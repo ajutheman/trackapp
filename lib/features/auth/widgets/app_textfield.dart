@@ -5,12 +5,7 @@ class AppTextField extends StatelessWidget {
   final TextEditingController controller;
   final TextInputType keyboardType;
 
-  const AppTextField({
-    Key? key,
-    required this.hint,
-    required this.controller,
-    this.keyboardType = TextInputType.text,
-  }) : super(key: key);
+  const AppTextField({Key? key, required this.hint, required this.controller, this.keyboardType = TextInputType.text}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +14,7 @@ class AppTextField extends StatelessWidget {
       keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         filled: true,
         fillColor: Colors.white,
