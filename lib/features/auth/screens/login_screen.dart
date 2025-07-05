@@ -5,7 +5,9 @@ import 'package:truck_app/features/auth/screens/otp_screen.dart';
 import '../../../core/theme/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool isDriverLogin;
+
+  const LoginScreen({super.key, required this.isDriverLogin});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

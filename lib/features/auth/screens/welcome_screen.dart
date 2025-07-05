@@ -1,84 +1,144 @@
 import 'package:flutter/material.dart';
-import 'package:truck_app/features/auth/screens/login_screen.dart';
+import 'package:truck_app/features/auth/screens/login_screen.dart'; // Assuming this is your login screen for users
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_colors.dart'; // Ensure this path is correct
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  final List<Map<String, String>> _onboardingData = [
+    {
+      'image': 'assets/onboarding_connect.png', // Placeholder image
+      'title': 'Connect Instantly',
+      'description': 'Find and connect with reliable transporters and loads across India with ease.',
+    },
+    {
+      'image': 'assets/onboarding_grow.png', // Placeholder image
+      'title': 'Grow Your Business',
+      'description': 'Expand your network and discover new opportunities to maximize your earnings.',
+    },
+    {
+      'image': 'assets/onboarding_secure.png', // Placeholder image
+      'title': 'Secure & Transparent',
+      'description': 'Experience safe transactions and clear communication every step of the way.',
+    },
+    {
+      'image': 'assets/onboarding_support.png', // Placeholder image
+      'title': '24/7 Support',
+      'description': 'Our dedicated support team is always here to assist you, day or night.',
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(() {
+      setState(() {
+        _currentPage = _pageController.page?.round() ?? 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onSkipPressed() {
+    _pageController.jumpToPage(_onboardingData.length - 1);
+  }
+
+  void _onContinuePressed() {
+    if (_currentPage < _onboardingData.length - 1) {
+      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
+    } else {
+      // On the last page, the "Continue" button is replaced by login options
+      // This logic will not be triggered directly by "Continue" on the last page.
+    }
+  }
+
+  void _navigateToLoginAsUser() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen(isDriverLogin: false)));
+  }
+
+  void _navigateToLoginAsDriver() {
+    // Assuming a separate login screen or flow for drivers
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen(isDriverLogin: true)));
+    // You might want to pass a flag or navigate to a different screen for driver login
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(height: 60),
-
-              // Hero Section
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // App Logo/Icon with modern styling
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
-                    ),
-                    child: const Icon(Icons.local_shipping_rounded, size: 60, color: Colors.white),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // App Title
-                  Text(
-                    'LoadLink',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 36, letterSpacing: -0.5),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Subtitle
-                  Text(
-                    'Your Gateway to Seamless\nTrucking Solutions',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary, fontSize: 18, height: 1.5, fontWeight: FontWeight.w400),
-                  ),
-                ],
-              ),
-
-              // Features Section
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: FeatureCard(icon: Icons.connect_without_contact_rounded, title: 'Connect', subtitle: 'Find customers instantly')),
-                      const SizedBox(width: 16),
-                      Expanded(child: FeatureCard(icon: Icons.trending_up_rounded, title: 'Grow', subtitle: 'Expand your business')),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: FeatureCard(icon: Icons.security_rounded, title: 'Secure', subtitle: 'Safe transactions')),
-                      const SizedBox(width: 16),
-                      Expanded(child: FeatureCard(icon: Icons.support_agent_rounded, title: 'Support', subtitle: '24/7 assistance')),
-                    ],
-                  ),
-                ],
-              ),
-
-              // CTA Section
-              Column(
+        child: Column(
+          children: [
+            // Skip Button
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (_currentPage < _onboardingData.length - 1) // Show skip until last page
+                    TextButton(
+                      onPressed: _onSkipPressed,
+                      child: Text(
+                        'Skip',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Onboarding Carousel
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _onboardingData.length,
+                itemBuilder: (context, index) {
+                  return _buildOnboardingSlide(
+                    imagePath: _onboardingData[index]['image']!,
+                    title: _onboardingData[index]['title']!,
+                    description: _onboardingData[index]['description']!,
+                  );
+                },
+              ),
+            ),
+
+            // Page Indicator Dots
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _onboardingData.length,
+                      (index) => _buildDot(index == _currentPage),
+                ),
+              ),
+            ),
+
+            // Navigation Buttons
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              child: _currentPage == _onboardingData.length - 1
+                  ? Column(
+                children: [
+                  // Login as User Button
                   Container(
                     width: double.infinity,
                     height: 56,
@@ -88,59 +148,140 @@ class WelcomeScreen extends StatelessWidget {
                       boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                      },
+                      onPressed: _navigateToLoginAsUser,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: const Text('Get Started', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                      child: const Text('Login as User', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Login as Driver Button
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface, // Different background for driver login
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.secondary, width: 2),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _navigateToLoginAsDriver,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text('Login as Driver', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.secondary)),
                     ),
                   ),
                 ],
+              )
+                  : Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.centerLeft, end: Alignment.centerRight),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
+                ),
+                child: ElevatedButton(
+                  onPressed: _onContinuePressed,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                ),
               ),
-              SizedBox(height: 10),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-class FeatureCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const FeatureCard({required this.icon, required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
+  Widget _buildOnboardingSlide({required String imagePath, required String title, required String description}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, size: 24, color: AppColors.primary),
+          // Illustration (Placeholder)
+          Image.asset(
+            imagePath,
+            height: 250,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                height: 250,
+                width: double.infinity,
+                color: AppColors.background,
+                child: Icon(Icons.image_not_supported_outlined, size: 100, color: AppColors.textSecondary.withOpacity(0.3)),
+              );
+            },
           ),
-          const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-          const SizedBox(height: 4),
-          Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const SizedBox(height: 40),
+          // Title
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Description
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildDot(bool isActive) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+      height: 8.0,
+      width: isActive ? 24.0 : 8.0,
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.secondary : AppColors.textSecondary.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
 }
+
+// Ensure LoginScreen can accept a flag for driver login if needed
+// This is a simple modification for demonstration.
+// You might have a more complex routing or state management for this.
+// In features/auth/screens/login_screen.dart
+/*
+class LoginScreen extends StatelessWidget {
+  final bool isDriverLogin;
+  const LoginScreen({super.key, this.isDriverLogin = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(isDriverLogin ? 'Driver Login' : 'User Login')),
+      body: Center(
+        child: Text('Login Screen for ${isDriverLogin ? "Driver" : "User"}'),
+      ),
+    );
+  }
+}
+*/
