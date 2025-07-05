@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:truck_app/features/home/screens/home_screen_driver.dart';
 
-import '../../../core/theme/app_colors.dart'; // Assuming AppColors is in this path
+import '../../../core/theme/app_colors.dart';
+import '../../main/screen/main_screen_driver.dart'; // Assuming AppColors is in this path
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -240,7 +240,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreen> with Ticke
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => HomeScreenDriver()), (predict) => false);
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predict) => false);
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     child: const Text('Get Started', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
