@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:truck_app/features/auth/screens/welcome_screen.dart';
+import 'package:truck_app/features/main/screen/main_screen_driver.dart';
 
 import 'core/theme/app_theme.dart';
 
@@ -12,13 +12,6 @@ class GoodsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Goods App',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
-      home: WelcomeScreen(),
-    );
+    return MaterialApp(title: 'Goods App', theme: AppTheme.lightTheme, darkTheme: AppTheme.darkTheme, themeMode: ThemeMode.light, home: MainScreenDriver());
   }
 }
