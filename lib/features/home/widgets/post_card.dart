@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:truck_app/core/constants/app_images.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../model/post.dart';
@@ -26,8 +27,23 @@ class PostCard extends StatelessWidget {
           if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                post.imageUrl!,
+              // child: Image.network(
+              //   post.imageUrl!,
+              //   height: 150, // Fixed height for consistency
+              //   width: double.infinity, // Take full width
+              //   fit: BoxFit.cover,
+              //   errorBuilder: (context, error, stackTrace) {
+              //     return Container(
+              //       height: 150,
+              //       color: AppColors.border,
+              //       child: Center(
+              //         child: Icon(Icons.image_not_supported_outlined, color: AppColors.textHint, size: 48),
+              //       ),
+              //     );
+              //   },
+              // ),
+              child: Image.asset(
+                AppImages.dummyPost,
                 height: 150, // Fixed height for consistency
                 width: double.infinity, // Take full width
                 fit: BoxFit.cover,

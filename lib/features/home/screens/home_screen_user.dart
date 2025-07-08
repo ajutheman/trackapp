@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:truck_app/core/constants/app_images.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../model/connect.dart';
 import '../model/post.dart'; // Assuming you have this model
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart'; // Assuming you have this widget
-
-
 
 // Placeholder for a simple ConnectCard for Recent Connects
 
@@ -21,43 +21,43 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   final List<Connect> _connects = [
     Connect(
       id: 'c1',
-      postName: 'Load Request #12345',
-      replyUserName: 'Rinu',
-      postTitle: 'Urgent: Goods from Malappuram to Kochi',
-      dateTime: DateTime.now().subtract(const Duration(hours: 2)),
+      postName: 'Load Request #54321',
+      replyUserName: 'Faheem',
+      postTitle: 'FMCG delivery from Calicut to Trivandrum',
+      dateTime: DateTime.now().subtract(const Duration(hours: 1)),
       status: ConnectStatus.pending,
     ),
     Connect(
       id: 'c2',
-      postName: 'Vehicle Availability #67890',
-      replyUserName: 'Miya',
-      postTitle: 'Truck available for Chennai route',
-      dateTime: DateTime.now().subtract(const Duration(days: 1)),
+      postName: 'Vehicle Availability #90876',
+      replyUserName: 'Anjali',
+      postTitle: 'AC container for pharma supplies',
+      dateTime: DateTime.now().subtract(const Duration(days: 3)),
       status: ConnectStatus.accepted,
     ),
     Connect(
       id: 'c3',
-      postName: 'Load Request #11223',
-      replyUserName: 'Xavier',
-      postTitle: 'Heavy machinery transport to Bangalore',
-      dateTime: DateTime.now().subtract(const Duration(minutes: 45)),
-      status: ConnectStatus.pending,
+      postName: 'Load Request #33445',
+      replyUserName: 'Rahul',
+      postTitle: 'Furniture shifting to Thrissur',
+      dateTime: DateTime.now().subtract(const Duration(minutes: 30)),
+      status: ConnectStatus.completed,
     ),
     Connect(
       id: 'c4',
-      postName: 'Load Request #44556',
-      replyUserName: 'Marco',
-      postTitle: 'Fragile items delivery to Delhi',
-      dateTime: DateTime.now().subtract(const Duration(days: 2)),
+      postName: 'Vehicle Availability #55667',
+      replyUserName: 'Sneha',
+      postTitle: 'Open truck available for bulk goods',
+      dateTime: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
       status: ConnectStatus.rejected,
     ),
     Connect(
       id: 'c5',
-      postName: 'Vehicle Availability #77889',
-      replyUserName: 'John Smith',
-      postTitle: 'Mini truck for local shifting',
-      dateTime: DateTime.now().subtract(const Duration(hours: 5)),
-      status: ConnectStatus.completed,
+      postName: 'Load Request #99887',
+      replyUserName: 'Manoj Kumar',
+      postTitle: 'Urgent delivery to Hyderabad within 24h',
+      dateTime: DateTime.now().subtract(const Duration(hours: 3)),
+      status: ConnectStatus.pending,
     ),
   ];
 
@@ -96,14 +96,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
       appBar: _buildAppBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildRecentConnectsSection(),
-            const SizedBox(height: 24),
-            _buildListOfPostsSection(),
-          ],
-        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()]),
       ),
     );
   }
@@ -121,15 +114,11 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             // Center: App Logo
             Row(
               children: [
-                Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 28),
+                SizedBox(width: 35, height: 35, child: Image.asset(AppImages.appIconWithoutBackground)),
                 const SizedBox(width: 8),
                 Text(
                   'TruckApp', // Placeholder for App Logo text
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -162,20 +151,16 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         const SizedBox(height: 16),
         SizedBox(
           height: 120, // Height for horizontal list
-          child: _connects.isEmpty
-              ? Center(
-            child: Text(
-              'No recent connects yet.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          )
-              : ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _connects.length,
-            itemBuilder: (context, index) {
-              return RecentConnectCard(connect: _connects[index]);
-            },
-          ),
+          child:
+              _connects.isEmpty
+                  ? Center(child: Text('No recent connects yet.', style: TextStyle(color: AppColors.textSecondary)))
+                  : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _connects.length,
+                    itemBuilder: (context, index) {
+                      return RecentConnectCard(connect: _connects[index]);
+                    },
+                  ),
         ),
       ],
     );
@@ -191,23 +176,15 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         ),
         const SizedBox(height: 16),
         _userPosts.isEmpty
-            ? Center(
-          child: Text(
-            'No posts available at the moment.',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        )
+            ? Center(child: Text('No posts available at the moment.', style: TextStyle(color: AppColors.textSecondary)))
             : ListView.builder(
-          shrinkWrap: true, // Important for nested list views
-          physics: const NeverScrollableScrollPhysics(), // Important for nested list views
-          itemCount: _userPosts.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: PostCard(post: _userPosts[index]),
-            );
-          },
-        ),
+              shrinkWrap: true, // Important for nested list views
+              physics: const NeverScrollableScrollPhysics(), // Important for nested list views
+              itemCount: _userPosts.length,
+              itemBuilder: (context, index) {
+                return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: PostCard(post: _userPosts[index]));
+              },
+            ),
       ],
     );
   }

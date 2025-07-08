@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:truck_app/core/constants/app_images.dart';
 import 'package:truck_app/features/auth/screens/login_screen.dart'; // Assuming this is your login screen for users
 
 import '../../../core/theme/app_colors.dart'; // Ensure this path is correct
@@ -16,22 +17,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   final List<Map<String, String>> _onboardingData = [
     {
-      'image': 'assets/onboarding_connect.png', // Placeholder image
+      'image': AppImages.onboardingConnect, // Placeholder image
       'title': 'Connect Instantly',
       'description': 'Find and connect with reliable transporters and loads across India with ease.',
     },
     {
-      'image': 'assets/onboarding_grow.png', // Placeholder image
+      'image': AppImages.onboardingGrow, // Placeholder image
       'title': 'Grow Your Business',
       'description': 'Expand your network and discover new opportunities to maximize your earnings.',
     },
     {
-      'image': 'assets/onboarding_secure.png', // Placeholder image
+      'image':AppImages.onboardingSecure, // Placeholder image
       'title': 'Secure & Transparent',
       'description': 'Experience safe transactions and clear communication every step of the way.',
     },
     {
-      'image': 'assets/onboarding_support.png', // Placeholder image
+      'image': AppImages.onboardingSupport, // Placeholder image
       'title': '24/7 Support',
       'description': 'Our dedicated support team is always here to assist you, day or night.',
     },
