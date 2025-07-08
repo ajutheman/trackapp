@@ -10,6 +10,8 @@ class AppColors {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF1E1E1E);
   static const Color textSecondary = Color(0xFF6F6F6F);
+  static const Color textHint = Color(0xFF9E9E9E); // New: Lighter grey for hints/placeholders
+  static const Color border = Color(0xFFE0E0E0); // New: Light grey for borders and dividers
 
   // Success, Warning, Error
   static const Color success = Color(0xFF4CAF50);

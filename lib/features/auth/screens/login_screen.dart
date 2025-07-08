@@ -212,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             onPressed:
                                 phoneController.text.length == 10
                                     ? () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const OtpScreen()));
+                                      Navigator.push(context, MaterialPageRoute(builder: (_) => OtpScreen(isDriverLogin: widget.isDriverLogin)));
                                     }
                                     : null,
                             style: ElevatedButton.styleFrom(

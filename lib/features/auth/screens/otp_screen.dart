@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:truck_app/features/auth/screens/register_screen.dart';
+import 'package:truck_app/features/auth/screens/register_screen_driver.dart';
+import 'package:truck_app/features/auth/screens/register_screen_user.dart';
 
 import '../../../core/theme/app_colors.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key});
+  final bool isDriverLogin;
+
+  const OtpScreen({super.key, required this.isDriverLogin});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -249,7 +252,11 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                             _isOtpComplete
                                 ? () {
                                   HapticFeedback.mediumImpact();
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreen()));
+                                  if (widget.isDriverLogin) {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenDriver()));
+                                  } else {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenUser()));
+                                  }
                                 }
                                 : null,
                         style: ElevatedButton.styleFrom(

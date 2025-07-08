@@ -7,14 +7,14 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../main/screen/main_screen_driver.dart'; // Assuming AppColors is in this path
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class RegisterScreenDriver extends StatefulWidget {
+  const RegisterScreenDriver({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterProfileScreenDriverState();
+  State<RegisterScreenDriver> createState() => _RegisterProfileScreenDriverState();
 }
 
-class _RegisterProfileScreenDriverState extends State<RegisterScreen> with TickerProviderStateMixin {
+class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final PageController _pageController = PageController();
 

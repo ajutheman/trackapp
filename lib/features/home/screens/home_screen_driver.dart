@@ -61,12 +61,29 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
 
   // Mock data for Latest Posts
   final List<Post> _latestPosts = [
-    Post(title: 'New Policy Updates for Transporters', description: 'Important changes regarding road tax and permits.', date: DateTime.now().subtract(const Duration(days: 3))),
-    Post(title: 'Tips for Fuel Efficiency', description: 'Learn how to save on fuel costs with these simple tips.', date: DateTime.now().subtract(const Duration(days: 5))),
     Post(
-      title: 'Upcoming Maintenance Workshop',
-      description: 'Free workshop on truck maintenance in Malappuram.', // Personalized with current location
-      date: DateTime.now().subtract(const Duration(days: 7)),
+      title: 'Looking for a truck to move household items',
+      description: 'Need a medium-sized truck to shift goods from Malappuram to Kochi next week.',
+      date: DateTime.now().subtract(const Duration(hours: 5)),
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Household+Move',
+    ),
+    Post(
+      title: 'Urgent transport for fragile goods',
+      description: 'Require a secure vehicle for delicate items, preferably with air conditioning.',
+      date: DateTime.now().subtract(const Duration(days: 1)),
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Fragile+Transport',
+    ),
+    Post(
+      title: 'Daily commute service for office staff',
+      description: 'Seeking a reliable tempo traveller for staff pick-up and drop-off.',
+      date: DateTime.now().subtract(const Duration(days: 2)),
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Office+Commute',
+    ),
+    Post(
+      title: 'Bulk cement delivery to construction site',
+      description: 'Looking for a large truck to deliver cement bags to a site in Thrissur.',
+      date: DateTime.now().subtract(const Duration(days: 3)),
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Cement+Delivery',
     ),
   ];
 
