@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           borderRadius: BorderRadius.circular(20.0),
                           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20.0, spreadRadius: 2.0)],
                         ),
-                        child: Image.asset(AppImages.appIcon),
+                        child: Image.asset(AppImages.appIconWithName),
                       ),
                       const SizedBox(height: 30),
                       Text("LoadLink", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),

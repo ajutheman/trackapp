@@ -113,7 +113,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Center: App Logo
-            SizedBox(height: 35, child: Image.asset(AppImages.appIcon)),
+            SizedBox(height: 35, child: Image.asset(AppImages.appIconWithName)),
             // Right: Notification Icon
             IconButton(
               icon: Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 28),

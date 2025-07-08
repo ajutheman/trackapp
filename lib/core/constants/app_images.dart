@@ -1,5 +1,6 @@
 class AppImages {
-  static const String appIcon = 'assets/icon/icon.jpg';
+  static const String appIcon = 'assets/icon/icon.png';
+  static const String appIconWithName = 'assets/icon/icon_with_name.jpg';
   static const String appIconWithoutBackground = 'assets/icon/icon_without_background.png';
 
   static const String onboardingGrow = 'assets/images/onboarding_grow.png';
