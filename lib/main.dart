@@ -12,6 +12,13 @@ class GoodsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: 'Goods App', theme: AppTheme.lightTheme, darkTheme: AppTheme.darkTheme, themeMode: ThemeMode.light, home: SplashScreen());
+    return MaterialApp(
+      title: 'LoadLink',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
+      home: SplashScreen(),
+    );
   }
 }

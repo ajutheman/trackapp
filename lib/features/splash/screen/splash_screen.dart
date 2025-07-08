@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:truck_app/features/auth/screens/welcome_screen.dart';
 
 import '../../../core/constants/app_images.dart';
+import '../../auth/screens/welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -57,9 +57,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(height: 150, width: 150, child: Image.asset(AppImages.appIcon)),
+                      Container(
+                        height: 150,
+                        width: 150,
+                        padding: const EdgeInsets.all(20.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20.0),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20.0, spreadRadius: 2.0)],
+                        ),
+                        child: Image.asset(AppImages.appIcon),
+                      ),
                       const SizedBox(height: 30),
-                      Text("Truck App", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
+                      Text("LoadLink", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
                       const SizedBox(height: 5),
                       const Text("Manage. Track. Deliver.", style: TextStyle(fontSize: 16, color: Colors.black54)),
                       const SizedBox(height: 40),

@@ -103,25 +103,17 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
 
   AppBar _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       elevation: 0,
       titleSpacing: 0,
+      scrolledUnderElevation: 0,
       title: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Center: App Logo
-            Row(
-              children: [
-                SizedBox(width: 35, height: 35, child: Image.asset(AppImages.appIconWithoutBackground)),
-                const SizedBox(width: 8),
-                Text(
-                  'TruckApp', // Placeholder for App Logo text
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+            SizedBox(height: 35, child: Image.asset(AppImages.appIcon)),
             // Right: Notification Icon
             IconButton(
               icon: Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 28),
