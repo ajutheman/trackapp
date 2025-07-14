@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
 
 // Assuming AppColors is defined in this path
 import '../../../core/theme/app_colors.dart';
@@ -97,6 +98,8 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
+            _buildActionButton(label: 'My Vehicle', icon: Icons.directions_car_filled_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_)=>VehicleListScreen()))),
+            const SizedBox(height: 12),
             _buildActionButton(label: 'Terms and Conditions', icon: Icons.description_outlined, onTap: () => _showSnackBar('Navigating to Terms and Conditions')),
             const SizedBox(height: 12),
             _buildActionButton(label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, onTap: () => _showSnackBar('Navigating to Privacy Policy')),

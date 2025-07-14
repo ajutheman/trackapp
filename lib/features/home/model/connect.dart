@@ -5,6 +5,7 @@ class Connect {
   final String postTitle;
   final DateTime dateTime;
   final ConnectStatus status; // New: to track status
+  final bool isUser;
 
   Connect({
     required this.id,
@@ -13,11 +14,12 @@ class Connect {
     required this.postTitle,
     required this.dateTime,
     this.status = ConnectStatus.pending, // Default status
+    required this.isUser,
   });
 
   // Method to create a copy with updated status
   Connect copyWith({ConnectStatus? status}) {
-    return Connect(id: id, postName: postName, replyUserName: replyUserName, postTitle: postTitle, dateTime: dateTime, status: status ?? this.status);
+    return Connect(id: id, postName: postName, replyUserName: replyUserName, postTitle: postTitle, dateTime: dateTime,isUser: isUser, status: status ?? this.status);
   }
 }
 

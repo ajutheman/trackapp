@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -115,8 +116,8 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   }
 
   void _nextPage() {
-    if (_currentPage < 3) {
-      // Updated for 4 pages (0, 1, 2, 3)
+    if (_currentPage < 2) {
+      // Updated for 3 pages (0, 1, 2, 3)
       setState(() {
         _currentPage++;
       });
@@ -136,7 +137,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   }
 
   void _updateProgress() {
-    double progress = (_currentPage + 1) / 4; // Updated for 4 pages
+    double progress = (_currentPage + 1) / 3; // Updated for 4 pages
     _progressController.animateTo(progress);
   }
 
@@ -165,25 +166,19 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
 
   bool _isCurrentPageValid() {
     switch (_currentPage) {
-      case 0: // Personal Information (Name, Phone, WhatsApp, Email, Profile Picture)
+      case 0: // Personal Info
         return _nameController.text.isNotEmpty &&
             _phoneController.text.length == 10 &&
-            _whatsAppController.text.length == 10 && // Assuming WhatsApp is also 10 digits
+            _whatsAppController.text.length == 10 &&
             _emailController.text.isNotEmpty &&
             _emailController.text.contains('@') &&
             _profilePicture != null;
-      case 1: // Business Information
-        return _companyController.text.isNotEmpty &&
-            _addressController.text.isNotEmpty &&
-            _cityController.text.isNotEmpty &&
-            _stateController.text.isNotEmpty &&
-            _pincodeController.text.length == 6;
-      case 2: // Vehicle Type selection
+      case 1: // Vehicle Type selection
         return _selectedVehicleType.isNotEmpty;
-      case 3: // Vehicle Details (RC, DL, Truck Images, Vehicle Number, Body Type, Capacity, T&C)
+      case 2: // Vehicle Details
         return _rcFile != null &&
             _drivingLicenseFile != null &&
-            _truckImages.isNotEmpty && // Ensure at least 4 images are uploaded
+            _truckImages.isNotEmpty &&
             _vehicleNumberController.text.isNotEmpty &&
             _selectedVehicleBodyType.isNotEmpty &&
             _vehicleCapacityController.text.isNotEmpty &&
@@ -269,7 +264,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _buildPersonalInfoPage(),
-                  _buildBusinessInfoPage(),
+                  // _buildBusinessInfoPage(),
                   _buildVehicleTypeSelectionPage(), // Renamed for clarity
                   _buildVehicleDetailsPage(), // New page for remaining vehicle details
                 ],
@@ -307,7 +302,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Create Profile', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                    Text('Step ${_currentPage + 1} of 4', style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)), // Updated total steps
+                    Text('Step ${_currentPage + 1} of 3', style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)), // Updated total steps
                   ],
                 ),
               ),
@@ -384,7 +379,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   focusNode: _whatsAppFocus,
                   label: 'WhatsApp Number',
                   hint: 'Enter your WhatsApp number',
-                  icon: Icons.info_outline,
+                  icon: FontAwesomeIcons.whatsapp,
                   keyboardType: TextInputType.phone,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
                   onChanged: (value) => setState(() {}),
@@ -412,92 +407,92 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     );
   }
 
-  Widget _buildBusinessInfoPage() {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Business Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const SizedBox(height: 8),
-                const Text('Tell us about your business', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                const SizedBox(height: 32),
-
-                _buildInputField(
-                  controller: _companyController,
-                  focusNode: _companyFocus,
-                  label: 'Company Name',
-                  hint: 'Enter company name',
-                  icon: Icons.business_outlined,
-                  onChanged: (value) => setState(() {}),
-                ),
-
-                const SizedBox(height: 20),
-
-                _buildInputField(
-                  controller: _addressController,
-                  focusNode: _addressFocus,
-                  label: 'Address',
-                  hint: 'Enter full address',
-                  icon: Icons.location_on_outlined,
-                  maxLines: 2,
-                  onChanged: (value) => setState(() {}),
-                ),
-
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInputField(
-                        controller: _cityController,
-                        focusNode: _cityFocus,
-                        label: 'City',
-                        hint: 'City',
-                        icon: Icons.location_city_outlined,
-                        onChanged: (value) => setState(() {}),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildInputField(
-                        controller: _stateController,
-                        focusNode: _stateFocus,
-                        label: 'State',
-                        hint: 'State',
-                        icon: Icons.map_outlined,
-                        onChanged: (value) => setState(() {}),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                _buildInputField(
-                  controller: _pincodeController,
-                  focusNode: _pincodeFocus,
-                  label: 'Pincode',
-                  hint: 'Enter pincode',
-                  icon: Icons.pin_drop_outlined,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
-                  onChanged: (value) => setState(() {}),
-                ),
-
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildBusinessInfoPage() {
+  //   return FadeTransition(
+  //     opacity: _fadeAnimation,
+  //     child: SlideTransition(
+  //       position: _slideAnimation,
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(horizontal: 24),
+  //         child: SingleChildScrollView(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               const Text('Business Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+  //               const SizedBox(height: 8),
+  //               const Text('Tell us about your business', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+  //               const SizedBox(height: 32),
+  //
+  //               _buildInputField(
+  //                 controller: _companyController,
+  //                 focusNode: _companyFocus,
+  //                 label: 'Company Name',
+  //                 hint: 'Enter company name',
+  //                 icon: Icons.business_outlined,
+  //                 onChanged: (value) => setState(() {}),
+  //               ),
+  //
+  //               const SizedBox(height: 20),
+  //
+  //               _buildInputField(
+  //                 controller: _addressController,
+  //                 focusNode: _addressFocus,
+  //                 label: 'Address',
+  //                 hint: 'Enter full address',
+  //                 icon: Icons.location_on_outlined,
+  //                 maxLines: 2,
+  //                 onChanged: (value) => setState(() {}),
+  //               ),
+  //
+  //               const SizedBox(height: 20),
+  //
+  //               Row(
+  //                 children: [
+  //                   Expanded(
+  //                     child: _buildInputField(
+  //                       controller: _cityController,
+  //                       focusNode: _cityFocus,
+  //                       label: 'City',
+  //                       hint: 'City',
+  //                       icon: Icons.location_city_outlined,
+  //                       onChanged: (value) => setState(() {}),
+  //                     ),
+  //                   ),
+  //                   const SizedBox(width: 16),
+  //                   Expanded(
+  //                     child: _buildInputField(
+  //                       controller: _stateController,
+  //                       focusNode: _stateFocus,
+  //                       label: 'State',
+  //                       hint: 'State',
+  //                       icon: Icons.map_outlined,
+  //                       onChanged: (value) => setState(() {}),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //
+  //               const SizedBox(height: 20),
+  //
+  //               _buildInputField(
+  //                 controller: _pincodeController,
+  //                 focusNode: _pincodeFocus,
+  //                 label: 'Pincode',
+  //                 hint: 'Enter pincode',
+  //                 icon: Icons.pin_drop_outlined,
+  //                 keyboardType: TextInputType.number,
+  //                 inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+  //                 onChanged: (value) => setState(() {}),
+  //               ),
+  //
+  //               const SizedBox(height: 40),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // Renamed from _buildVehicleInfoPage to reflect its new purpose
   Widget _buildVehicleTypeSelectionPage() {
@@ -857,7 +852,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
       padding: const EdgeInsets.all(24),
       child:
           _currentPage ==
-                  3 // Last page (0, 1, 2, 3)
+                  2 // Last page (0, 1, 2, 3)
               ? Container(
                 width: double.infinity,
                 height: 56,

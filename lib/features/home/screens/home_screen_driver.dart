@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:truck_app/core/constants/dummy_data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../model/connect.dart';
 import '../model/post.dart';
-import '../widgets/connect_card.dart';
+import '../../connect/widgets/connect_card.dart';
 import '../widgets/post_card.dart';
 
 class HomeScreenDriver extends StatefulWidget {
@@ -16,48 +17,7 @@ class HomeScreenDriver extends StatefulWidget {
 
 class _HomeScreenDriverState extends State<HomeScreenDriver> {
   // Mock data for Connect Cards
-  final List<Connect> _connects = [
-    Connect(
-      id: 'c1',
-      postName: 'Load Request #54321',
-      replyUserName: 'Faheem',
-      postTitle: 'FMCG delivery from Calicut to Trivandrum',
-      dateTime: DateTime.now().subtract(const Duration(hours: 1)),
-      status: ConnectStatus.pending,
-    ),
-    Connect(
-      id: 'c2',
-      postName: 'Vehicle Availability #90876',
-      replyUserName: 'Anjali',
-      postTitle: 'AC container for pharma supplies',
-      dateTime: DateTime.now().subtract(const Duration(days: 3)),
-      status: ConnectStatus.accepted,
-    ),
-    Connect(
-      id: 'c3',
-      postName: 'Load Request #33445',
-      replyUserName: 'Rahul',
-      postTitle: 'Furniture shifting to Thrissur',
-      dateTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      status: ConnectStatus.completed,
-    ),
-    Connect(
-      id: 'c4',
-      postName: 'Vehicle Availability #55667',
-      replyUserName: 'Sneha',
-      postTitle: 'Open truck available for bulk goods',
-      dateTime: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
-      status: ConnectStatus.rejected,
-    ),
-    Connect(
-      id: 'c5',
-      postName: 'Load Request #99887',
-      replyUserName: 'Manoj Kumar',
-      postTitle: 'Urgent delivery to Hyderabad within 24h',
-      dateTime: DateTime.now().subtract(const Duration(hours: 3)),
-      status: ConnectStatus.pending,
-    ),
-  ];
+
 
   // Mock data for Latest Posts
   final List<Post> _latestPosts = [
@@ -186,7 +146,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
         Text('Connect Requests', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
         // Display Connect Cards
-        ..._connects.map(
+        ...DummyData.driverConnections.map(
           (connect) => Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: ConnectCard(

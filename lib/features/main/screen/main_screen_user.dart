@@ -3,6 +3,7 @@ import 'package:truck_app/features/connect/screens/connect_screen.dart';
 import 'package:truck_app/features/home/screens/home_screen_user.dart';
 import 'package:truck_app/features/profile/screen/profile_screen_user.dart';
 
+import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
 
 class MainScreenUser extends StatefulWidget {
@@ -18,7 +19,7 @@ class _MainScreenUserState extends State<MainScreenUser> {
   // List of screens to be displayed in the BottomNavigationBar for users
   final List<Widget> _screens = [
     const HomeScreenUser(),
-    ConnectScreen(), // Reusing the ConnectScreen as it's common
+    ConnectScreen(connections: DummyData.userConnections), // Reusing the ConnectScreen as it's common
     const ProfileScreenUser(),
   ];
 

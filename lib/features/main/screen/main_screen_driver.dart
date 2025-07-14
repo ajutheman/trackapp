@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:truck_app/core/constants/dummy_data.dart';
 import 'package:truck_app/features/add_post/screen/add_post_screen.dart';
 import 'package:truck_app/features/connect/screens/connect_screen.dart';
 
@@ -20,7 +21,7 @@ class _MainScreenDriverState extends State<MainScreenDriver> {
   final List<Widget> _screens = [
     const HomeScreenDriver(),
     // Placeholder for Connect Screen
-    ConnectScreen(), // Placeholder for Add Post Screen
+    ConnectScreen(connections: DummyData.driverConnections), // Placeholder for Add Post Screen
     AddPostScreen(),
     const ProfileScreenDriver(),
   ];

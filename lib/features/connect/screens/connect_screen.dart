@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../home/model/connect.dart';
-import '../../home/widgets/connect_card.dart';
+import '../widgets/connect_card.dart';
 
 class ConnectScreen extends StatefulWidget {
-  const ConnectScreen({super.key});
+  final List<Connect> connections ;
+  ConnectScreen({super.key, required this.connections});
 
   @override
   State<ConnectScreen> createState() => _ConnectScreenState();
@@ -14,49 +15,6 @@ class ConnectScreen extends StatefulWidget {
 class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Mock data for Connect Cards
-  final List<Connect> _allConnects = [
-    Connect(
-      id: 'c1',
-      postName: 'Load Request #54321',
-      replyUserName: 'Faheem',
-      postTitle: 'FMCG delivery from Calicut to Trivandrum',
-      dateTime: DateTime.now().subtract(const Duration(hours: 1)),
-      status: ConnectStatus.pending,
-    ),
-    Connect(
-      id: 'c2',
-      postName: 'Vehicle Availability #90876',
-      replyUserName: 'Anjali',
-      postTitle: 'AC container for pharma supplies',
-      dateTime: DateTime.now().subtract(const Duration(days: 3)),
-      status: ConnectStatus.accepted,
-    ),
-    Connect(
-      id: 'c3',
-      postName: 'Load Request #33445',
-      replyUserName: 'Rahul',
-      postTitle: 'Furniture shifting to Thrissur',
-      dateTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      status: ConnectStatus.completed,
-    ),
-    Connect(
-      id: 'c4',
-      postName: 'Vehicle Availability #55667',
-      replyUserName: 'Sneha',
-      postTitle: 'Open truck available for bulk goods',
-      dateTime: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
-      status: ConnectStatus.rejected,
-    ),
-    Connect(
-      id: 'c5',
-      postName: 'Load Request #99887',
-      replyUserName: 'Manoj Kumar',
-      postTitle: 'Urgent delivery to Hyderabad within 24h',
-      dateTime: DateTime.now().subtract(const Duration(hours: 3)),
-      status: ConnectStatus.pending,
-    ),
-  ];
 
   // State to manage connects, allowing updates
   List<Connect> _connects = [];
@@ -65,7 +23,7 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _connects = List.from(_allConnects); // Initialize with all connects
+    _connects = List.from(widget.connections); // Initialize with all connects
   }
 
   @override
