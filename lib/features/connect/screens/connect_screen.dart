@@ -6,16 +6,15 @@ import '../widgets/connect_card.dart';
 
 class ConnectScreen extends StatefulWidget {
   final List<Connect> connections;
+
   ConnectScreen({super.key, required this.connections});
 
   @override
   State<ConnectScreen> createState() => _ConnectScreenState();
 }
 
-class _ConnectScreenState extends State<ConnectScreen>
-    with TickerProviderStateMixin {
+class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-
 
   // State to manage connects, allowing updates
   List<Connect> _connects = [];
@@ -24,7 +23,6 @@ class _ConnectScreenState extends State<ConnectScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
 
     _connects = List.from(widget.connections);
   }
@@ -38,17 +36,7 @@ class _ConnectScreenState extends State<ConnectScreen>
   void _showSnackBar(String message, {bool isSuccess = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle : Icons.error,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
+        content: Row(children: [Icon(isSuccess ? Icons.check_circle : Icons.error, color: Colors.white, size: 20), const SizedBox(width: 8), Expanded(child: Text(message))]),
         backgroundColor: isSuccess ? AppColors.success : AppColors.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -83,15 +71,9 @@ class _ConnectScreenState extends State<ConnectScreen>
     if (filterStatus == null) {
       return _connects; // All
     } else if (filterStatus == ConnectStatus.pending) {
-      return _connects.where((c) =>
-      c.status == ConnectStatus.pending ||
-          c.status == ConnectStatus.rejected
-      ).toList();
+      return _connects.where((c) => c.status == ConnectStatus.pending || c.status == ConnectStatus.rejected).toList();
     } else if (filterStatus == ConnectStatus.accepted) {
-      return _connects.where((c) =>
-      c.status == ConnectStatus.accepted ||
-          c.status == ConnectStatus.completed
-      ).toList();
+      return _connects.where((c) => c.status == ConnectStatus.accepted || c.status == ConnectStatus.completed).toList();
     }
     return [];
   }
@@ -105,35 +87,19 @@ class _ConnectScreenState extends State<ConnectScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'My Connections',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-          ),
-        ),
+        title: const Text('My Connections', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 20)),
         backgroundColor: AppColors.background,
         elevation: 0,
-        centerTitle: true, leading: IconButton(
+        centerTitle: true,
+        leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
             ),
-            child: Icon(
-              Icons.arrow_back_rounded,
-              color: AppColors.textPrimary,
-              size: 20,
-            ),
+            child: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary, size: 20),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -144,42 +110,21 @@ class _ConnectScreenState extends State<ConnectScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: TabBar(
               controller: _tabController,
               labelColor: Colors.white,
+              indicatorSize: TabBarIndicatorSize.tab,
               unselectedLabelColor: AppColors.textSecondary,
               indicator: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
               ),
-              indicatorPadding: const EdgeInsets.all(4),
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
+              indicatorPadding: const EdgeInsets.all(2),
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               tabs: [
                 Tab(
                   child: Row(
@@ -189,14 +134,8 @@ class _ConnectScreenState extends State<ConnectScreen>
                       const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.textSecondary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${_getTabCount(null)}',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                        ),
+                        decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('${_getTabCount(null)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -209,14 +148,8 @@ class _ConnectScreenState extends State<ConnectScreen>
                       const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.textSecondary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${_getTabCount(ConnectStatus.pending)}',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                        ),
+                        decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('${_getTabCount(ConnectStatus.pending)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -229,14 +162,8 @@ class _ConnectScreenState extends State<ConnectScreen>
                       const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.textSecondary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${_getTabCount(ConnectStatus.accepted)}',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                        ),
+                        decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('${_getTabCount(ConnectStatus.accepted)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -269,39 +196,18 @@ class _ConnectScreenState extends State<ConnectScreen>
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    AppColors.textSecondary.withOpacity(0.1),
-                    AppColors.textSecondary.withOpacity(0.05),
-                  ],
+                  colors: [AppColors.textSecondary.withOpacity(0.1), AppColors.textSecondary.withOpacity(0.05)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                _getEmptyStateIcon(filterStatus),
-                size: 60,
-                color: AppColors.textSecondary.withOpacity(0.6),
-              ),
+              child: Icon(_getEmptyStateIcon(filterStatus), size: 60, color: AppColors.textSecondary.withOpacity(0.6)),
             ),
             const SizedBox(height: 20),
-            Text(
-              _getEmptyStateTitle(filterStatus),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            Text(_getEmptyStateTitle(filterStatus), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             const SizedBox(height: 8),
-            Text(
-              _getEmptyStateMessage(filterStatus),
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            Text(_getEmptyStateMessage(filterStatus), style: TextStyle(fontSize: 14, color: AppColors.textSecondary), textAlign: TextAlign.center),
           ],
         ),
       );
