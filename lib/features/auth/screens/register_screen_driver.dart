@@ -50,6 +50,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   File? _rcFile; // New
   File? _drivingLicenseFile; // New
   final List<File> _truckImages = []; // New
+  File? _vehicleInsuranceFile;
 
   // Dropdowns/Selections
   String _selectedVehicleType = '';
@@ -178,6 +179,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
       case 2: // Vehicle Details
         return _rcFile != null &&
             _drivingLicenseFile != null &&
+            _vehicleInsuranceFile != null &&
             _truckImages.isNotEmpty &&
             _vehicleNumberController.text.isNotEmpty &&
             _selectedVehicleBodyType.isNotEmpty &&
@@ -226,7 +228,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                 const Text('Registration Successful!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                 const SizedBox(height: 10),
                 const Text(
-                  'Welcome to LoadLink! Your account has been created successfully.',
+                  'Welcome to Return Cargo! Your account has been created successfully.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                 ),
@@ -601,7 +603,13 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 20),
-
+                _buildFileUploadWidget(
+                  label: 'Upload Vehicle Insurance',
+                  file: _vehicleInsuranceFile,
+                  onPick: () => _pickFile((file) => _vehicleInsuranceFile = file),
+                  icon: Icons.shield_outlined,
+                ),
+                const SizedBox(height: 20),
                 _buildDropdownField(
                   label: 'Vehicle Body Type',
                   value: _selectedVehicleBodyType,

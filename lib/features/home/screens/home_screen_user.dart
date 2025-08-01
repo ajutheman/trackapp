@@ -3,7 +3,7 @@ import 'package:truck_app/core/constants/app_images.dart';
 
 import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
-import '../model/connect.dart';
+import '../../notification/screen/notification_screen.dart';
 import '../model/post.dart'; // Assuming you have this model
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart'; // Assuming you have this widget
@@ -19,7 +19,6 @@ class HomeScreenUser extends StatefulWidget {
 
 class _HomeScreenUserState extends State<HomeScreenUser> {
   // Mock data for Recent Connects
-
 
   // Mock data for List of Posts
   final List<Post> _userPosts = [
@@ -78,7 +77,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             IconButton(
               icon: Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 28),
               onPressed: () {
-                _showSnackBar('Notifications tapped!');
+                Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationScreen()));
               },
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.surface,
@@ -104,7 +103,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         SizedBox(
           height: 120, // Height for horizontal list
           child:
-          DummyData.userConnections.isEmpty
+              DummyData.userConnections.isEmpty
                   ? Center(child: Text('No recent connects yet.', style: TextStyle(color: AppColors.textSecondary)))
                   : ListView.builder(
                     scrollDirection: Axis.horizontal,

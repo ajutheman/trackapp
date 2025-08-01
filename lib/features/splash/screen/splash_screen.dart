@@ -69,11 +69,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         child: Image.asset(AppImages.appIconWithName),
                       ),
                       const SizedBox(height: 30),
-                      Text("LoadLink", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
+                      Text("Return Cargo", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
                       const SizedBox(height: 5),
                       const Text("Manage. Track. Deliver.", style: TextStyle(fontSize: 16, color: Colors.black54)),
-                      const SizedBox(height: 40),
-                      _buildLoadingIndicator(),
                     ],
                   ),
                 ),
@@ -83,20 +81,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         ),
       ),
     );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return Column(
-      children: [
-        SizedBox(width: 60, height: 60, child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor), strokeWidth: 3)),
-        const SizedBox(height: 20),
-        _buildLoadingText(),
-      ],
-    );
-  }
-
-  Widget _buildLoadingText() {
-    return Text("Loading..", style: const TextStyle(fontSize: 16, color: Colors.black45));
   }
 
   init() {

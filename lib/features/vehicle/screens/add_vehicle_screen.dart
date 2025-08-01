@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/features/vehicle/model/vehicle.dart'; // Import the Vehicle model
@@ -28,6 +27,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
   // File Uploads
   File? _rcFile;
   File? _drivingLicenseFile;
+  File? _vehicleInsuranceFile;
   final List<File> _truckImages = [];
 
   // Dropdowns/Selections
@@ -78,7 +78,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
   }
 
   void _nextPage() {
-    if (_currentPage < 1) { // Only 2 pages (0, 1)
+    if (_currentPage < 1) {
+      // Only 2 pages (0, 1)
       setState(() {
         _currentPage++;
       });
@@ -132,6 +133,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
       case 1: // Vehicle Details and Documents
         return _rcFile != null &&
             _drivingLicenseFile != null &&
+            _vehicleInsuranceFile != null &&
             _truckImages.length >= 4 && // Minimum 4 truck images
             _vehicleNumberController.text.isNotEmpty &&
             _vehicleCapacityController.text.isNotEmpty &&
@@ -157,14 +159,18 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
     if (mounted) {
       // Create a new Vehicle object with a unique ID
       final newVehicle = Vehicle(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), // Simple unique ID
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        // Simple unique ID
         type: _selectedVehicleType!,
         bodyType: _selectedVehicleBodyType!,
         capacity: double.parse(_vehicleCapacityController.text),
         vehicleNumber: _vehicleNumberController.text.toUpperCase(),
-        rcFileUrl: _rcFile?.path, // In a real app, this would be the uploaded URL
-        drivingLicenseFileUrl: _drivingLicenseFile?.path, // In a real app, this would be the uploaded URL
-        truckImageUrls: _truckImages.map((f) => f.path).toList(), // In a real app, these would be uploaded URLs
+        rcFileUrl: _rcFile?.path,
+        // In a real app, this would be the uploaded URL
+        drivingLicenseFileUrl: _drivingLicenseFile?.path,
+        // In a real app, this would be the uploaded URL
+        truckImageUrls: _truckImages.map((f) => f.path).toList(),
+        // In a real app, these would be uploaded URLs
         goodsAccepted: _goodsAccepted,
       );
 
@@ -189,14 +195,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
 
             // Form Content
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildVehicleTypeSelectionPage(),
-                  _buildVehicleDetailsPage(),
-                ],
-              ),
+              child: PageView(controller: _pageController, physics: const NeverScrollableScrollPhysics(), children: [_buildVehicleTypeSelectionPage(), _buildVehicleDetailsPage()]),
             ),
 
             // Navigation Buttons
@@ -289,12 +288,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 1.2,
-                        ),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.2),
                         itemCount: _vehicleTypes.length,
                         itemBuilder: (context, index) {
                           final vehicleType = _vehicleTypes[index];
@@ -401,7 +395,13 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
                   textCapitalization: TextCapitalization.characters, // Capitalize input
                 ),
                 const SizedBox(height: 20),
-
+                _buildFileUploadWidget(
+                  label: 'Upload Vehicle Insurance',
+                  file: _vehicleInsuranceFile,
+                  onPick: () => _pickFile((file) => _vehicleInsuranceFile = file),
+                  icon: Icons.shield_outlined,
+                ),
+                const SizedBox(height: 20),
                 _buildInputField(
                   controller: _vehicleCapacityController,
                   focusNode: _vehicleCapacityFocus,
@@ -409,7 +409,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
                   hint: 'e.g., 5.0',
                   icon: Icons.scale_outlined,
                   keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}$'))], // Allow decimals up to 2 places
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}$'))],
+                  // Allow decimals up to 2 places
                   onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 30),
@@ -420,28 +421,29 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
                 Wrap(
                   spacing: 8.0,
                   runSpacing: 8.0,
-                  children: _allGoods.map((goods) {
-                    final isSelected = _goodsAccepted.contains(goods);
-                    return ChoiceChip(
-                      label: Text(goods),
-                      selected: isSelected,
-                      selectedColor: AppColors.secondary.withOpacity(0.1),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _goodsAccepted.add(goods);
-                          } else {
-                            _goodsAccepted.remove(goods);
-                          }
-                        });
-                      },
-                      labelStyle: TextStyle(color: isSelected ? AppColors.secondary : AppColors.textSecondary),
-                      side: BorderSide(color: isSelected ? AppColors.secondary : Colors.grey.shade300),
-                      backgroundColor: AppColors.surface,
-                      elevation: 2,
-                      shadowColor: Colors.black.withOpacity(0.05),
-                    );
-                  }).toList(),
+                  children:
+                      _allGoods.map((goods) {
+                        final isSelected = _goodsAccepted.contains(goods);
+                        return ChoiceChip(
+                          label: Text(goods),
+                          selected: isSelected,
+                          selectedColor: AppColors.secondary.withOpacity(0.1),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _goodsAccepted.add(goods);
+                              } else {
+                                _goodsAccepted.remove(goods);
+                              }
+                            });
+                          },
+                          labelStyle: TextStyle(color: isSelected ? AppColors.secondary : AppColors.textSecondary),
+                          side: BorderSide(color: isSelected ? AppColors.secondary : Colors.grey.shade300),
+                          backgroundColor: AppColors.surface,
+                          elevation: 2,
+                          shadowColor: Colors.black.withOpacity(0.05),
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 20),
 
@@ -458,12 +460,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
                       activeColor: AppColors.secondary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
-                    Expanded(
-                      child: Text(
-                        'I agree to the Terms and Conditions',
-                        style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                      ),
-                    ),
+                    Expanded(child: Text('I agree to the Terms and Conditions', style: TextStyle(fontSize: 14, color: AppColors.textPrimary))),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -552,9 +549,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
               icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
               style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
               onChanged: onChanged,
-              items: items.map<DropdownMenuItem<T>>((T item) {
-                return DropdownMenuItem<T>(value: item, child: itemBuilder(item));
-              }).toList(),
+              items:
+                  items.map<DropdownMenuItem<T>>((T item) {
+                    return DropdownMenuItem<T>(value: item, child: itemBuilder(item));
+                  }).toList(),
             ),
           ),
         ),
@@ -595,11 +593,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
             ),
           ),
         ),
-        if (file != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Image.file(file, height: 100, width: 100, fit: BoxFit.cover),
-          ),
+        if (file != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(file, height: 100, width: 100, fit: BoxFit.cover)),
       ],
     );
   }
@@ -658,50 +652,50 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> with TickerProvider
   Widget _buildNavigationButtons() {
     return Container(
       padding: const EdgeInsets.all(24),
-      child: _currentPage == 1 // Last page
-          ? Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
-          color: _isCurrentPageValid() ? null : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
-        ),
-        child: ElevatedButton(
-          onPressed: _isCurrentPageValid() && !_isLoading ? _addVehicle : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: _isLoading
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : Text(
-            'Add Vehicle',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600),
-          ),
-        ),
-      )
-          : Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
-          color: _isCurrentPageValid() ? null : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
-        ),
-        child: ElevatedButton(
-          onPressed: _isCurrentPageValid() ? _nextPage : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: Text('Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600)),
-        ),
-      ),
+      child:
+          _currentPage ==
+                  1 // Last page
+              ? Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
+                  color: _isCurrentPageValid() ? null : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isCurrentPageValid() && !_isLoading ? _addVehicle : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Add Vehicle', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600)),
+                ),
+              )
+              : Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
+                  color: _isCurrentPageValid() ? null : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isCurrentPageValid() ? _nextPage : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text('Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600)),
+                ),
+              ),
     );
   }
 }

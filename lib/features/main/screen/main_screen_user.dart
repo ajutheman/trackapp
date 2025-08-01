@@ -5,6 +5,7 @@ import 'package:truck_app/features/profile/screen/profile_screen_user.dart';
 
 import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../post/screens/add_post_screen.dart';
 
 class MainScreenUser extends StatefulWidget {
   const MainScreenUser({super.key});
@@ -20,6 +21,7 @@ class _MainScreenUserState extends State<MainScreenUser> {
   final List<Widget> _screens = [
     const HomeScreenUser(),
     ConnectScreen(connections: DummyData.userConnections), // Reusing the ConnectScreen as it's common
+    AddPostScreen(),
     const ProfileScreenUser(),
   ];
 
@@ -49,6 +51,7 @@ class _MainScreenUserState extends State<MainScreenUser> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home_rounded), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.link_outlined), activeIcon: Icon(Icons.link_rounded), label: 'Connect'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_box_outlined), activeIcon: Icon(Icons.add_box_rounded), label: 'Add Post'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person_rounded), label: 'Profile'),
         ],
       ),

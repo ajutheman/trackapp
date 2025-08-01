@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:truck_app/core/constants/dummy_data.dart';
+import 'package:truck_app/features/notification/screen/notification_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../model/connect.dart';
-import '../model/post.dart';
 import '../../connect/widgets/connect_card.dart';
+import '../model/post.dart';
 import '../widgets/post_card.dart';
 
 class HomeScreenDriver extends StatefulWidget {
@@ -17,7 +17,6 @@ class HomeScreenDriver extends StatefulWidget {
 
 class _HomeScreenDriverState extends State<HomeScreenDriver> {
   // Mock data for Connect Cards
-
 
   // Mock data for Latest Posts
   final List<Post> _latestPosts = [
@@ -88,7 +87,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
             IconButton(
               icon: Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 28),
               onPressed: () {
-                _showSnackBar('Notifications tapped!');
+                Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationScreen()));
               },
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.surface,

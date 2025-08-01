@@ -6,6 +6,7 @@ import 'package:truck_app/features/auth/screens/welcome_screen.dart';
 
 // Assuming AppColors is defined in this path
 import '../../../core/theme/app_colors.dart';
+import '../../post/screens/my_posts_screen.dart';
 
 class ProfileScreenUser extends StatefulWidget {
   const ProfileScreenUser({super.key});
@@ -97,6 +98,12 @@ class _ProfileScreenUserState extends State<ProfileScreenUser> {
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
+            _buildActionButton(
+              label: 'My Posts',
+              icon: Icons.assignment_outlined,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen())),
+            ),
+            const SizedBox(height: 12),
             _buildActionButton(label: 'Terms and Conditions', icon: Icons.description_outlined, onTap: () => _showSnackBar('Navigating to Terms and Conditions')),
             const SizedBox(height: 12),
             _buildActionButton(label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, onTap: () => _showSnackBar('Navigating to Privacy Policy')),
@@ -238,10 +245,7 @@ class _ProfileScreenUserState extends State<ProfileScreenUser> {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Logout', style: TextStyle(color: AppColors.textPrimary)),
-          content: const Text(
-            'Are you sure you want to log out?',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
+          content: const Text('Are you sure you want to log out?', style: TextStyle(color: AppColors.textSecondary)),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -252,11 +256,7 @@ class _ProfileScreenUserState extends State<ProfileScreenUser> {
             ElevatedButton(
               onPressed: () {
                 // Perform logout logic here, e.g., clearing session/token
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => WelcomeScreen()),
-                      (route) => false,
-                );
+                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (route) => false);
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               child: const Text('Logout', style: TextStyle(color: Colors.white)),

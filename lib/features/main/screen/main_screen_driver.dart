@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:truck_app/core/constants/dummy_data.dart';
-import 'package:truck_app/features/add_post/screen/add_post_screen.dart';
+import 'package:truck_app/features/post/screens/add_post_screen.dart';
 import 'package:truck_app/features/connect/screens/connect_screen.dart';
 
 import '../../../core/theme/app_colors.dart';
