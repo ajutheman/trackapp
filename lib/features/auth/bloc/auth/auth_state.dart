@@ -24,9 +24,10 @@ class OTPSentSuccess extends AuthState {
 
 /// State indicating that OTP verification was successful.
 class OTPVerifiedSuccess extends AuthState {
+  final String token;
   final bool isNewUser;
 
-  OTPVerifiedSuccess({required this.isNewUser});
+  OTPVerifiedSuccess({required this.isNewUser,required this.token});
 }
 
 class AuthFailure extends AuthState {

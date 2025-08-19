@@ -7,8 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // If you plan to use LocalService for saving tokens after OTP verification,
 // you might need to re-add that import and logic in _onVerifyOTPRequested.
 
-import '../../../services/local/local_services.dart';
-import '../repo/auth_repo.dart';
+import '../../../../services/local/local_services.dart';
+import '../../repo/auth_repo.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -47,8 +47,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (result.isSuccess) {
         // If your verifyOTP API returns tokens to be saved locally after successful verification,
         // you would add that logic here, e.g.:
-        await LocalService.saveToken(accessToken:result.data?['phoneVerifiedToken']);
-        emit(OTPVerifiedSuccess(isNewUser: result.data?['isNewUser'])); // A dedicated state for successful OTP verification
+        bool isNewUser = result.data?['isNewUser'] ?? false;
+        String token = result.data?['phoneVerifiedToken'] ?? '';
+        if (isNewUser) {
+          await LocalService.saveToken(accessToken: token);
+        }
+        emit(OTPVerifiedSuccess(isNewUser: isNewUser, token: token)); // A dedicated state for successful OTP verification
       } else {
         emit(AuthFailure(error: result.message ?? "An unknown error occurred during OTP verification"));
       }

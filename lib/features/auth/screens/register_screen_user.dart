@@ -2,14 +2,20 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/features/main/screen/main_screen_user.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../bloc/user/user_bloc.dart';
+import '../bloc/user/user_event.dart';
+import '../bloc/user/user_state.dart';
 
 class RegisterScreenUser extends StatefulWidget {
   final String phone;
-  const RegisterScreenUser({super.key, required this.phone});
+  final String token;
+
+  const RegisterScreenUser({super.key, required this.phone, required this.token});
 
   @override
   State<RegisterScreenUser> createState() => _RegisterScreenUserState();
@@ -31,34 +37,9 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
   File? _profilePicture;
   bool _isLoading = false;
 
-
-  Future<void> _pickFile() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
-    if (file != null) {
-      setState(() => _profilePicture = File(file.path));
-    }
-  }
-
-  bool _isFormValid() {
-    return _nameController.text.isNotEmpty &&
-        _phoneController.text.length == 10 &&
-        _whatsAppController.text.length == 10 &&
-        _emailController.text.contains('@') &&
-        _profilePicture != null;
-  }
-
-  void _submit() async {
-    if (!_isFormValid()) return;
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenUser()), (predict) => false);
-  }
-
   @override
   void initState() {
-   _phoneController.text=widget.phone;
+    _phoneController.text = widget.phone;
     super.initState();
   }
 
@@ -80,62 +61,75 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text("User Registration"), backgroundColor: AppColors.background, foregroundColor: AppColors.textPrimary, elevation: 0),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Personal Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 32),
-            _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline),
-            const SizedBox(height: 20),
-            _buildInputField(enabled: false,
-              controller: _phoneController,
-              focusNode: _phoneFocus,
-              label: 'Phone Number',
-              hint: 'Enter your phone number',
-              icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-            ),
-            const SizedBox(height: 20),
-            _buildInputField(
-              controller: _whatsAppController,
-              focusNode: _whatsAppFocus,
-              label: 'WhatsApp Number',
-              hint: 'Enter your WhatsApp number',
-              icon: Icons.chat_outlined,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-            ),
-            const SizedBox(height: 20),
-            _buildInputField(
-              controller: _emailController,
-              focusNode: _emailFocus,
-              label: 'Email Address',
-              hint: 'Enter your email',
-              icon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-            _buildFileUploadWidget(label: 'Profile Picture', file: _profilePicture, onPick: _pickFile, icon: Icons.camera_alt_outlined),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isFormValid() && !_isLoading ? _submit : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isFormValid() ? AppColors.secondary : Colors.grey.shade300,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child:
-                    _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                        : const Text('Register', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+      body: BlocListener<UserBloc, UserState>(
+        listener: (context, state) {
+          if (state is UserRegistrationLoading) {
+            setState(() => _isLoading = true);
+          } else if (state is UserRegistrationSuccess) {
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const MainScreenUser()), (predict) => false);
+          } else if (state is UserRegistrationFailure) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Personal Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              const SizedBox(height: 32),
+              _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline),
+              const SizedBox(height: 20),
+              _buildInputField(
+                enabled: false,
+                controller: _phoneController,
+                focusNode: _phoneFocus,
+                label: 'Phone Number',
+                hint: 'Enter your phone number',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              _buildInputField(
+                controller: _whatsAppController,
+                focusNode: _whatsAppFocus,
+                label: 'WhatsApp Number',
+                hint: 'Enter your WhatsApp number',
+                icon: Icons.chat_outlined,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+              ),
+              const SizedBox(height: 20),
+              _buildInputField(
+                controller: _emailController,
+                focusNode: _emailFocus,
+                label: 'Email Address',
+                hint: 'Enter your email',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 20),
+              _buildFileUploadWidget(label: 'Profile Picture', file: _profilePicture, onPick: _pickFile, icon: Icons.camera_alt_outlined),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isFormValid() && !_isLoading ? _submit : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isFormValid() ? AppColors.secondary : Colors.grey.shade300,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child:
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                          : const Text('Register', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -148,7 +142,8 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,  bool enabled = true,
+    List<TextInputFormatter>? inputFormatters,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +157,8 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             border: Border.all(color: focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
-          child: TextField( enabled: enabled,
+          child: TextField(
+            enabled: enabled,
             controller: controller,
             focusNode: focusNode,
             keyboardType: keyboardType,
@@ -218,5 +214,22 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
         if (file != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(file, height: 100, width: 100, fit: BoxFit.cover)),
       ],
     );
+  }
+
+  Future<void> _pickFile() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+    if (file != null) {
+      setState(() => _profilePicture = File(file.path));
+    }
+  }
+
+  bool _isFormValid() {
+    return _nameController.text.isNotEmpty && _phoneController.text.length == 10 && _whatsAppController.text.length == 10 && _emailController.text.contains('@');
+  }
+
+  void _submit() async {
+    if (!_isFormValid()) return;
+    context.read<UserBloc>().add(RegisterUser(name: _nameController.text, whatsappNumber: _whatsAppController.text, email: _emailController.text, token: widget.token));
   }
 }

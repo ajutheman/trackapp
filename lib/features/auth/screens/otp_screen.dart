@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/utils/messages.dart';
-import 'package:truck_app/features/auth/screens/register_screen_driver.dart';
 import 'package:truck_app/features/auth/screens/register_screen_user.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../bloc/auth_bloc.dart';
-import '../bloc/auth_event.dart';
-import '../bloc/auth_state.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
+import '../bloc/auth/auth_state.dart';
 
 class OtpScreen extends StatefulWidget {
   final bool isDriverLogin;
@@ -131,7 +130,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                 // Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenDriver()));
                 showSnackBar(context, "Driver registration is still under construction. Please go back and choose 'Login as User'.");
               } else {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenUser(phone:widget.phone)));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenUser(phone: widget.phone, token: state.token)));
               }
             }
           },
@@ -286,7 +285,10 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Text('Verify & Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isOtpComplete ? Colors.white : Colors.grey.shade600)),
+                          child: Text(
+                            'Verify & Continue',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isOtpComplete ? Colors.white : Colors.grey.shade600),
+                          ),
                         ),
                       ),
                     ),
@@ -302,9 +304,10 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _verifyOtp() {                                  HapticFeedback.mediumImpact();
+  void _verifyOtp() {
+    HapticFeedback.mediumImpact();
 
-  context.read<AuthBloc>().add(VerifyOTPRequested(otp: _otpValue,token: widget.otpRequestToken));
+    context.read<AuthBloc>().add(VerifyOTPRequested(otp: _otpValue, token: widget.otpRequestToken));
   }
 }
 
