@@ -19,7 +19,7 @@ class Connect {
 
   // Method to create a copy with updated status
   Connect copyWith({ConnectStatus? status}) {
-    return Connect(id: id, postName: postName, replyUserName: replyUserName, postTitle: postTitle, dateTime: dateTime,isUser: isUser, status: status ?? this.status);
+    return Connect(id: id, postName: postName, replyUserName: replyUserName, postTitle: postTitle, dateTime: dateTime, isUser: isUser, status: status ?? this.status);
   }
 }
 

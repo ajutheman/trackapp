@@ -98,11 +98,7 @@ class _ProfileScreenUserState extends State<ProfileScreenUser> {
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
-            _buildActionButton(
-              label: 'My Posts',
-              icon: Icons.assignment_outlined,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen())),
-            ),
+            _buildActionButton(label: 'My Posts', icon: Icons.assignment_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen()))),
             const SizedBox(height: 12),
             _buildActionButton(label: 'Terms and Conditions', icon: Icons.description_outlined, onTap: () => _showSnackBar('Navigating to Terms and Conditions')),
             const SizedBox(height: 12),

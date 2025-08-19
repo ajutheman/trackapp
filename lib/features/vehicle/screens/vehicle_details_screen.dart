@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/features/vehicle/model/vehicle.dart';
@@ -8,26 +6,19 @@ import 'package:url_launcher/url_launcher.dart'; // For launching URLs (document
 class VehicleDetailsScreen extends StatelessWidget {
   final Vehicle vehicle;
 
-  const VehicleDetailsScreen({
-    super.key,
-    required this.vehicle,
-  });
+  const VehicleDetailsScreen({super.key, required this.vehicle});
 
   // Helper to launch a URL (e.g., for documents or images)
   Future<void> _launchURL(String? url, BuildContext context) async {
     if (url == null || url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No file available to open.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No file available to open.')));
       return;
     }
     final Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch $url')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not launch $url')));
     }
   }
 
@@ -36,11 +27,9 @@ class VehicleDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          vehicle.vehicleNumber,
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-        ),
-        backgroundColor: AppColors.background,        foregroundColor: Colors.black,
+        title: Text(vehicle.vehicleNumber, style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+        backgroundColor: AppColors.background,
+        foregroundColor: Colors.black,
 
         elevation: 0,
         centerTitle: true,
@@ -64,21 +53,9 @@ class VehicleDetailsScreen extends StatelessWidget {
               context,
               title: 'Vehicle Overview',
               children: [
-                _buildDetailRow(
-                  icon: vehicle.type.icon,
-                  label: 'Type',
-                  value: vehicle.type.name,
-                ),
-                _buildDetailRow(
-                  icon: Icons.local_shipping_outlined,
-                  label: 'Body Type',
-                  value: vehicle.bodyType.name,
-                ),
-                _buildDetailRow(
-                  icon: Icons.scale_outlined,
-                  label: 'Capacity',
-                  value: '${vehicle.capacity} tons',
-                ),
+                _buildDetailRow(icon: vehicle.type.icon, label: 'Type', value: vehicle.type.name),
+                _buildDetailRow(icon: Icons.local_shipping_outlined, label: 'Body Type', value: vehicle.bodyType.name),
+                _buildDetailRow(icon: Icons.scale_outlined, label: 'Capacity', value: '${vehicle.capacity} tons'),
               ],
             ),
             const SizedBox(height: 16),
@@ -88,18 +65,8 @@ class VehicleDetailsScreen extends StatelessWidget {
               context,
               title: 'Documents',
               children: [
-                _buildDocumentRow(
-                  context,
-                  label: 'RC (Registration Certificate)',
-                  fileUrl: vehicle.rcFileUrl,
-                  icon: Icons.description_outlined,
-                ),
-                _buildDocumentRow(
-                  context,
-                  label: 'Driving License',
-                  fileUrl: vehicle.drivingLicenseFileUrl,
-                  icon: Icons.credit_card_outlined,
-                ),
+                _buildDocumentRow(context, label: 'RC (Registration Certificate)', fileUrl: vehicle.rcFileUrl, icon: Icons.description_outlined),
+                _buildDocumentRow(context, label: 'Driving License', fileUrl: vehicle.drivingLicenseFileUrl, icon: Icons.credit_card_outlined),
               ],
             ),
             const SizedBox(height: 16),
@@ -140,12 +107,9 @@ class VehicleDetailsScreen extends StatelessWidget {
                           height: 150,
                           width: 200,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 150,
-                            width: 200,
-                            color: Colors.grey.shade200,
-                            child: Icon(Icons.broken_image, color: AppColors.textSecondary.withOpacity(0.5)),
-                          ),
+                          errorBuilder:
+                              (context, error, stackTrace) =>
+                                  Container(height: 150, width: 200, color: Colors.grey.shade200, child: Icon(Icons.broken_image, color: AppColors.textSecondary.withOpacity(0.5))),
                         ),
                       ),
                     );
@@ -164,14 +128,17 @@ class VehicleDetailsScreen extends StatelessWidget {
                   Wrap(
                     spacing: 8.0,
                     runSpacing: 8.0,
-                    children: vehicle.goodsAccepted
-                        .map((goods) => Chip(
-                      label: Text(goods),
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      labelStyle: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
-                      side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
-                    ))
-                        .toList(),
+                    children:
+                        vehicle.goodsAccepted
+                            .map(
+                              (goods) => Chip(
+                                label: Text(goods),
+                                backgroundColor: AppColors.primary.withOpacity(0.1),
+                                labelStyle: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
+                                side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                              ),
+                            )
+                            .toList(),
                   ),
                 ],
               ),
@@ -188,21 +155,12 @@ class VehicleDetailsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-          ),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const Divider(height: 24, thickness: 1, color: AppColors.border),
           ...children,
         ],
@@ -222,15 +180,9 @@ class VehicleDetailsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-                ),
+                Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
                 const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                ),
+                Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
               ],
             ),
           ),
@@ -250,10 +202,7 @@ class VehicleDetailsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-                ),
+                Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
                 const SizedBox(height: 4),
                 Text(
                   '${label.trim().toLowerCase().replaceAll(' ', '_')}_001.pdf',
@@ -269,11 +218,7 @@ class VehicleDetailsScreen extends StatelessWidget {
             ),
           ),
           if (fileUrl != null && fileUrl.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.open_in_new, color: AppColors.secondary),
-              onPressed: () => _launchURL(fileUrl, context),
-              tooltip: 'Open Document',
-            ),
+            IconButton(icon: Icon(Icons.open_in_new, color: AppColors.secondary), onPressed: () => _launchURL(fileUrl, context), tooltip: 'Open Document'),
         ],
       ),
     );

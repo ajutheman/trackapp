@@ -6,11 +6,7 @@ class VehicleCard extends StatelessWidget {
   final Vehicle vehicle;
   final VoidCallback onTap;
 
-  const VehicleCard({
-    super.key,
-    required this.vehicle,
-    required this.onTap,
-  });
+  const VehicleCard({super.key, required this.vehicle, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +18,7 @@ class VehicleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,10 +26,7 @@ class VehicleCard extends StatelessWidget {
             // Vehicle Icon
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
               child: Icon(
                 vehicle.type.icon, // Using the extension for the icon
                 color: AppColors.primary,
@@ -51,38 +38,19 @@ class VehicleCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    vehicle.vehicleNumber,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  Text(vehicle.vehicleNumber, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                   const SizedBox(height: 4),
                   Text(
                     '${vehicle.type.name} - ${vehicle.bodyType.name}', // Using extensions for names
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Capacity: ${vehicle.capacity} tons',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  Text('Capacity: ${vehicle.capacity} tons', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                   if (vehicle.goodsAccepted.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
                       'Goods: ${vehicle.goodsAccepted.join(', ')}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

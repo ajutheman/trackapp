@@ -1,25 +1,10 @@
 import 'package:flutter/material.dart';
 
 // Enum for vehicle types
-enum VehicleType {
-  smallTruck,
-  mediumTruck,
-  largeTruck,
-  containerTruck,
-  trailer,
-  miniTruck,
-  other,
-}
+enum VehicleType { smallTruck, mediumTruck, largeTruck, containerTruck, trailer, miniTruck, other }
 
 // Enum for vehicle body types
-enum VehicleBodyType {
-  open,
-  closed,
-  container,
-  flatbed,
-  tipper,
-  other,
-}
+enum VehicleBodyType { open, closed, container, flatbed, tipper, other }
 
 // Helper function to get string representation of VehicleType
 extension VehicleTypeExtension on VehicleType {

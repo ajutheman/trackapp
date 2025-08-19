@@ -99,11 +99,7 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
-            _buildActionButton(
-              label: 'My Posts',
-              icon: Icons.assignment_outlined,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen())),
-            ),
+            _buildActionButton(label: 'My Posts', icon: Icons.assignment_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen()))),
             const SizedBox(height: 12),
             _buildActionButton(
               label: 'My Vehicle',

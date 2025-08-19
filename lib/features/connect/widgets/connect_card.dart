@@ -120,15 +120,11 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.transparent, Colors.white.withOpacity(0.1), Colors.transparent],
-                        stops: const [0.0, 0.5, 1.0],
-                      ),
+                      gradient: LinearGradient(colors: [Colors.transparent, Colors.white.withOpacity(0.1), Colors.transparent], stops: const [0.0, 0.5, 1.0]),
                     ),
                   ),
                 ),
               ),
-
 
             // Content
             Padding(
@@ -244,11 +240,7 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
                             flex: 2,
                             child: Container(
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.success, AppColors.success.withOpacity(0.8)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                gradient: LinearGradient(colors: [AppColors.success, AppColors.success.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [BoxShadow(color: AppColors.success.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
                               ),
@@ -291,11 +283,7 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                gradient: LinearGradient(colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
                               ),
@@ -316,11 +304,7 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.success, AppColors.success.withOpacity(0.8)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
+                                gradient: LinearGradient(colors: [AppColors.success, AppColors.success.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [BoxShadow(color: AppColors.success.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
                               ),

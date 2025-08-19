@@ -10,25 +10,11 @@ class UserNotification {
   final DateTime timestamp;
   bool isRead; // Can be changed to mark as read
 
-  UserNotification({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.timestamp,
-    this.isRead = false,
-  });
+  UserNotification({required this.id, required this.title, required this.description, required this.timestamp, this.isRead = false});
 
   // Helper method to create a copy with updated read status
-  UserNotification copyWith({
-    bool? isRead,
-  }) {
-    return UserNotification(
-      id: id,
-      title: title,
-      description: description,
-      timestamp: timestamp,
-      isRead: isRead ?? this.isRead,
-    );
+  UserNotification copyWith({bool? isRead}) {
+    return UserNotification(id: id, title: title, description: description, timestamp: timestamp, isRead: isRead ?? this.isRead);
   }
 }
 
@@ -95,9 +81,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _notifications[i] = _notifications[i].copyWith(isRead: true);
       }
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All notifications marked as read!')),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All notifications marked as read!')));
   }
 
   @override
@@ -105,101 +89,70 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-        ),
+        title: const Text('Notifications', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
         foregroundColor: Colors.black,
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
         actions: [
           if (_notifications.any((n) => !n.isRead)) // Show button only if there are unread notifications
-            TextButton(
-              onPressed: _markAllAsRead,
-              child: Text(
-                'Mark All as Read',
-                style: TextStyle(color: AppColors.secondary, fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ),
+            TextButton(onPressed: _markAllAsRead, child: Text('Mark All as Read', style: TextStyle(color: AppColors.secondary, fontSize: 14, fontWeight: FontWeight.w600))),
         ],
       ),
-      body: _notifications.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.notifications_none_rounded, size: 80, color: AppColors.textSecondary.withOpacity(0.5)),
-            const SizedBox(height: 16),
-            Text(
-              'No new notifications.',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _notifications.length,
-        itemBuilder: (context, index) {
-          final notification = _notifications[index];
-          return GestureDetector(
-            onTap: () {
-              _markNotificationAsRead(notification);
-              // In a real app, you might navigate to a detail screen or related content
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Tapped on: ${notification.title}')),
-              );
-            },
-            child: Card(
-              margin: const EdgeInsets.only(bottom: 12.0),
-              color: notification.isRead ? AppColors.surface :  Color(0xFFE2E8F0),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: notification.isRead ? BorderSide.none : BorderSide(color: AppColors.secondary, width: 0.5),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+      body:
+          _notifications.isEmpty
+              ? Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      notification.title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w700,
-                        color: AppColors.textPrimary,
+                    Icon(Icons.notifications_none_rounded, size: 80, color: AppColors.textSecondary.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text('No new notifications.', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                  ],
+                ),
+              )
+              : ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _notifications.length,
+                itemBuilder: (context, index) {
+                  final notification = _notifications[index];
+                  return GestureDetector(
+                    onTap: () {
+                      _markNotificationAsRead(notification);
+                      // In a real app, you might navigate to a detail screen or related content
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tapped on: ${notification.title}')));
+                    },
+                    child: Card(
+                      margin: const EdgeInsets.only(bottom: 12.0),
+                      color: notification.isRead ? AppColors.surface : Color(0xFFE2E8F0),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: notification.isRead ? BorderSide.none : BorderSide(color: AppColors.secondary, width: 0.5),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      notification.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: Text(
-                        _formatTimestamp(notification.timestamp),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary.withOpacity(0.7),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notification.title,
+                              style: TextStyle(fontSize: 18, fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.w700, color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(notification.description, style: TextStyle(fontSize: 14, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Text(_formatTimestamp(notification.timestamp), style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withOpacity(0.7))),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-            ),
-          );
-        },
-      ),
     );
   }
 

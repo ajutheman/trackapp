@@ -119,7 +119,12 @@ class DummyData {
       vehicleNumber: 'KA01CD5678',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       drivingLicenseFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      truckImageUrls: ['https://via.placeholder.com/600x400.png?text=Truck+2+Side',AppImages.dummyTruck1, AppImages.dummyTruck2, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side',],
+      truckImageUrls: [
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+        AppImages.dummyTruck1,
+        AppImages.dummyTruck2,
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+      ],
       goodsAccepted: ['Food', 'Furniture'],
     ),
     Vehicle(
@@ -130,7 +135,13 @@ class DummyData {
       vehicleNumber: 'MH12EF3456',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       drivingLicenseFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      truckImageUrls: [AppImages.dummyTruck1,'https://via.placeholder.com/600x400.png?text=Truck+2+Side', AppImages.dummyTruck2, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side'], goodsAccepted: ['Medicines', 'Groceries'],
+      truckImageUrls: [
+        AppImages.dummyTruck1,
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+        AppImages.dummyTruck2,
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+      ],
+      goodsAccepted: ['Medicines', 'Groceries'],
     ),
     Vehicle(
       id: 'V004',
@@ -140,7 +151,14 @@ class DummyData {
       vehicleNumber: 'TN10GH7890',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       drivingLicenseFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      truckImageUrls: ['https://via.placeholder.com/600x400.png?text=Truck+2+Side','https://via.placeholder.com/600x400.png?text=Truck+2+Side',AppImages.dummyTruck2, AppImages.dummyTruck2, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side'], goodsAccepted: ['Plastic Items', 'Hardware'],
+      truckImageUrls: [
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+        AppImages.dummyTruck2,
+        AppImages.dummyTruck2,
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side',
+      ],
+      goodsAccepted: ['Plastic Items', 'Hardware'],
     ),
     Vehicle(
       id: 'V005',
@@ -150,7 +168,8 @@ class DummyData {
       vehicleNumber: 'AP03IJ1122',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       drivingLicenseFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      truckImageUrls: [AppImages.dummyTruck1, AppImages.dummyTruck1, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side'], goodsAccepted: ['Water', 'Oil'],
+      truckImageUrls: [AppImages.dummyTruck1, AppImages.dummyTruck1, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side'],
+      goodsAccepted: ['Water', 'Oil'],
     ),
   ];
 }

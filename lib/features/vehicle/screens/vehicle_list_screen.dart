@@ -33,12 +33,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
   }
 
   void _navigateToVehicleDetails(Vehicle vehicle) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VehicleDetailsScreen(vehicle: vehicle),
-      ),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (context) => VehicleDetailsScreen(vehicle: vehicle)));
   }
 
   void _showSnackBar(String message) {
@@ -50,75 +45,62 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'My Vehicles',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-        ),
+        title: const Text('My Vehicles', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
         foregroundColor: Colors.black,
       ),
-      body: _vehicles.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(FontAwesomeIcons.truck, size: 80, color: AppColors.textSecondary.withOpacity(0.5)),
-            const SizedBox(height: 16),
-            Text(
-              'No vehicles added yet.',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final newVehicle = await Navigator.push<Vehicle>(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AddVehicleScreen()),
-                );
-                if (newVehicle != null) {
-                  _addVehicle(newVehicle);
-                }
-              },
-              icon: const Icon(Icons.add_box_outlined, color: Colors.white),
-              label: const Text('Add First Vehicle', style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      body:
+          _vehicles.isEmpty
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(FontAwesomeIcons.truck, size: 80, color: AppColors.textSecondary.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text('No vehicles added yet.', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final newVehicle = await Navigator.push<Vehicle>(context, MaterialPageRoute(builder: (context) => const AddVehicleScreen()));
+                        if (newVehicle != null) {
+                          _addVehicle(newVehicle);
+                        }
+                      },
+                      icon: const Icon(Icons.add_box_outlined, color: Colors.white),
+                      label: const Text('Add First Vehicle', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _vehicles.length,
+                itemBuilder: (context, index) {
+                  final vehicle = _vehicles[index];
+                  return VehicleCard(vehicle: vehicle, onTap: () => _navigateToVehicleDetails(vehicle));
+                },
               ),
-            ),
-          ],
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _vehicles.length,
-        itemBuilder: (context, index) {
-          final vehicle = _vehicles[index];
-          return VehicleCard(
-            vehicle: vehicle,
-            onTap: () => _navigateToVehicleDetails(vehicle),
-          );
-        },
-      ),
-      floatingActionButton: _vehicles.isNotEmpty
-          ? FloatingActionButton(
-        onPressed: () async {
-          final newVehicle = await Navigator.push<Vehicle>(
-            context,
-            MaterialPageRoute(builder: (context) => const AddVehicleScreen()),
-          );
-          if (newVehicle != null) {
-            _addVehicle(newVehicle);
-          }
-        },
-        child: const Icon(Icons.add, color: Colors.white),
-        backgroundColor: AppColors.secondary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      )
-          : null,
+      floatingActionButton:
+          _vehicles.isNotEmpty
+              ? FloatingActionButton(
+                onPressed: () async {
+                  final newVehicle = await Navigator.push<Vehicle>(context, MaterialPageRoute(builder: (context) => const AddVehicleScreen()));
+                  if (newVehicle != null) {
+                    _addVehicle(newVehicle);
+                  }
+                },
+                child: const Icon(Icons.add, color: Colors.white),
+                backgroundColor: AppColors.secondary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              )
+              : null,
     );
   }
 }

@@ -8,7 +8,8 @@ import 'package:truck_app/features/main/screen/main_screen_user.dart';
 import '../../../core/theme/app_colors.dart';
 
 class RegisterScreenUser extends StatefulWidget {
-  const RegisterScreenUser({super.key});
+  final String phone;
+  const RegisterScreenUser({super.key, required this.phone});
 
   @override
   State<RegisterScreenUser> createState() => _RegisterScreenUserState();
@@ -29,6 +30,7 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
 
   File? _profilePicture;
   bool _isLoading = false;
+
 
   Future<void> _pickFile() async {
     final ImagePicker picker = ImagePicker();
@@ -52,6 +54,12 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     await Future.delayed(const Duration(seconds: 2));
     setState(() => _isLoading = false);
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenUser()), (predict) => false);
+  }
+
+  @override
+  void initState() {
+   _phoneController.text=widget.phone;
+    super.initState();
   }
 
   @override
@@ -81,7 +89,7 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             const SizedBox(height: 32),
             _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline),
             const SizedBox(height: 20),
-            _buildInputField(
+            _buildInputField(enabled: false,
               controller: _phoneController,
               focusNode: _phoneFocus,
               label: 'Phone Number',
@@ -140,7 +148,7 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
+    List<TextInputFormatter>? inputFormatters,  bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +162,7 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             border: Border.all(color: focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
-          child: TextField(
+          child: TextField( enabled: enabled,
             controller: controller,
             focusNode: focusNode,
             keyboardType: keyboardType,
