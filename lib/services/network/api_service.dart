@@ -10,28 +10,32 @@ class ApiService {
 
   final List<int> successStatusCodes = [200, 201, 202, 204];
 
-  Future<Result<dynamic>> get<T>(String endpoint, {bool isTokenRequired = true, Map<String, dynamic>? queryParams,String? token}) async {
-    return _executeRequest(() => _dio.get(endpoint, queryParameters: queryParams), isTokenRequired,token);
+  Future<Result<dynamic>> get<T>(String endpoint, {bool isTokenRequired = true, Map<String, dynamic>? queryParams, String? token}) async {
+    return _executeRequest(() => _dio.get(endpoint, queryParameters: queryParams), isTokenRequired, token);
   }
 
-  Future<Result<dynamic>> post<T>(String endpoint, {Map<String, dynamic>? body, bool isTokenRequired = true,String? token}) async {
-    return _executeRequest(() => _dio.post(endpoint, data: body), isTokenRequired,token);
+  Future<Result<dynamic>> post<T>(String endpoint, {Map<String, dynamic>? body, bool isTokenRequired = true, String? token}) async {
+    return _executeRequest(() => _dio.post(endpoint, data: body), isTokenRequired, token);
   }
 
-  Future<Result<dynamic>> patch<T>(String endpoint, {Map<String, dynamic>? body, bool isTokenRequired = true,String? token}) async {
-    return _executeRequest(() => _dio.patch(endpoint, data: body), isTokenRequired,token);
+  Future<Result<dynamic>> postWithFormData<T>(String endpoint, {required FormData formData, bool isTokenRequired = true, String? token}) async {
+    return _executeRequest(() => _dio.post(endpoint, data: formData), isTokenRequired, token);
   }
 
-  Future<Result<dynamic>> put<T>(String endpoint, {Map<String, dynamic>? body, bool isTokenRequired = true,String? token}) async {
-    return _executeRequest(() => _dio.put(endpoint, data: body), isTokenRequired,token);
+  Future<Result<dynamic>> patch<T>(String endpoint, {Map<String, dynamic>? body, bool isTokenRequired = true, String? token}) async {
+    return _executeRequest(() => _dio.patch(endpoint, data: body), isTokenRequired, token);
   }
 
-  Future<Result<dynamic>> delete<T>(String endpoint, {bool isTokenRequired = true,String? token}) async {
-    return _executeRequest(() => _dio.delete(endpoint), isTokenRequired,token);
+  Future<Result<dynamic>> put<T>(String endpoint, {Map<String, dynamic>? body, bool isTokenRequired = true, String? token}) async {
+    return _executeRequest(() => _dio.put(endpoint, data: body), isTokenRequired, token);
+  }
+
+  Future<Result<dynamic>> delete<T>(String endpoint, {bool isTokenRequired = true, String? token}) async {
+    return _executeRequest(() => _dio.delete(endpoint), isTokenRequired, token);
   }
 
   // ---- Private Helpers ---- //
-  Future<Result<dynamic>> _executeRequest(Future<Response> Function() requestFn, bool isTokenRequired,String? token) async {
+  Future<Result<dynamic>> _executeRequest(Future<Response> Function() requestFn, bool isTokenRequired, String? token) async {
     try {
       await _checkInternetConnection();
 
@@ -40,7 +44,7 @@ class ApiService {
         _dio.options.headers['Authorization'] = 'Bearer $_token';
       }
 
-      if (token!=null) {
+      if (token != null) {
         _dio.options.headers['Authorization'] = 'Bearer $token';
       }
 
@@ -74,20 +78,20 @@ class ApiService {
     final data = response.data;
 
     if (successStatusCodes.contains(response.statusCode)) {
-      if (data['status'] == true || data['success'] == true) {
+      if (data is Map && (data['status'] == true || data['success'] == true)) {
         return Result.success(data['data'], message: data['message']);
       }
-      return Result.error(data['message'] ?? 'Unknown error');
+      return Result.error(data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error');
     }
 
-    return Result.error(data['message'] ?? 'HTTP Error: ${response.statusCode}');
+    return Result.error(data is Map ? (data['message'] ?? 'HTTP Error: ${response.statusCode}') : 'HTTP Error: ${response.statusCode}');
   }
 
   Result<dynamic> _handleError(DioException e) {
     print(e.response?.data);
     try {
       final data = e.response?.data;
-      final message = data?['message'] ?? 'HTTP Error: ${e.response?.statusCode}';
+      final message = data is Map ? (data['message'] ?? 'HTTP Error: ${e.response?.statusCode}') : 'HTTP Error: ${e.response?.statusCode}';
       return Result.error(message);
     } catch (exceptionError) {
       return Result.error('Network Parse Error: $exceptionError');

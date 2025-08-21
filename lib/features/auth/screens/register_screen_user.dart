@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:truck_app/core/constants/app_user_type.dart';
 import 'package:truck_app/features/main/screen/main_screen_user.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -230,6 +231,6 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
 
   void _submit() async {
     if (!_isFormValid()) return;
-    context.read<UserBloc>().add(RegisterUser(name: _nameController.text, whatsappNumber: _whatsAppController.text, email: _emailController.text, token: widget.token));
+    context.read<UserBloc>().add(RegisterUser(userType: AppUserType.user,name: _nameController.text, whatsappNumber: _whatsAppController.text, email: _emailController.text, token: widget.token));
   }
 }

@@ -2,14 +2,25 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:truck_app/features/auth/bloc/vehicle/vehicle_event.dart';
 
+import '../../../core/constants/app_user_type.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../main/screen/main_screen_driver.dart'; // Assuming AppColors is in this path
+import '../../main/screen/main_screen_driver.dart';
+import '../bloc/user/user_bloc.dart';
+import '../bloc/user/user_event.dart';
+import '../bloc/user/user_state.dart';
+import '../bloc/vehicle/vehicle_bloc.dart';
+import '../bloc/vehicle/vehicle_state.dart'; // Assuming AppColors is in this path
 
 class RegisterScreenDriver extends StatefulWidget {
-  const RegisterScreenDriver({super.key});
+  final String phone;
+  final String token;
+
+  const RegisterScreenDriver({super.key, required this.phone, required this.token});
 
   @override
   State<RegisterScreenDriver> createState() => _RegisterProfileScreenDriverState();
@@ -77,6 +88,8 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   void initState() {
     super.initState();
 
+    _phoneController.text = widget.phone;
+
     _animationController = AnimationController(duration: const Duration(milliseconds: 600), vsync: this);
     _progressController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
@@ -116,166 +129,66 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     super.dispose();
   }
 
-  void _nextPage() {
-    if (_currentPage < 2) {
-      // Updated for 3 pages (0, 1, 2, 3)
-      setState(() {
-        _currentPage++;
-      });
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      _updateProgress();
-    }
-  }
-
-  void _previousPage() {
-    if (_currentPage > 0) {
-      setState(() {
-        _currentPage--;
-      });
-      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      _updateProgress();
-    }
-  }
-
-  void _updateProgress() {
-    double progress = (_currentPage + 1) / 3; // Updated for 4 pages
-    _progressController.animateTo(progress);
-  }
-
-  Future<void> _pickFile(Function(File?) onFilePicked) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? file = await picker.pickImage(source: ImageSource.gallery); // Can use .camera as well
-    if (file != null) {
-      setState(() {
-        onFilePicked(File(file.path));
-      });
-    }
-  }
-
-  Future<void> _pickMultipleImages() async {
-    final ImagePicker picker = ImagePicker();
-    final List<XFile> images = await picker.pickMultiImage();
-    if (images.isNotEmpty) {
-      setState(() {
-        _truckImages.clear(); // Clear previous images if re-picking
-        for (var img in images) {
-          _truckImages.add(File(img.path));
-        }
-      });
-    }
-  }
-
-  bool _isCurrentPageValid() {
-    switch (_currentPage) {
-      case 0: // Personal Info
-        return _nameController.text.isNotEmpty &&
-            _phoneController.text.length == 10 &&
-            _whatsAppController.text.length == 10 &&
-            _emailController.text.isNotEmpty &&
-            _emailController.text.contains('@') &&
-            _profilePicture != null;
-      case 1: // Vehicle Type selection
-        return _selectedVehicleType.isNotEmpty;
-      case 2: // Vehicle Details
-        return _rcFile != null &&
-            _drivingLicenseFile != null &&
-            _vehicleInsuranceFile != null &&
-            _truckImages.isNotEmpty &&
-            _vehicleNumberController.text.isNotEmpty &&
-            _selectedVehicleBodyType.isNotEmpty &&
-            _vehicleCapacityController.text.isNotEmpty &&
-            _termsAccepted;
-      default:
-        return false;
-    }
-  }
-
-  Future<void> _completeRegistration() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate API call and file uploads
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Navigate to main app or show success
-      _showSuccessDialog();
-    }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.check_circle, color: AppColors.success, size: 50),
-                ),
-                const SizedBox(height: 20),
-                const Text('Registration Successful!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const SizedBox(height: 10),
-                const Text(
-                  'Welcome to Return Cargo! Your account has been created successfully.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predict) => false);
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                    child: const Text('Get Started', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header with Progress
-            _buildHeader(),
-
-            // Form Content
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildPersonalInfoPage(),
-                  // _buildBusinessInfoPage(),
-                  _buildVehicleTypeSelectionPage(), // Renamed for clarity
-                  _buildVehicleDetailsPage(), // New page for remaining vehicle details
-                ],
-              ),
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<UserBloc, UserState>(
+              listener: (context, state) {
+                // Your existing UserBloc logic
+                if (state is UserRegistrationLoading) {
+                  setState(() => _isLoading = true);
+                } else if (state is UserRegistrationSuccess) {
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    _gotoPage(1);
+                  }); // Proceed to next page after user registration
+                } else if (state is UserRegistrationFailure) {
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+                }
+              },
             ),
-
-            // Navigation Buttons
-            _buildNavigationButtons(),
+            // **ADD THIS NEW LISTENER FOR VehicleBloc**
+            BlocListener<VehicleBloc, VehicleState>(
+              listener: (context, state) {
+                if (state is VehicleRegistrationLoading) {
+                  setState(() => _isLoading = true);
+                } else if (state is VehicleRegistrationSuccess) {
+                  setState(() => _isLoading = false);
+                  _showSuccessDialog(); // Show success and navigate
+                } else if (state is VehicleRegistrationFailure) {
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+                }
+              },
+            ),
           ],
+          child: Column(
+            children: [
+              // Header with Progress
+              _buildHeader(),
+
+              // Form Content
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _isLoading ? Center(child: CircularProgressIndicator()) : _buildPersonalInfoPage(),
+                    // _buildBusinessInfoPage(),
+                    _isLoading ? Center(child: CircularProgressIndicator()) : _buildVehicleTypeSelectionPage(), // Renamed for clarity
+                    _isLoading ? Center(child: CircularProgressIndicator()) : _buildVehicleDetailsPage(), // New page for remaining vehicle details
+                  ],
+                ),
+              ),
+
+              // Navigation Buttons
+              _buildNavigationButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -354,17 +267,11 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                 const Text('Tell us about yourself and your contact details', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                 const SizedBox(height: 32),
 
-                _buildInputField(
-                  controller: _nameController,
-                  focusNode: _nameFocus,
-                  label: 'Full Name',
-                  hint: 'Enter your full name',
-                  icon: Icons.person_outline,
-                  onChanged: (value) => setState(() {}),
-                ),
+                _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline),
                 const SizedBox(height: 20),
 
                 _buildInputField(
+                  enabled: false,
                   controller: _phoneController,
                   focusNode: _phoneFocus,
                   label: 'Phone Number',
@@ -372,7 +279,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-                  onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 20),
 
@@ -384,7 +290,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   icon: FontAwesomeIcons.whatsapp,
                   keyboardType: TextInputType.phone,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-                  onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 20),
 
@@ -395,7 +300,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   hint: 'Enter your email',
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 20),
 
@@ -409,94 +313,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     );
   }
 
-  // Widget _buildBusinessInfoPage() {
-  //   return FadeTransition(
-  //     opacity: _fadeAnimation,
-  //     child: SlideTransition(
-  //       position: _slideAnimation,
-  //       child: Padding(
-  //         padding: const EdgeInsets.symmetric(horizontal: 24),
-  //         child: SingleChildScrollView(
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               const Text('Business Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-  //               const SizedBox(height: 8),
-  //               const Text('Tell us about your business', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-  //               const SizedBox(height: 32),
-  //
-  //               _buildInputField(
-  //                 controller: _companyController,
-  //                 focusNode: _companyFocus,
-  //                 label: 'Company Name',
-  //                 hint: 'Enter company name',
-  //                 icon: Icons.business_outlined,
-  //                 onChanged: (value) => setState(() {}),
-  //               ),
-  //
-  //               const SizedBox(height: 20),
-  //
-  //               _buildInputField(
-  //                 controller: _addressController,
-  //                 focusNode: _addressFocus,
-  //                 label: 'Address',
-  //                 hint: 'Enter full address',
-  //                 icon: Icons.location_on_outlined,
-  //                 maxLines: 2,
-  //                 onChanged: (value) => setState(() {}),
-  //               ),
-  //
-  //               const SizedBox(height: 20),
-  //
-  //               Row(
-  //                 children: [
-  //                   Expanded(
-  //                     child: _buildInputField(
-  //                       controller: _cityController,
-  //                       focusNode: _cityFocus,
-  //                       label: 'City',
-  //                       hint: 'City',
-  //                       icon: Icons.location_city_outlined,
-  //                       onChanged: (value) => setState(() {}),
-  //                     ),
-  //                   ),
-  //                   const SizedBox(width: 16),
-  //                   Expanded(
-  //                     child: _buildInputField(
-  //                       controller: _stateController,
-  //                       focusNode: _stateFocus,
-  //                       label: 'State',
-  //                       hint: 'State',
-  //                       icon: Icons.map_outlined,
-  //                       onChanged: (value) => setState(() {}),
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //
-  //               const SizedBox(height: 20),
-  //
-  //               _buildInputField(
-  //                 controller: _pincodeController,
-  //                 focusNode: _pincodeFocus,
-  //                 label: 'Pincode',
-  //                 hint: 'Enter pincode',
-  //                 icon: Icons.pin_drop_outlined,
-  //                 keyboardType: TextInputType.number,
-  //                 inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
-  //                 onChanged: (value) => setState(() {}),
-  //               ),
-  //
-  //               const SizedBox(height: 40),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Renamed from _buildVehicleInfoPage to reflect its new purpose
   Widget _buildVehicleTypeSelectionPage() {
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -600,7 +416,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   label: 'Vehicle Number',
                   hint: 'e.g., KA01AB1234',
                   icon: Icons.numbers_outlined,
-                  onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 20),
                 _buildFileUploadWidget(
@@ -659,7 +474,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   hint: 'e.g., 5.0',
                   icon: Icons.scale_outlined,
                   keyboardType: TextInputType.number,
-                  onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 30),
 
@@ -695,8 +509,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     required IconData icon,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
-    int maxLines = 1,
-    required Function(String) onChanged,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,24 +520,24 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300, width: focusNode.hasFocus ? 2 : 1),
+            border: Border.all(color: focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: TextField(
+            enabled: enabled,
             controller: controller,
             focusNode: focusNode,
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
-            maxLines: maxLines,
             style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(icon, color: focusNode.hasFocus ? AppColors.secondary : AppColors.textSecondary),
+              prefixIcon: Icon(icon, color: AppColors.textSecondary),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            onChanged: onChanged,
+            onChanged: (_) => setState(() {}),
           ),
         ),
       ],
@@ -858,53 +671,28 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   Widget _buildNavigationButtons() {
     return Container(
       padding: const EdgeInsets.all(24),
-      child:
-          _currentPage ==
-                  2 // Last page (0, 1, 2, 3)
-              ? Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
-                  color: _isCurrentPageValid() ? null : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
-                ),
-                child: ElevatedButton(
-                  onPressed: _isCurrentPageValid() && !_isLoading ? _completeRegistration : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child:
-                      _isLoading
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : Text(
-                            'Complete Registration',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600),
-                          ),
-                ),
-              )
-              : Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
-                  color: _isCurrentPageValid() ? null : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
-                ),
-                child: ElevatedButton(
-                  onPressed: _isCurrentPageValid() ? _nextPage : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text('Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600)),
-                ),
-              ),
+      child: Container(
+        width: double.infinity,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: _isCurrentPageValid() ? LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)]) : null,
+          color: _isCurrentPageValid() ? null : Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _isCurrentPageValid() ? [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))] : [],
+        ),
+        child: ElevatedButton(
+          onPressed: _isCurrentPageValid() ? submitForm : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: Text(
+            _currentPage == 2 ? "Complete Registration" : 'Continue',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _isCurrentPageValid() ? Colors.white : Colors.grey.shade600),
+          ),
+        ),
+      ),
     );
   }
 
@@ -924,6 +712,161 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
         return Icons.delivery_dining;
       default:
         return Icons.local_shipping;
+    }
+  }
+
+  bool _isCurrentPageValid() {
+    switch (_currentPage) {
+      case 0: // Personal Info
+        return _nameController.text.isNotEmpty &&
+            _phoneController.text.length == 10 &&
+            _whatsAppController.text.length == 10 &&
+            _emailController.text.isNotEmpty &&
+            _emailController.text.contains('@');
+      case 1: // Vehicle Type selection
+        return _selectedVehicleType.isNotEmpty;
+      case 2: // Vehicle Details
+        return _rcFile != null &&
+            _drivingLicenseFile != null &&
+            _vehicleInsuranceFile != null &&
+            _truckImages.isNotEmpty &&
+            _vehicleNumberController.text.isNotEmpty &&
+            _selectedVehicleBodyType.isNotEmpty &&
+            _vehicleCapacityController.text.isNotEmpty &&
+            _termsAccepted;
+      default:
+        return false;
+    }
+  }
+
+  Future<void> _completeRegistration() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Simulate API call and file uploads
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Navigate to main app or show success
+      _showSuccessDialog();
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.check_circle, color: AppColors.success, size: 50),
+                ),
+                const SizedBox(height: 20),
+                const Text('Registration Successful!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                const SizedBox(height: 10),
+                const Text(
+                  'Welcome to Return Cargo! Your account has been created successfully.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predict) => false);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    child: const Text('Get Started', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  submitForm() {
+    if (_currentPage == 0) {
+      context.read<UserBloc>().add(
+        RegisterUser(userType: AppUserType.driver, name: _nameController.text, whatsappNumber: _whatsAppController.text, email: _emailController.text, token: widget.token),
+      );
+    } else if (_currentPage == 1) {
+      _gotoPage(2);
+    } else {
+      context.read<VehicleBloc>().add(
+        RegisterVehicle(
+          vehicleNumber: _vehicleNumberController.text,
+          vehicleType: _selectedVehicleType,
+          vehicleBodyType: _selectedVehicleBodyType,
+          vehicleCapacity: _vehicleCapacityController.text,
+          goodsAccepted: _goodsAccepted.first,
+          registrationCertificate: _rcFile!,
+          // Ensure these are not null before dispatching
+          truckImages: _truckImages,
+          termsAndConditionsAccepted: _termsAccepted,
+        ),
+      );
+    }
+  }
+
+  void _gotoPage(int page) {
+    // Updated for 3 pages (0, 1, 2, 3)
+    setState(() {
+      _currentPage = page;
+      _isLoading = false;
+    });
+    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    _updateProgress();
+  }
+
+  void _previousPage() {
+    if (_currentPage > 0) {
+      setState(() {
+        _currentPage--;
+      });
+      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _updateProgress();
+    }
+  }
+
+  void _updateProgress() {
+    double progress = (_currentPage + 1) / 3; // Updated for 4 pages
+    _progressController.animateTo(progress);
+  }
+
+  Future<void> _pickFile(Function(File?) onFilePicked) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? file = await picker.pickImage(source: ImageSource.gallery); // Can use .camera as well
+    if (file != null) {
+      setState(() {
+        onFilePicked(File(file.path));
+      });
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      setState(() {
+        _truckImages.clear(); // Clear previous images if re-picking
+        for (var img in images) {
+          _truckImages.add(File(img.path));
+        }
+      });
     }
   }
 }

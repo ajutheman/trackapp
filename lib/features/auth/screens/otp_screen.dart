@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/utils/messages.dart';
+import 'package:truck_app/features/auth/screens/register_screen_driver.dart';
 import 'package:truck_app/features/auth/screens/register_screen_user.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../main/screen/main_screen_driver.dart';
 import '../../main/screen/main_screen_user.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
@@ -128,8 +130,11 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
 
             if (state is OTPVerifiedSuccess) {
               if (widget.isDriverLogin) {
-                // Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenDriver()));
-                showSnackBar(context, "Driver registration is still under construction. Please go back and choose 'Login as User'.");
+                // if (state.isNewUser) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenDriver(phone: widget.phone, token: state.token)));
+                // } else {
+                //   Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const MainScreenDriver()), (predict) => false);
+                // }
               } else {
                 if (state.isNewUser) {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenUser(phone: widget.phone, token: state.token)));
