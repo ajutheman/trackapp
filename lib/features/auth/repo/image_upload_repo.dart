@@ -14,10 +14,12 @@ class ImageUploadRepository {
   ImageUploadRepository({required this.apiService});
 
   /// Uploads a single image file to the API and returns the image ID.
-  Future<Result<String>> uploadImage({required File imageFile}) async {
+  Future<Result<String>> uploadImage({required String type,required File imageFile}) async {
     try {
       // Create a FormData object to hold the file.
-      final formData = FormData.fromMap({'type': 'vehicle', 'image': await MultipartFile.fromFile(imageFile.path, filename: imageFile.path.split('/').last)});
+      print(type);
+      print(imageFile.path);
+     final Object? formData = FormData.fromMap({'type': type, 'image': await MultipartFile.fromFile(imageFile.path, filename: imageFile.path.split('/').last,contentType: DioMediaType.parse('image/jpeg'))});
 
       // Use the postWithFormData method from ApiService.
       final res = await apiService.postWithFormData(
@@ -25,12 +27,12 @@ class ImageUploadRepository {
         formData: formData,
         isTokenRequired: true, // Assuming image upload requires authentication.
       );
-
+print("data ${res}");
       if (res.isSuccess) {
         // The API response data should contain the image ID.
         // Assuming the response data is a Map with a key like 'imageId'.
         // You might need to adjust this based on your API's response structure.
-        return Result.success('test');
+        return Result.success(res.data['image']['_id']);
       } else {
         return Result.error(res.message ?? 'Failed to upload image');
       }

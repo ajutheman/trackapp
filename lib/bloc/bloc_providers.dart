@@ -5,9 +5,11 @@ import 'package:truck_app/features/auth/bloc/user/user_bloc.dart';
 
 import '../di/locator.dart';
 import '../features/auth/bloc/vehicle/vehicle_bloc.dart';
+import '../features/splash/bloc/user_session/user_session_bloc.dart';
 
 List<BlocProvider> globalBlocProviders = [
   BlocProvider<AuthBloc>(create: (_) => locator()),
+  BlocProvider<UserSessionBloc>(create: (_) => locator()),
   BlocProvider<UserBloc>(create: (_) => locator()),
   BlocProvider<VehicleBloc>(create: (_) => locator()),
   BlocProvider<ImageUploadBloc>(create: (_) => locator()),

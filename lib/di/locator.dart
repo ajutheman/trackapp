@@ -4,6 +4,7 @@ import 'package:truck_app/features/auth/bloc/user/user_bloc.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
 import 'package:truck_app/features/auth/repo/user_repo.dart';
 import 'package:truck_app/features/auth/repo/vehicle_repo.dart';
+import 'package:truck_app/features/splash/bloc/user_session/user_session_bloc.dart';
 
 import '../features/auth/bloc/image_upload/image_upload_bloc.dart';
 import '../features/auth/bloc/vehicle/vehicle_bloc.dart';
@@ -24,6 +25,7 @@ void setupLocator() {
 
   // BLoCs
   locator.registerFactory(() => AuthBloc(repository: locator()));
+  locator.registerFactory(() => UserSessionBloc());
   locator.registerFactory(() => UserBloc(repository: locator()));
   locator.registerFactory(() => VehicleBloc(repository: locator(), imageRepository: locator()));
   locator.registerFactory(() => ImageUploadBloc(repository: locator()));

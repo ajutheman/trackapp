@@ -6,7 +6,7 @@ import '../../model/network/result.dart';
 import '../local/local_services.dart';
 
 class ApiService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl, headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'x-client-type': 'mobile'}));
+  final Dio _dio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
 
   final List<int> successStatusCodes = [200, 201, 202, 204];
 
@@ -18,7 +18,7 @@ class ApiService {
     return _executeRequest(() => _dio.post(endpoint, data: body), isTokenRequired, token);
   }
 
-  Future<Result<dynamic>> postWithFormData<T>(String endpoint, {required FormData formData, bool isTokenRequired = true, String? token}) async {
+  Future<Result<dynamic>> postWithFormData<T>(String endpoint, {required Object? formData, bool isTokenRequired = true, String? token}) async {
     return _executeRequest(() => _dio.post(endpoint, data: formData), isTokenRequired, token);
   }
 

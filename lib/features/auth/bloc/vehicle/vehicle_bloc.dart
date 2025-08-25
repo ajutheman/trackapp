@@ -1,11 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:truck_app/core/constants/upload_image_type.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
 
-// Assuming app_user_type is not directly needed for vehicle bloc,
-// but keep it if there's a dependency for other reasons.
-// import 'package:truck_app/core/constants/app_user_type.dart';
-
-import '../../../../services/local/local_services.dart'; // To save token if returned
 import '../../repo/vehicle_repo.dart'; // Import the new vehicle repository
 import 'vehicle_event.dart'; // Import vehicle events
 import 'vehicle_state.dart'; // Import vehicle states
@@ -28,23 +24,27 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
   /// [VehicleRegistrationSuccess] or [VehicleRegistrationFailure] based on the result.
   void _onRegisterVehicle(RegisterVehicle event, Emitter<VehicleState> emit) async {
     emit(VehicleRegistrationLoading());
-    final result = await repository.registerVehicle(
-      vehicleNumber: event.vehicleNumber,
-      vehicleType: event.vehicleType,
-      vehicleBodyType: event.vehicleBodyType,
-      vehicleCapacity: event.vehicleCapacity,
-      goodsAccepted: event.goodsAccepted,
-      // registrationCertificate: event.registrationCertificate,
-      // truckImages: event.truckImages,
-      registrationCertificate: 'test',
-      truckImages: ['test'],
-      termsAndConditionsAccepted: event.termsAndConditionsAccepted,
-    );
 
-    if (result.isSuccess) {
-      emit(VehicleRegistrationSuccess());
-    } else {
-      emit(VehicleRegistrationFailure(result.message!));
-    }
+    print("image ${(await imageRepository.uploadImage(type: UploadImageType.vehicle, imageFile: event.registrationCertificate))}");
+
+    // final result = await repository.registerVehicle(
+    //   vehicleNumber: event.vehicleNumber,
+    //   vehicleType: '684aa71cb88048daeaebff8a',
+    //   vehicleBodyType: '685ea11cf883dfb6dcf0b900',
+    //   vehicleCapacity: event.vehicleCapacity,
+    //   goodsAccepted: '684aa71cb88048daeaebff90',
+    //   // registrationCertificate: event.registrationCertificate,
+    //   // truckImages: event.truckImages,
+    //   registrationCertificate: '68abf58c06db05e601466669',
+    //   truckImages: ['68ac3247d47a3749fb1ad71d', '68ac3252d47a3749fb1ad71f', '68ac3256d47a3749fb1ad721', '68ac325bd47a3749fb1ad723'],
+    //   termsAndConditionsAccepted: event.termsAndConditionsAccepted,
+    // );
+    //
+    // if (result.isSuccess) {
+    //   emit(VehicleRegistrationSuccess());
+    // } else {
+    //   emit(VehicleRegistrationFailure(result.message!));
+    // }
+    emit(VehicleRegistrationFailure('result.message!'));
   }
 }

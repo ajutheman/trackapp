@@ -1,6 +1,7 @@
 // features/auth/bloc/auth_bloc.dart
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:truck_app/core/constants/app_user_type.dart';
 
 // Removed unused imports like google_sign_in, env_config, local_services
 // if they are not used by the remaining OTP-focused logic.
@@ -49,8 +50,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // you would add that logic here, e.g.:
         bool isNewUser = result.data?['isNewUser'] ?? false;
         String token = result.data?['phoneVerifiedToken'] ?? '';
-        if (isNewUser) {
-          await LocalService.saveToken(accessToken: token);
+        if (!isNewUser) {
+          await LocalService.saveToken(accessToken: token, isDriver: result.data?['user']['user_type'] == AppUserType.driver);
         }
         emit(OTPVerifiedSuccess(isNewUser: isNewUser, token: token)); // A dedicated state for successful OTP verification
       } else {

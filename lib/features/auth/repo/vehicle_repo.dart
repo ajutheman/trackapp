@@ -22,7 +22,18 @@ class VehicleRepository {
     required String registrationCertificate,
     required List<String> truckImages,
     required bool termsAndConditionsAccepted,
-  }) async {
+  }) async {   ({
+    "vehicleNumber": vehicleNumber,
+    "vehicleType": vehicleType,
+    "vehicleBodyType": vehicleBodyType,
+    "vehicleCapacity": vehicleCapacity,
+    "goodsAccepted": goodsAccepted,
+    "registrationCertificate": registrationCertificate,
+    "truckImages": truckImages,
+    "termsAndConditionsAccepted": termsAndConditionsAccepted.toString(), // API expects string
+  }).forEach((key, value) {
+    print('$key: $value');
+  });
     final res = await apiService.post(
       // Assuming you have an API endpoint for vehicle registration
       ApiEndpoints.registerVehicle, // You'll need to define this in ApiEndpoints
@@ -38,6 +49,7 @@ class VehicleRepository {
       },
       isTokenRequired: true, // Assuming vehicle registration requires a token
     );
+
 
     if (res.isSuccess) {
       return Result.success(res.data as Map<String, dynamic>);

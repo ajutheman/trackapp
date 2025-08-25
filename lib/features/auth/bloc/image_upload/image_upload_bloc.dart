@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:truck_app/core/constants/upload_image_type.dart';
 
 import '../../repo/image_upload_repo.dart'; // Import the new image upload repository
 import 'image_upload_event.dart'; // Import image upload events
@@ -22,6 +23,7 @@ class ImageUploadBloc extends Bloc<ImageUploadEvent, ImageUploadState> {
   void _onUploadImage(UploadImage event, Emitter<ImageUploadState> emit) async {
     emit(ImageUploadLoading());
     final result = await repository.uploadImage(
+      type: UploadImageType.vehicle,
       imageFile: event.imageFile,
     );
 

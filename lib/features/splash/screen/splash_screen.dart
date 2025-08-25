@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:truck_app/features/main/screen/main_screen_driver.dart';
+import 'package:truck_app/features/main/screen/main_screen_user.dart';
 
 import '../../../core/constants/app_images.dart';
+import '../../../core/utils/messages.dart';
 import '../../auth/screens/welcome_screen.dart';
+import '../bloc/user_session/user_session_bloc.dart';
+import '../bloc/user_session/user_session_event.dart';
+import '../bloc/user_session/user_session_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,41 +49,59 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [theme.primaryColor.withOpacity(0.1), theme.primaryColor.withOpacity(0.3)]),
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 150,
-                        width: 150,
-                        padding: const EdgeInsets.all(20.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20.0),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20.0, spreadRadius: 2.0)],
+      body: BlocListener<UserSessionBloc, UserSessionState>(
+        listener: (context, state) {
+          if (state is SessionAuthenticated) {
+            if (state.isDriver) {
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predicate) => false);
+            } else {
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenUser()), (predicate) => false);
+            }
+          } else if (state is SessionUnauthenticated) {
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+          } else if (state is SessionError) {
+            showSnackBar(context, state.errorMessage);
+            Future.delayed(Duration(seconds: 2)).then((result) {
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+            });
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [theme.primaryColor.withOpacity(0.1), theme.primaryColor.withOpacity(0.3)]),
+          ),
+          child: Center(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          height: 150,
+                          width: 150,
+                          padding: const EdgeInsets.all(20.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20.0),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20.0, spreadRadius: 2.0)],
+                          ),
+                          child: Image.asset(AppImages.appIconWithName),
                         ),
-                        child: Image.asset(AppImages.appIconWithName),
-                      ),
-                      const SizedBox(height: 30),
-                      Text("Return Cargo", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
-                      const SizedBox(height: 5),
-                      const Text("Manage. Track. Deliver.", style: TextStyle(fontSize: 16, color: Colors.black54)),
-                    ],
+                        const SizedBox(height: 30),
+                        Text("Return Cargo", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
+                        const SizedBox(height: 5),
+                        const Text("Manage. Track. Deliver.", style: TextStyle(fontSize: 16, color: Colors.black54)),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -85,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   init() {
     Future.delayed(Duration(seconds: 3)).then((result) {
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+      context.read<UserSessionBloc>().add(AuthCheckRequested());
     });
   }
 }

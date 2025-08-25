@@ -15,9 +15,10 @@ class UserBloc extends Bloc<UserEvent, UserState> {
 
   void _onRegisterUser(RegisterUser event, Emitter<UserState> emit) async {
     emit(UserRegistrationLoading());
-    final result = await repository.createProfile(name: event.name, whatsappNumber: event.whatsappNumber, email: event.email, userType: AppUserType.user, token: event.token);
+    final result = await repository.createProfile(name: event.name, whatsappNumber: event.whatsappNumber, email: event.email, userType: event.userType, token: event.token);
     String token = result.data?['accessToken'] ?? '';
-    await LocalService.saveToken(accessToken: token);
+    print(result.data?['user']['user_type']);
+    await LocalService.saveToken(accessToken: token, isDriver: result.data?['user']['user_type']['_id'] == AppUserType.driver);
     if (result.isSuccess) {
       emit(UserRegistrationSuccess());
     } else {

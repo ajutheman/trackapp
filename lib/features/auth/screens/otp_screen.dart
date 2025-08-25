@@ -130,11 +130,11 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
 
             if (state is OTPVerifiedSuccess) {
               if (widget.isDriverLogin) {
-                // if (state.isNewUser) {
+                if (state.isNewUser) {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenDriver(phone: widget.phone, token: state.token)));
-                // } else {
-                //   Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const MainScreenDriver()), (predict) => false);
-                // }
+                } else {
+                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const MainScreenDriver()), (predict) => false);
+                }
               } else {
                 if (state.isNewUser) {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreenUser(phone: widget.phone, token: state.token)));

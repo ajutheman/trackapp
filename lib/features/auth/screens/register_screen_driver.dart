@@ -739,24 +739,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     }
   }
 
-  Future<void> _completeRegistration() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate API call and file uploads
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Navigate to main app or show success
-      _showSuccessDialog();
-    }
-  }
-
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -798,7 +780,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     );
   }
 
-  submitForm() {
+  submitForm() async {
     if (_currentPage == 0) {
       context.read<UserBloc>().add(
         RegisterUser(userType: AppUserType.driver, name: _nameController.text, whatsappNumber: _whatsAppController.text, email: _emailController.text, token: widget.token),
@@ -806,19 +788,34 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     } else if (_currentPage == 1) {
       _gotoPage(2);
     } else {
-      context.read<VehicleBloc>().add(
-        RegisterVehicle(
-          vehicleNumber: _vehicleNumberController.text,
-          vehicleType: _selectedVehicleType,
-          vehicleBodyType: _selectedVehicleBodyType,
-          vehicleCapacity: _vehicleCapacityController.text,
-          goodsAccepted: _goodsAccepted.first,
-          registrationCertificate: _rcFile!,
-          // Ensure these are not null before dispatching
-          truckImages: _truckImages,
-          termsAndConditionsAccepted: _termsAccepted,
-        ),
-      );
+      // context.read<VehicleBloc>().add(
+      //   RegisterVehicle(
+      //     vehicleNumber: _vehicleNumberController.text,
+      //     vehicleType: _selectedVehicleType,
+      //     vehicleBodyType: _selectedVehicleBodyType,
+      //     vehicleCapacity: _vehicleCapacityController.text,
+      //     goodsAccepted: _goodsAccepted.first,
+      //     registrationCertificate: _rcFile!,
+      //     // Ensure these are not null before dispatching
+      //     truckImages: _truckImages,
+      //     termsAndConditionsAccepted: _termsAccepted,
+      //   ),
+      // );
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Simulate API call and file uploads
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Navigate to main app or show success
+        _showSuccessDialog();
+      }
     }
   }
 
