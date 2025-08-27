@@ -9,4 +9,5 @@ class ApiEndpoints {
   static const String registerProfile = 'api/v1/users/profile';
   static const String registerVehicle = 'api/v1/vehicles';
   static const String uploadImage = 'api/v1/images/upload';
+  static const String uploadDocument = 'api/v1/documents/upload';
 }

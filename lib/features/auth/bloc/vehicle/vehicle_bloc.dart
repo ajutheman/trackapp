@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/constants/upload_image_type.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
+import 'package:truck_app/model/network/result.dart';
 
 import '../../repo/vehicle_repo.dart'; // Import the new vehicle repository
 import 'vehicle_event.dart'; // Import vehicle events
@@ -25,26 +26,61 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
   void _onRegisterVehicle(RegisterVehicle event, Emitter<VehicleState> emit) async {
     emit(VehicleRegistrationLoading());
 
-    print("image ${(await imageRepository.uploadImage(type: UploadImageType.vehicle, imageFile: event.registrationCertificate))}");
+    try {
+      // 1. Upload the single registration certificate image.
+      final Result<String> certificateUploadResult = await imageRepository.uploadDocument(type: UploadImageType.registration, imageFile: event.registrationCertificate);
 
-    // final result = await repository.registerVehicle(
-    //   vehicleNumber: event.vehicleNumber,
-    //   vehicleType: '684aa71cb88048daeaebff8a',
-    //   vehicleBodyType: '685ea11cf883dfb6dcf0b900',
-    //   vehicleCapacity: event.vehicleCapacity,
-    //   goodsAccepted: '684aa71cb88048daeaebff90',
-    //   // registrationCertificate: event.registrationCertificate,
-    //   // truckImages: event.truckImages,
-    //   registrationCertificate: '68abf58c06db05e601466669',
-    //   truckImages: ['68ac3247d47a3749fb1ad71d', '68ac3252d47a3749fb1ad71f', '68ac3256d47a3749fb1ad721', '68ac325bd47a3749fb1ad723'],
-    //   termsAndConditionsAccepted: event.termsAndConditionsAccepted,
-    // );
-    //
-    // if (result.isSuccess) {
-    //   emit(VehicleRegistrationSuccess());
-    // } else {
-    //   emit(VehicleRegistrationFailure(result.message!));
-    // }
-    emit(VehicleRegistrationFailure('result.message!'));
+      // Check if the single image upload failed.
+      if (!certificateUploadResult.isSuccess) {
+        emit(VehicleRegistrationFailure(certificateUploadResult.message ?? 'Failed to upload registration certificate.'));
+        return; // Stop execution if upload fails.
+      }
+      final Result<String> drivingLicenseResult = await imageRepository.uploadDocument(type: UploadImageType.license, imageFile: event.drivingLicense);
+
+      // Check if the single image upload failed.
+      if (!certificateUploadResult.isSuccess) {
+        emit(VehicleRegistrationFailure(certificateUploadResult.message ?? 'Failed to upload drivingLicense.'));
+        return; // Stop execution if upload fails.
+      }
+
+      // 2. Upload multiple truck images in parallel.
+      final List<Future<Result<String>>> uploadFutures =
+          event.truckImages.map((file) {
+            return imageRepository.uploadImage(type: UploadImageType.vehicle, imageFile: file);
+          }).toList();
+
+      final List<Result<String>> truckUploadResults = await Future.wait(uploadFutures);
+
+      // Check if any of the multiple image uploads failed.
+      final List<String> truckImageUrls = [];
+      for (final result in truckUploadResults) {
+        if (!result.isSuccess) {
+          emit(VehicleRegistrationFailure(result.message ?? 'Failed to upload one or more truck images.'));
+          return; // Stop execution if any upload fails.
+        }
+        truckImageUrls.add(result.data!);
+      }
+
+      final result = await repository.registerVehicle(
+        vehicleNumber: event.vehicleNumber,
+        vehicleType: '684aa71cb88048daeaebff8a',
+        vehicleBodyType: '685ea11cf883dfb6dcf0b900',
+        vehicleCapacity: event.vehicleCapacity,
+        goodsAccepted: '684aa71cb88048daeaebff90',
+        drivingLicense: drivingLicenseResult.data!,
+        registrationCertificate: certificateUploadResult.data!,
+        truckImages: truckImageUrls,
+        termsAndConditionsAccepted: event.termsAndConditionsAccepted,
+      );
+
+      if (result.isSuccess) {
+        emit(VehicleRegistrationSuccess());
+      } else {
+        emit(VehicleRegistrationFailure(result.message!));
+      }
+    } catch (e) {
+      // Catch any unexpected errors during the process.
+      emit(VehicleRegistrationFailure('An unexpected error occurred: ${e.toString()}'));
+    }
   }
 }

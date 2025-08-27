@@ -729,7 +729,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
         return _rcFile != null &&
             _drivingLicenseFile != null &&
             _vehicleInsuranceFile != null &&
-            _truckImages.isNotEmpty &&
+            _truckImages.length>=4 &&
             _vehicleNumberController.text.isNotEmpty &&
             _selectedVehicleBodyType.isNotEmpty &&
             _vehicleCapacityController.text.isNotEmpty &&
@@ -788,34 +788,35 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     } else if (_currentPage == 1) {
       _gotoPage(2);
     } else {
-      // context.read<VehicleBloc>().add(
-      //   RegisterVehicle(
-      //     vehicleNumber: _vehicleNumberController.text,
-      //     vehicleType: _selectedVehicleType,
-      //     vehicleBodyType: _selectedVehicleBodyType,
-      //     vehicleCapacity: _vehicleCapacityController.text,
-      //     goodsAccepted: _goodsAccepted.first,
-      //     registrationCertificate: _rcFile!,
-      //     // Ensure these are not null before dispatching
-      //     truckImages: _truckImages,
-      //     termsAndConditionsAccepted: _termsAccepted,
-      //   ),
-      // );
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Simulate API call and file uploads
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Navigate to main app or show success
-        _showSuccessDialog();
-      }
+      context.read<VehicleBloc>().add(
+        RegisterVehicle(
+          vehicleNumber: _vehicleNumberController.text,
+          vehicleType: _selectedVehicleType,
+          vehicleBodyType: _selectedVehicleBodyType,
+          vehicleCapacity: _vehicleCapacityController.text,
+          goodsAccepted: _goodsAccepted.first,
+          registrationCertificate: _rcFile!,
+          // Ensure these are not null before dispatching
+          drivingLicense: _drivingLicenseFile!,
+          truckImages: _truckImages,
+          termsAndConditionsAccepted: _termsAccepted,
+        ),
+      );
+      // setState(() {
+      //   _isLoading = true;
+      // });
+      //
+      // // Simulate API call and file uploads
+      // await Future.delayed(const Duration(seconds: 2));
+      //
+      // if (mounted) {
+      //   setState(() {
+      //     _isLoading = false;
+      //   });
+      //
+      //   // Navigate to main app or show success
+      //   _showSuccessDialog();
+      // }
     }
   }
 
@@ -859,7 +860,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     final List<XFile> images = await picker.pickMultiImage();
     if (images.isNotEmpty) {
       setState(() {
-        _truckImages.clear(); // Clear previous images if re-picking
+        // _truckImages.clear(); // Clear previous images if re-picking
         for (var img in images) {
           _truckImages.add(File(img.path));
         }

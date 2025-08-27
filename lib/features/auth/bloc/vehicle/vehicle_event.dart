@@ -17,6 +17,7 @@ class RegisterVehicle extends VehicleEvent {
   final String vehicleBodyType;
   final String vehicleCapacity;
   final String goodsAccepted;
+  final File drivingLicense;
   final File registrationCertificate;
   final List<File> truckImages;
   final bool termsAndConditionsAccepted;
@@ -28,6 +29,7 @@ class RegisterVehicle extends VehicleEvent {
     required this.vehicleBodyType,
     required this.vehicleCapacity,
     required this.goodsAccepted,
+    required this.drivingLicense,
     required this.registrationCertificate,
     required this.truckImages,
     required this.termsAndConditionsAccepted,
