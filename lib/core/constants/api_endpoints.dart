@@ -10,4 +10,7 @@ class ApiEndpoints {
   static const String registerVehicle = 'api/v1/vehicles';
   static const String uploadImage = 'api/v1/images/upload';
   static const String uploadDocument = 'api/v1/documents/upload';
+  static const String allVehicleBodyTypes = 'api/v1/vehicles/body-types';
+  static const String allGoodsAccepted = 'api/v1/vehicles/goods-accepted';
+  static const String allVehicleTypes = 'api/v1/vehicles/types';
 }

@@ -5,16 +5,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:truck_app/features/auth/bloc/vehicle/vehicle_event.dart';
+import 'package:truck_app/core/utils/messages.dart';
+import 'package:truck_app/features/vehicle/bloc/vehicle_metadata/vehicle_meta_bloc.dart';
+import 'package:truck_app/features/vehicle/model/vehicle_metadata.dart';
 
 import '../../../core/constants/app_user_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../main/screen/main_screen_driver.dart';
+import '../../vehicle/bloc/vehicle/vehicle_bloc.dart';
+import '../../vehicle/bloc/vehicle/vehicle_event.dart';
+import '../../vehicle/bloc/vehicle/vehicle_state.dart';
+import '../../vehicle/bloc/vehicle_metadata/vehicle_meta_event.dart';
+import '../../vehicle/bloc/vehicle_metadata/vehicle_meta_state.dart';
 import '../bloc/user/user_bloc.dart';
 import '../bloc/user/user_event.dart';
 import '../bloc/user/user_state.dart';
-import '../bloc/vehicle/vehicle_bloc.dart';
-import '../bloc/vehicle/vehicle_state.dart'; // Assuming AppColors is in this path
 
 class RegisterScreenDriver extends StatefulWidget {
   final String phone;
@@ -64,9 +69,9 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   File? _vehicleInsuranceFile;
 
   // Dropdowns/Selections
-  String _selectedVehicleType = '';
-  String _selectedVehicleBodyType = ''; // New
-  final List<String> _goodsAccepted = []; // New - for optional goods accepted
+  VehicleType? _selectedVehicleType;
+  VehicleBodyType? _selectedVehicleBodyType; // New
+  final List<GoodsAccepted> selectedGoodsAccepted = []; // New - for optional goods accepted
 
   // Checkbox
   bool _termsAccepted = false; // New
@@ -81,8 +86,9 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
   int _currentPage = 0;
   bool _isLoading = false;
 
-  final List<String> _vehicleTypes = ['Small Truck', 'Medium Truck', 'Large Truck', 'Container Truck', 'Trailer', 'Mini Truck'];
-  final List<String> _vehicleBodyTypes = ['Open', 'Closed', 'Container', 'Flatbed', 'Tipper']; // New
+  final List<VehicleType> _vehicleTypes = [];
+  final List<VehicleBodyType> _vehicleBodyTypes = [];
+  final List<GoodsAccepted> _goodsAcceptedList = [];
 
   @override
   void initState() {
@@ -97,6 +103,7 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _progressController, curve: Curves.easeInOut));
 
     _animationController.forward();
+    context.read<VehicleMetaBloc>().add(LoadAllMeta());
   }
 
   @override
@@ -165,6 +172,23 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                 }
               },
             ),
+            BlocListener<VehicleMetaBloc, VehicleMetaState>(
+              listener: (context, state) {
+                if (state is VehicleMetaLoading) {
+                  setState(() => _isLoading = true);
+                } else if (state is VehicleMetaLoaded) {
+                  setState(() {
+                    _isLoading = false;
+                    _vehicleTypes.addAll(state.vehicleTypes);
+                    _vehicleBodyTypes.addAll(state.bodyTypes);
+                    _goodsAcceptedList.addAll(state.goodsAccepted);
+                  });
+                } else if (state is VehicleMetaError) {
+                  setState(() => _isLoading = false);
+                  showSnackBar(context, state.message);
+                }
+              },
+            ),
           ],
           child: Column(
             children: [
@@ -203,7 +227,9 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
           Row(
             children: [
               IconButton(
-                onPressed: _currentPage > 0 ? _previousPage : () => Navigator.pop(context),
+                onPressed: () {
+                  showSnackBar(context, "You can't go back");
+                },
                 icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.textPrimary),
                 style: IconButton.styleFrom(
                   backgroundColor: AppColors.surface,
@@ -354,10 +380,10 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(_getVehicleIcon(vehicleType), size: 40, color: isSelected ? AppColors.secondary : AppColors.textSecondary),
+                            Icon(_getVehicleIcon(vehicleType.name), size: 40, color: isSelected ? AppColors.secondary : AppColors.textSecondary),
                             const SizedBox(height: 12),
                             Text(
-                              vehicleType,
+                              vehicleType.name,
                               textAlign: TextAlign.center,
                               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isSelected ? AppColors.secondary : AppColors.textPrimary),
                             ),
@@ -425,16 +451,19 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                   icon: Icons.shield_outlined,
                 ),
                 const SizedBox(height: 20),
-                _buildDropdownField(
+                _buildDropdownField<VehicleBodyType>(
                   label: 'Vehicle Body Type',
                   value: _selectedVehicleBodyType,
                   items: _vehicleBodyTypes,
-                  onChanged: (String? newValue) {
+                  onChanged: (newValue) {
                     setState(() {
                       _selectedVehicleBodyType = newValue!;
                     });
                   },
                   icon: Icons.local_shipping_outlined,
+                  displayBuilder: (value) {
+                    return value.name;
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -444,18 +473,18 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                 Wrap(
                   spacing: 8.0,
                   children:
-                      ['Electronics', 'Furniture', 'Textiles', 'Food', 'Machinery', 'Construction Material'].map((goods) {
-                        final isSelected = _goodsAccepted.contains(goods);
+                      _goodsAcceptedList.map((goods) {
+                        final isSelected = selectedGoodsAccepted.contains(goods);
                         return ChoiceChip(
-                          label: Text(goods),
+                          label: Text(goods.name),
                           selected: isSelected,
                           selectedColor: AppColors.secondary.withOpacity(0.1),
                           onSelected: (selected) {
                             setState(() {
                               if (selected) {
-                                _goodsAccepted.add(goods);
+                                selectedGoodsAccepted.add(goods);
                               } else {
-                                _goodsAccepted.remove(goods);
+                                selectedGoodsAccepted.remove(goods);
                               }
                             });
                           },
@@ -544,7 +573,14 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     );
   }
 
-  Widget _buildDropdownField({required String label, required String value, required List<String> items, required Function(String?) onChanged, required IconData icon}) {
+  Widget _buildDropdownField<T>({
+    required String label,
+    required T? value,
+    required List<T> items,
+    required String Function(T) displayBuilder,
+    required Function(T?) onChanged,
+    required IconData icon,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -559,8 +595,8 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value.isEmpty ? null : value,
+            child: DropdownButton<T>(
+              value: value,
               hint: Row(
                 children: [Icon(icon, color: AppColors.textSecondary), const SizedBox(width: 12), const Text('Select option', style: TextStyle(color: AppColors.textSecondary))],
               ),
@@ -569,8 +605,11 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
               style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
               onChanged: onChanged,
               items:
-                  items.map<DropdownMenuItem<String>>((String item) {
-                    return DropdownMenuItem<String>(value: item, child: Text(item));
+                  items.map<DropdownMenuItem<T>>((T item) {
+                    return DropdownMenuItem<T>(
+                      value: item,
+                      child: Text(displayBuilder(item)), // 👈 display
+                    );
                   }).toList(),
             ),
           ),
@@ -724,14 +763,14 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
             _emailController.text.isNotEmpty &&
             _emailController.text.contains('@');
       case 1: // Vehicle Type selection
-        return _selectedVehicleType.isNotEmpty;
+        return _selectedVehicleType != null;
       case 2: // Vehicle Details
         return _rcFile != null &&
             _drivingLicenseFile != null &&
             _vehicleInsuranceFile != null &&
-            _truckImages.length>=4 &&
+            _truckImages.length >= 4 &&
             _vehicleNumberController.text.isNotEmpty &&
-            _selectedVehicleBodyType.isNotEmpty &&
+            _selectedVehicleBodyType != null &&
             _vehicleCapacityController.text.isNotEmpty &&
             _termsAccepted;
       default:
@@ -791,10 +830,10 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
       context.read<VehicleBloc>().add(
         RegisterVehicle(
           vehicleNumber: _vehicleNumberController.text,
-          vehicleType: _selectedVehicleType,
-          vehicleBodyType: _selectedVehicleBodyType,
+          vehicleType: _selectedVehicleType!.id,
+          vehicleBodyType: _selectedVehicleBodyType!.id,
           vehicleCapacity: _vehicleCapacityController.text,
-          goodsAccepted: _goodsAccepted.first,
+          goodsAccepted: selectedGoodsAccepted.first.id,
           registrationCertificate: _rcFile!,
           // Ensure these are not null before dispatching
           drivingLicense: _drivingLicenseFile!,
@@ -820,16 +859,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     }
   }
 
-  void _gotoPage(int page) {
-    // Updated for 3 pages (0, 1, 2, 3)
-    setState(() {
-      _currentPage = page;
-      _isLoading = false;
-    });
-    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-    _updateProgress();
-  }
-
   void _previousPage() {
     if (_currentPage > 0) {
       setState(() {
@@ -838,6 +867,16 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
       _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
       _updateProgress();
     }
+  }
+
+  void _gotoPage(int page) {
+    // Updated for 3 pages (0, 1, 2, 3)
+    setState(() {
+      _currentPage = page;
+      _isLoading = false;
+    });
+    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    _updateProgress();
   }
 
   void _updateProgress() {

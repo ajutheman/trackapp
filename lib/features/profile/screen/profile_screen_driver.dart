@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/features/post/screens/my_posts_screen.dart';
 import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
+import 'package:truck_app/services/local/local_services.dart';
 
 // Assuming AppColors is defined in this path
 import '../../../core/theme/app_colors.dart';
@@ -257,8 +258,8 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
               child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
-              onPressed: () {
-                // Perform logout logic here, e.g., clearing session/token
+              onPressed: () async {
+                await LocalService.deleteTokens();
                 Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (route) => false);
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),

@@ -3,7 +3,7 @@ import 'package:truck_app/core/constants/upload_image_type.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
 import 'package:truck_app/model/network/result.dart';
 
-import '../../repo/vehicle_repo.dart'; // Import the new vehicle repository
+import '../../repo/vehicle_repo.dart';
 import 'vehicle_event.dart'; // Import vehicle events
 import 'vehicle_state.dart'; // Import vehicle states
 
@@ -63,10 +63,10 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
 
       final result = await repository.registerVehicle(
         vehicleNumber: event.vehicleNumber,
-        vehicleType: '684aa71cb88048daeaebff8a',
-        vehicleBodyType: '685ea11cf883dfb6dcf0b900',
+        vehicleType: event.vehicleType,
+        vehicleBodyType: event.vehicleBodyType,
         vehicleCapacity: event.vehicleCapacity,
-        goodsAccepted: '684aa71cb88048daeaebff90',
+        goodsAccepted: event.goodsAccepted,
         drivingLicense: drivingLicenseResult.data!,
         registrationCertificate: certificateUploadResult.data!,
         truckImages: truckImageUrls,
