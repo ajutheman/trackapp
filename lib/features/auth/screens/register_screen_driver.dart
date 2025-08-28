@@ -103,7 +103,6 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _progressController, curve: Curves.easeInOut));
 
     _animationController.forward();
-    context.read<VehicleMetaBloc>().add(LoadAllMeta());
   }
 
   @override
@@ -149,6 +148,8 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                 if (state is UserRegistrationLoading) {
                   setState(() => _isLoading = true);
                 } else if (state is UserRegistrationSuccess) {
+                  // Load vehicle metadata on success
+                  context.read<VehicleMetaBloc>().add(LoadAllMeta());
                   Future.delayed(Duration(milliseconds: 100), () {
                     _gotoPage(1);
                   }); // Proceed to next page after user registration
