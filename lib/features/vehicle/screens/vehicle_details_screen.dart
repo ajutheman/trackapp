@@ -53,8 +53,8 @@ class VehicleDetailsScreen extends StatelessWidget {
               context,
               title: 'Vehicle Overview',
               children: [
-                _buildDetailRow(icon: vehicle.type.icon, label: 'Type', value: vehicle.type.name),
-                _buildDetailRow(icon: Icons.local_shipping_outlined, label: 'Body Type', value: vehicle.bodyType.name),
+                _buildDetailRow(icon: getVehicleTypeIcon(vehicle.type), label: 'Type', value: vehicle.type),
+                _buildDetailRow(icon: Icons.local_shipping_outlined, label: 'Body Type', value: vehicle.bodyType),
                 _buildDetailRow(icon: Icons.scale_outlined, label: 'Capacity', value: '${vehicle.capacity} tons'),
               ],
             ),
@@ -85,7 +85,7 @@ class VehicleDetailsScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(right: 12.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
+                        child: Image.network(
                           // Assuming local file paths for demonstration
                           // In a real app, use NetworkImage for URLs
                           // Image.network(vehicle.truckImageUrls[index], ...)

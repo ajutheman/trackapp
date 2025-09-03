@@ -1,6 +1,7 @@
 import '../../../core/constants/api_endpoints.dart';
 import '../../../model/network/result.dart';
 import '../../../services/network/api_service.dart';
+import '../model/vehicle.dart';
 
 /// Repository class for handling vehicle-related API calls.
 class VehicleRepository {
@@ -48,6 +49,23 @@ class VehicleRepository {
     }
   }
 
-  // You can add more methods here for fetching, updating, or deleting vehicles
-  // similar to the commented-out methods in user_repo.dart if needed.
+    Future<Result<List<Vehicle>>> getVehicles() async {
+        final res = await apiService.get(
+          ApiEndpoints.getVehicles,
+          isTokenRequired: true,
+        );
+
+    if (res.isSuccess) {
+          try {
+            final List<dynamic> vehicleData = res.data as List<dynamic>;
+            final vehicles = vehicleData.map((json) => Vehicle.fromMap(json as Map<String, dynamic>)).toList();
+            return Result.success(vehicles);
+          } catch (e) {
+            print(e);
+            return Result.error('Failed to parse vehicle data.');
+          }
+        } else {
+          return Result.error(res.message ?? 'Failed to fetch vehicles');
+        }
+      }
 }

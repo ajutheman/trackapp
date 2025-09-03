@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../model/vehicle.dart';
+
 /// Abstract base class for all vehicle-related states.
 abstract class VehicleState extends Equatable {
   const VehicleState();
@@ -26,4 +28,25 @@ class VehicleRegistrationFailure extends VehicleState {
 
   @override
   List<Object> get props => [error];
+}
+
+class VehicleListLoading extends VehicleState {}
+
+/// State indicating that fetching the vehicle list was successful.
+class VehicleListSuccess extends VehicleState {
+  final List<Vehicle> vehicles;
+
+  /// Constructor for VehicleListSuccess state.
+  const VehicleListSuccess(this.vehicles);
+
+  @override
+  List<Object> get props => [vehicles];
+}
+
+/// State indicating that fetching the vehicle list failed.
+class VehicleListFailure extends VehicleState {
+  final String error;
+
+  /// Constructor for VehicleListFailure state.
+  const VehicleListFailure(this.error);
 }

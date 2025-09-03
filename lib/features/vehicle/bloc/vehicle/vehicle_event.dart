@@ -47,3 +47,5 @@ class RegisterVehicle extends VehicleEvent {
     termsAndConditionsAccepted,
    ];
 }
+/// Event to trigger fetching the list of registered vehicles.
+class GetVehicles extends VehicleEvent {}

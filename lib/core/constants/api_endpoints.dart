@@ -13,4 +13,5 @@ class ApiEndpoints {
   static const String allVehicleBodyTypes = 'api/v1/vehicles/body-types';
   static const String allGoodsAccepted = 'api/v1/vehicles/goods-accepted';
   static const String allVehicleTypes = 'api/v1/vehicles/types';
+  static const String getVehicles = 'api/v1/vehicles';
 }

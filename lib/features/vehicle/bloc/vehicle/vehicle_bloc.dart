@@ -15,7 +15,7 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
   /// Constructor for VehicleBloc.
   /// Initializes the BLoC with VehicleInitial state and registers event handlers.
   VehicleBloc({required this.repository, required this.imageRepository}) : super(VehicleInitial()) {
-    on<RegisterVehicle>(_onRegisterVehicle);
+    on<RegisterVehicle>(_onRegisterVehicle);on<GetVehicles>(_onGetVehicles);
   }
 
   /// Event handler for the [RegisterVehicle] event.
@@ -82,5 +82,24 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
       // Catch any unexpected errors during the process.
       emit(VehicleRegistrationFailure('An unexpected error occurred: ${e.toString()}'));
     }
-  }
+  }  /// Event handler for the [GetVehicles] event.
+    ///
+    /// Emits [VehicleListLoading] state, calls the repository to fetch the list
+    /// of vehicles, and then emits [VehicleListSuccess] or [VehicleListFailure]
+    /// based on the result.
+    void _onGetVehicles(GetVehicles event, Emitter<VehicleState> emit) async {
+        emit(VehicleListLoading());
+    
+        try {
+          final result = await repository.getVehicles();
+    
+          if (result.isSuccess) {
+            emit(VehicleListSuccess(result.data!));
+          } else {
+            emit(VehicleListFailure(result.message!));
+          }
+        } catch (e) {
+          emit(VehicleListFailure('An unexpected error occurred: ${e.toString()}'));
+        }
+      }
 }

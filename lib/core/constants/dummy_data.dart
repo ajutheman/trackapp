@@ -102,19 +102,23 @@ class DummyData {
   static List<Vehicle> driverVehicles = [
     Vehicle(
       id: 'V001',
-      type: VehicleType.largeTruck,
-      bodyType: VehicleBodyType.container,
+      type: 'largeTruck',
+      bodyType: 'container',
       capacity: 15.0,
       vehicleNumber: 'KL07AB1234',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       drivingLicenseFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      truckImageUrls: [AppImages.dummyTruck1, AppImages.dummyTruck2, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side'],
+      truckImageUrls: [
+        AppImages.dummyTruck1,
+        AppImages.dummyTruck2,
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side'
+      ],
       goodsAccepted: ['Electronics', 'Machinery', 'Textiles'],
     ),
     Vehicle(
       id: 'V002',
-      type: VehicleType.miniTruck,
-      bodyType: VehicleBodyType.open,
+      type: 'miniTruck',
+      bodyType: 'open',
       capacity: 2.5,
       vehicleNumber: 'KA01CD5678',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
@@ -129,8 +133,8 @@ class DummyData {
     ),
     Vehicle(
       id: 'V003',
-      type: VehicleType.containerTruck,
-      bodyType: VehicleBodyType.closed,
+      type: 'containerTruck',
+      bodyType: 'closed',
       capacity: 1.0,
       vehicleNumber: 'MH12EF3456',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
@@ -145,8 +149,8 @@ class DummyData {
     ),
     Vehicle(
       id: 'V004',
-      type: VehicleType.trailer,
-      bodyType: VehicleBodyType.open,
+      type: 'trailer',
+      bodyType: 'open',
       capacity: 3.0,
       vehicleNumber: 'TN10GH7890',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
@@ -162,13 +166,17 @@ class DummyData {
     ),
     Vehicle(
       id: 'V005',
-      type: VehicleType.largeTruck,
-      bodyType: VehicleBodyType.tipper,
+      type: 'largeTruck',
+      bodyType: 'tipper',
       capacity: 20.0,
       vehicleNumber: 'AP03IJ1122',
       rcFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       drivingLicenseFileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-      truckImageUrls: [AppImages.dummyTruck1, AppImages.dummyTruck1, 'https://via.placeholder.com/600x400.png?text=Truck+2+Side'],
+      truckImageUrls: [
+        AppImages.dummyTruck1,
+        AppImages.dummyTruck1,
+        'https://via.placeholder.com/600x400.png?text=Truck+2+Side'
+      ],
       goodsAccepted: ['Water', 'Oil'],
     ),
   ];

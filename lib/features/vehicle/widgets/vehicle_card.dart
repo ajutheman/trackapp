@@ -28,7 +28,7 @@ class VehicleCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
               child: Icon(
-                vehicle.type.icon, // Using the extension for the icon
+                getVehicleTypeIcon(vehicle.type), // Using the extension for the icon
                 color: AppColors.primary,
                 size: 30,
               ),
@@ -41,7 +41,7 @@ class VehicleCard extends StatelessWidget {
                   Text(vehicle.vehicleNumber, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                   const SizedBox(height: 4),
                   Text(
-                    '${vehicle.type.name} - ${vehicle.bodyType.name}', // Using extensions for names
+                    '${vehicle.type} - ${vehicle.bodyType}', // Using extensions for names
                     style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
