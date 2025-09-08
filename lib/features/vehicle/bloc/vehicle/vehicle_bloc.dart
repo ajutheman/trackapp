@@ -75,6 +75,7 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
 
       if (result.isSuccess) {
         emit(VehicleRegistrationSuccess());
+        add(GetVehicles());
       } else {
         emit(VehicleRegistrationFailure(result.message!));
       }

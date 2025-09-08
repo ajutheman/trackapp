@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:truck_app/core/constants/dummy_data.dart'; // Assuming you have a DummyData class
 import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/features/vehicle/model/vehicle.dart';
 import 'package:truck_app/features/vehicle/screens/add_vehicle_screen.dart';
@@ -21,29 +20,16 @@ class VehicleListScreen extends StatefulWidget {
 
 class _VehicleListScreenState extends State<VehicleListScreen> {
   // Dummy list of vehicles for demonstration
-  List<Vehicle> _vehicles = [];
 
   @override
   void initState() {
     super.initState();
     // Initialize with dummy data or fetch from a service
     context.read<VehicleBloc>().add(GetVehicles());
-    _vehicles = List.from(DummyData.driverVehicles);
-  }
-
-  void _addVehicle(Vehicle newVehicle) {
-    setState(() {
-      _vehicles.add(newVehicle);
-    });
-    _showSnackBar('Vehicle ${newVehicle.vehicleNumber} added successfully!');
   }
 
   void _navigateToVehicleDetails(Vehicle vehicle) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => VehicleDetailsScreen(vehicle: vehicle)));
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
   }
 
   @override
@@ -51,8 +37,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Vehicles',
-            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+        title: const Text('My Vehicles', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
@@ -75,10 +60,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               itemCount: vehicles.length,
               itemBuilder: (context, index) {
                 final vehicle = vehicles[index];
-                return VehicleCard(
-                  vehicle: vehicle,
-                  onTap: () => _navigateToVehicleDetails(vehicle),
-                );
+                return VehicleCard(vehicle: vehicle, onTap: () => _navigateToVehicleDetails(vehicle));
               },
             );
           } else {
@@ -91,14 +73,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
           if (state is VehicleListSuccess && state.vehicles.isNotEmpty) {
             return FloatingActionButton(
               onPressed: () async {
-                // Navigate to add vehicle and on success, refresh list
-                // final newVehicle = await Navigator.push<Vehicle>(
-                //   context,
-                //   MaterialPageRoute(builder: (context) => const AddVehicleScreen()),
-                // );
-                // if (newVehicle != null) {
-                //   context.read<VehicleBloc>().add(GetVehicles());
-                // }
+                Navigator.push<Vehicle>(context, MaterialPageRoute(builder: (context) => const AddVehicleScreen()));
               },
               child: const Icon(Icons.add, color: Colors.white),
               backgroundColor: AppColors.secondary,
@@ -111,6 +86,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       ),
     );
   }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -118,18 +94,11 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
         children: [
           Icon(FontAwesomeIcons.truck, size: 80, color: AppColors.textSecondary.withOpacity(0.5)),
           const SizedBox(height: 16),
-          Text('No vehicles added yet.',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+          Text('No vehicles added yet.', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () async {
-              // final newVehicle = await Navigator.push<Vehicle>(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => const AddVehicleScreen()),
-              // );
-              // if (newVehicle != null) {
-              //   context.read<VehicleBloc>().add(GetVehicles());
-              // }
+              Navigator.push<Vehicle>(context, MaterialPageRoute(builder: (context) => const AddVehicleScreen()));
             },
             icon: const Icon(Icons.add_box_outlined, color: Colors.white),
             label: const Text('Add First Vehicle', style: TextStyle(color: Colors.white)),
@@ -143,5 +112,4 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
       ),
     );
   }
-
 }
