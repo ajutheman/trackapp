@@ -117,6 +117,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               labelColor: Colors.white,
               indicatorSize: TabBarIndicatorSize.tab,
               unselectedLabelColor: AppColors.textSecondary,
+              dividerHeight: 0,
               indicator: BoxDecoration(
                 gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(12),
@@ -193,7 +194,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppColors.textSecondary.withOpacity(0.1), AppColors.textSecondary.withOpacity(0.05)],

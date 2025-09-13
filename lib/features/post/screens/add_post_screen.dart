@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart'; // For date and time formatting
+import 'package:truck_app/features/post/screens/map_point_selector.dart';
 
 // Assuming AppColors is defined in this path
 import '../../../core/theme/app_colors.dart';
@@ -27,6 +29,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
   // Placeholder for map coordinates (in a real app, this would come from a map picker)
   String? _startLocationCoordinates;
   String? _destinationCoordinates;
+
+  LatLng? startLocation;
+  LatLng? endLocation;
 
   @override
   void dispose() {
@@ -167,12 +172,17 @@ class _AddPostScreenState extends State<AddPostScreen> {
               _buildMapCoordinatesField(
                 label: 'Map Coordinates (Placeholder)',
                 coordinates: _startLocationCoordinates,
-                onTap: () {
-                  // In a real app, this would open a map picker
+                onTap: () async {
+                  // // In a real app, this would open a map picker
+                  // setState(() {
+                  //   _startLocationCoordinates = '8.5241° N, 76.9366° E'; // Mock coordinates
+                  // });
+                  // _showSnackBar('Map picker for Start Location would open here!');
+                  LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
                   setState(() {
-                    _startLocationCoordinates = '8.5241° N, 76.9366° E'; // Mock coordinates
+                    startLocation = location;
+                    _startLocationCoordinates = formatLatLng(location);
                   });
-                  _showSnackBar('Map picker for Start Location would open here!');
                 },
               ),
               const SizedBox(height: 30),
@@ -195,12 +205,12 @@ class _AddPostScreenState extends State<AddPostScreen> {
               _buildMapCoordinatesField(
                 label: 'Map Coordinates (Placeholder)',
                 coordinates: _destinationCoordinates,
-                onTap: () {
-                  // In a real app, this would open a map picker
+                onTap: () async {
+                  LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
                   setState(() {
-                    _destinationCoordinates = '8.0883° N, 77.5385° E'; // Mock coordinates
+                    endLocation = location;
+                    _destinationCoordinates = formatLatLng(location);
                   });
-                  _showSnackBar('Map picker for Destination would open here!');
                 },
               ),
               const SizedBox(height: 30),
@@ -418,5 +428,16 @@ class _AddPostScreenState extends State<AddPostScreen> {
         ),
       ],
     );
+  }
+
+  String formatLatLng(LatLng location) {
+    String latDirection = location.latitude >= 0 ? 'N' : 'S';
+    String lngDirection = location.longitude >= 0 ? 'E' : 'W';
+
+    // Use absolute values to avoid negative signs
+    String lat = location.latitude.abs().toStringAsFixed(4);
+    String lng = location.longitude.abs().toStringAsFixed(4);
+
+    return '$lat° $latDirection, $lng° $lngDirection';
   }
 }
