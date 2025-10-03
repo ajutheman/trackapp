@@ -49,23 +49,20 @@ class VehicleRepository {
     }
   }
 
-    Future<Result<List<Vehicle>>> getVehicles() async {
-        final res = await apiService.get(
-          ApiEndpoints.getVehicles,
-          isTokenRequired: true,
-        );
+  Future<Result<List<Vehicle>>> getVehicles() async {
+    final res = await apiService.get(ApiEndpoints.getVehicles, isTokenRequired: true);
 
     if (res.isSuccess) {
-          try {
-            final List<dynamic> vehicleData = res.data as List<dynamic>;
-            final vehicles = vehicleData.map((json) => Vehicle.fromMap(json as Map<String, dynamic>)).toList();
-            return Result.success(vehicles);
-          } catch (e) {
-            print(e);
-            return Result.error('Failed to parse vehicle data.');
-          }
-        } else {
-          return Result.error(res.message ?? 'Failed to fetch vehicles');
-        }
+      try {
+        final List<dynamic> vehicleData = res.data as List<dynamic>;
+        final vehicles = vehicleData.map((json) => Vehicle.fromMap(json as Map<String, dynamic>)).toList();
+        return Result.success(vehicles);
+      } catch (e) {
+        print(e);
+        return Result.error('Failed to parse vehicle data.');
       }
+    } else {
+      return Result.error(res.message ?? 'Failed to fetch vehicles');
+    }
+  }
 }

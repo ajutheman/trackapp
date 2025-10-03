@@ -48,6 +48,37 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     ),
   ];
 
+  // Header: From/To location inputs
+  String? _fromLocation;
+  String? _toLocation;
+
+  final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _toController = TextEditingController();
+  final List<String> _sampleLocations = [
+    'Kochi',
+    'Thrissur',
+    'Thiruvananthapuram',
+    'Kozhikode',
+    'Malappuram',
+    'Kannur',
+    'Palakkad',
+    'Alappuzha',
+    'Kottayam',
+    'Idukki',
+    'Ernakulam',
+    'Bengaluru',
+    'Chennai',
+    'Hyderabad',
+    'Mumbai',
+  ];
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,7 +86,10 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
       appBar: _buildAppBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [_buildHeaderLocationSelector(), const SizedBox(height: 24), _buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()],
+        ),
       ),
     );
   }
@@ -142,5 +176,159 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 1)));
+  }
+
+  // Header UI - From/To selector
+  Widget _buildHeaderLocationSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 6))],
+            border: Border.all(color: Colors.black.withOpacity(0.05)),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              _buildLocationRow(
+                label: 'From',
+                value: _fromLocation,
+                icon: Icons.my_location_rounded,
+                iconColor: Colors.green.shade600,
+                onTap: () => _openLocationInput(isFrom: true),
+              ),
+              const Divider(height: 16),
+              _buildLocationRow(label: 'To', value: _toLocation, icon: Icons.location_on_rounded, iconColor: Colors.red.shade600, onTap: () => _openLocationInput(isFrom: false)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationRow({required String label, required String? value, required IconData icon, required Color iconColor, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(
+                  value == null || value.isEmpty ? 'Choose location' : value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.edit_location_alt_rounded, color: AppColors.textSecondary),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openLocationInput({required bool isFrom}) async {
+    final controller = isFrom ? _fromController : _toController;
+    controller.text = isFrom ? (_fromLocation ?? '') : (_toLocation ?? '');
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            List<String> filtered =
+                _sampleLocations.where((e) => controller.text.trim().isEmpty ? true : e.toLowerCase().contains(controller.text.trim().toLowerCase())).take(12).toList();
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(isFrom ? 'Set From location' : 'Set To location'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      onChanged: (_) => setLocalState(() {}),
+                      onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+                      decoration: InputDecoration(
+                        hintText: 'Type a place, area or city',
+                        prefixIcon: Icon(isFrom ? Icons.my_location_rounded : Icons.location_on_rounded),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (filtered.isNotEmpty)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 240),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = filtered[index];
+                            return ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                              leading: Icon(Icons.place_rounded, color: AppColors.textSecondary),
+                              title: Text(item, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              onTap: () => Navigator.pop(context, item),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                ElevatedButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Save')),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        if (isFrom) {
+          _fromLocation = result;
+        } else {
+          _toLocation = result;
+        }
+      });
+    }
+  }
+
+  void _swapLocations() {
+    if ((_fromLocation ?? '').isEmpty && (_toLocation ?? '').isEmpty) {
+      _showSnackBar('Nothing to swap');
+      return;
+    }
+    setState(() {
+      final temp = _fromLocation;
+      _fromLocation = _toLocation;
+      _toLocation = temp;
+    });
   }
 }

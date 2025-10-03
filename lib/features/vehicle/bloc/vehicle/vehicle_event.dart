@@ -36,16 +36,8 @@ class RegisterVehicle extends VehicleEvent {
   });
 
   @override
-  List<Object> get props => [
-    vehicleNumber,
-    vehicleType,
-    vehicleBodyType,
-    vehicleCapacity,
-    goodsAccepted,
-    registrationCertificate,
-    truckImages,
-    termsAndConditionsAccepted,
-   ];
+  List<Object> get props => [vehicleNumber, vehicleType, vehicleBodyType, vehicleCapacity, goodsAccepted, registrationCertificate, truckImages, termsAndConditionsAccepted];
 }
+
 /// Event to trigger fetching the list of registered vehicles.
 class GetVehicles extends VehicleEvent {}
