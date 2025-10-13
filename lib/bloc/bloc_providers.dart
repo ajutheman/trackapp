@@ -3,6 +3,7 @@ import 'package:truck_app/features/auth/bloc/auth/auth_bloc.dart';
 import 'package:truck_app/features/auth/bloc/image_upload/image_upload_bloc.dart';
 import 'package:truck_app/features/auth/bloc/user/user_bloc.dart';
 import 'package:truck_app/features/vehicle/bloc/vehicle_metadata/vehicle_meta_bloc.dart';
+import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 
 import '../di/locator.dart';
 import '../features/splash/bloc/user_session/user_session_bloc.dart';
@@ -15,4 +16,5 @@ List<BlocProvider> globalBlocProviders = [
   BlocProvider<VehicleBloc>(create: (_) => locator()),
   BlocProvider<VehicleMetaBloc>(create: (_) => locator()),
   BlocProvider<ImageUploadBloc>(create: (_) => locator()),
+  BlocProvider<PostsBloc>(create: (_) => locator()),
 ];

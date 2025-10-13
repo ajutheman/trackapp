@@ -14,4 +14,17 @@ class ApiEndpoints {
   static const String allGoodsAccepted = 'api/v1/vehicles/goods-accepted';
   static const String allVehicleTypes = 'api/v1/vehicles/types';
   static const String getVehicles = 'api/v1/vehicles';
+
+  // Posts/Trips endpoints
+  static const String getAllPosts = 'api/v1/trips';
+  static const String createPost = 'api/v1/trips';
+  static const String getUserPosts = 'api/v1/trips/user';
+  static const String getPostById = 'api/v1/trips';
+  static const String updatePost = 'api/v1/trips';
+  static const String deletePost = 'api/v1/trips';
+
+  // Connections/Trips endpoints
+  static const String getConnections = 'api/v1/connections';
+  static const String createConnection = 'api/v1/connections';
+  static const String updateConnectionStatus = 'api/v1/connections';
 }

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/constants/app_images.dart';
 
 import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../notification/screen/notification_screen.dart';
-import '../model/post.dart'; // Assuming you have this model
+import '../model/post.dart';
 import '../widgets/post_card.dart';
-import '../widgets/recent_connect_card.dart'; // Assuming you have this widget
+import '../widgets/recent_connect_card.dart';
+import '../bloc/posts_bloc.dart';
 
 // Placeholder for a simple ConnectCard for Recent Connects
 
@@ -18,35 +20,10 @@ class HomeScreenUser extends StatefulWidget {
 }
 
 class _HomeScreenUserState extends State<HomeScreenUser> {
-  // Mock data for Recent Connects
-
-  // Mock data for List of Posts
-  final List<Post> _userPosts = [
-    Post(
-      title: 'Looking for a truck to move household items',
-      description: 'Need a medium-sized truck to shift goods from Malappuram to Kochi next week.',
-      date: DateTime.now().subtract(const Duration(hours: 5)),
-      imageUrl: 'https://via.placeholder.com/600x400.png?text=Household+Move',
-    ),
-    Post(
-      title: 'Urgent transport for fragile goods',
-      description: 'Require a secure vehicle for delicate items, preferably with air conditioning.',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      imageUrl: 'https://via.placeholder.com/600x400.png?text=Fragile+Transport',
-    ),
-    Post(
-      title: 'Daily commute service for office staff',
-      description: 'Seeking a reliable tempo traveller for staff pick-up and drop-off.',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      imageUrl: 'https://via.placeholder.com/600x400.png?text=Office+Commute',
-    ),
-    Post(
-      title: 'Bulk cement delivery to construction site',
-      description: 'Looking for a large truck to deliver cement bags to a site in Thrissur.',
-      date: DateTime.now().subtract(const Duration(days: 3)),
-      imageUrl: 'https://via.placeholder.com/600x400.png?text=Cement+Delivery',
-    ),
-  ];
+  // Posts from API will be managed by BLoC
+  List<Post> _posts = [];
+  bool _isLoading = false;
+  String? _errorMessage;
 
   // Header: From/To location inputs
   String? _fromLocation;
@@ -73,6 +50,13 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Fetch posts when the screen initializes
+    context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+  }
+
+  @override
   void dispose() {
     _fromController.dispose();
     _toController.dispose();
@@ -84,11 +68,33 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_buildHeaderLocationSelector(), const SizedBox(height: 24), _buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()],
+      body: BlocListener<PostsBloc, PostsState>(
+        listener: (context, state) {
+          if (state is PostsLoaded) {
+            setState(() {
+              _posts = state.posts;
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          } else if (state is PostsLoading) {
+            setState(() {
+              _isLoading = true;
+              _errorMessage = null;
+            });
+          } else if (state is PostsError) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = state.message;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_buildHeaderLocationSelector(), const SizedBox(height: 24), _buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()],
+          ),
         ),
       ),
     );
@@ -155,21 +161,65 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Available Posts', // Section title
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Available Posts', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            IconButton(
+              onPressed: () {
+                // Refresh posts
+                context.read<PostsBloc>().add(RefreshPosts(pickupLocation: _fromLocation, dropLocation: _toLocation));
+              },
+              icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 24),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        _userPosts.isEmpty
-            ? Center(child: Text('No posts available at the moment.', style: TextStyle(color: AppColors.textSecondary)))
-            : ListView.builder(
-              shrinkWrap: true, // Important for nested list views
-              physics: const NeverScrollableScrollPhysics(), // Important for nested list views
-              itemCount: _userPosts.length,
-              itemBuilder: (context, index) {
-                return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: PostCard(post: _userPosts[index]));
-              },
+        if (_isLoading)
+          const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator()))
+        else if (_errorMessage != null)
+          Center(
+            child: Column(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 8),
+                Text(_errorMessage!, style: TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
+          )
+        else if (_posts.isEmpty)
+          Center(
+            child: Column(
+              children: [
+                Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 48),
+                const SizedBox(height: 8),
+                Text('No posts available at the moment.', style: TextStyle(color: AppColors.textSecondary)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                  },
+                  child: const Text('Refresh'),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _posts.length,
+            itemBuilder: (context, index) {
+              return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: PostCard(post: _posts[index]));
+            },
+          ),
       ],
     );
   }
@@ -202,6 +252,16 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               ),
               const Divider(height: 16),
               _buildLocationRow(label: 'To', value: _toLocation, icon: Icons.location_on_rounded, iconColor: Colors.red.shade600, onTap: () => _openLocationInput(isFrom: false)),
+              const SizedBox(height: 12),
+              // Swap locations button
+              if (_fromLocation != null || _toLocation != null)
+                Center(
+                  child: IconButton(
+                    onPressed: _swapLocations,
+                    icon: Icon(Icons.swap_vert_rounded, color: AppColors.secondary, size: 28),
+                    style: IconButton.styleFrom(backgroundColor: AppColors.secondary.withOpacity(0.1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ),
             ],
           ),
         ),
@@ -317,6 +377,9 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           _toLocation = result;
         }
       });
+
+      // Filter posts based on selected locations
+      _filterPostsByLocation();
     }
   }
 
@@ -330,5 +393,13 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
       _fromLocation = _toLocation;
       _toLocation = temp;
     });
+
+    // Filter posts after swapping locations
+    _filterPostsByLocation();
+  }
+
+  void _filterPostsByLocation() {
+    // Fetch posts with location filters
+    context.read<PostsBloc>().add(FetchAllPosts(pickupLocation: _fromLocation, dropLocation: _toLocation, page: 1, limit: 20));
   }
 }
