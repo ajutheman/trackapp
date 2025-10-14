@@ -5,6 +5,7 @@ import 'package:truck_app/core/constants/app_images.dart';
 import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../notification/screen/notification_screen.dart';
+import '../../search/screens/search_screen.dart';
 import '../model/post.dart';
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart';
@@ -25,42 +26,11 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Header: From/To location inputs
-  String? _fromLocation;
-  String? _toLocation;
-
-  final TextEditingController _fromController = TextEditingController();
-  final TextEditingController _toController = TextEditingController();
-  final List<String> _sampleLocations = [
-    'Kochi',
-    'Thrissur',
-    'Thiruvananthapuram',
-    'Kozhikode',
-    'Malappuram',
-    'Kannur',
-    'Palakkad',
-    'Alappuzha',
-    'Kottayam',
-    'Idukki',
-    'Ernakulam',
-    'Bengaluru',
-    'Chennai',
-    'Hyderabad',
-    'Mumbai',
-  ];
-
   @override
   void initState() {
     super.initState();
     // Fetch posts when the screen initializes
     context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
-  }
-
-  @override
-  void dispose() {
-    _fromController.dispose();
-    _toController.dispose();
-    super.dispose();
   }
 
   @override
@@ -93,7 +63,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildHeaderLocationSelector(), const SizedBox(height: 24), _buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()],
+            children: [_buildSearchBox(), const SizedBox(height: 24), _buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()],
           ),
         ),
       ),
@@ -106,24 +76,52 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
       elevation: 0,
       titleSpacing: 0,
       scrolledUnderElevation: 0,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white, Colors.white.withOpacity(0.95)], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+      ),
       title: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Center: App Logo
-            SizedBox(height: 35, child: Image.asset(AppImages.appIconWithName)),
-            // Right: Notification Icon
-            IconButton(
-              icon: Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 28),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationScreen()));
-              },
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                padding: const EdgeInsets.all(12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+            // App Logo with animation
+            Hero(tag: 'app_logo', child: SizedBox(height: 35, child: Image.asset(AppImages.appIconWithName))),
+            // Notification Icon with badge
+            Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.notifications_none_rounded, color: AppColors.secondary, size: 26),
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationScreen()));
+                    },
+                    style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ),
+                // Notification badge
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 4, spreadRadius: 1)],
+                    ),
+                    constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -135,21 +133,56 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Recent Connects', // Section title
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.people_rounded, color: AppColors.secondary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text('Recent Connects', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            const Spacer(),
+            TextButton(
+              onPressed: () {
+                // Navigate to all connects
+              },
+              child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 120, // Height for horizontal list
+          height: 130,
           child:
               DummyData.userConnections.isEmpty
-                  ? Center(child: Text('No recent connects yet.', style: TextStyle(color: AppColors.textSecondary)))
+                  ? Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.people_outline, color: AppColors.textSecondary, size: 32),
+                          const SizedBox(height: 8),
+                          Text('No recent connects yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  )
                   : ListView.builder(
                     scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     itemCount: DummyData.userConnections.length,
                     itemBuilder: (context, index) {
-                      return RecentConnectCard(connect: DummyData.userConnections[index]);
+                      return Padding(padding: const EdgeInsets.only(right: 4), child: RecentConnectCard(connect: DummyData.userConnections[index]));
                     },
                   ),
         ),
@@ -158,57 +191,132 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   }
 
   Widget _buildListOfPostsSection() {
+    print(_errorMessage);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Available Posts', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            IconButton(
-              onPressed: () {
-                // Refresh posts
-                context.read<PostsBloc>().add(RefreshPosts(pickupLocation: _fromLocation, dropLocation: _toLocation));
-              },
-              icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 24),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.local_shipping_rounded, color: AppColors.secondary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text('Available Trips', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            const Spacer(),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  context.read<PostsBloc>().add(const RefreshPosts());
+                },
+                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+                tooltip: 'Refresh',
+              ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         if (_isLoading)
-          const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator()))
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40.0),
+              child: Column(
+                children: [
+                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
+                  const SizedBox(height: 16),
+                  Text('Loading trips...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+          )
         else if (_errorMessage != null)
           Center(
-            child: Column(
-              children: [
-                Icon(Icons.error_outline, color: Colors.red, size: 48),
-                const SizedBox(height: 8),
-                Text(_errorMessage!, style: TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: Colors.red.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.red.withOpacity(0.2))),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(Icons.error_outline_rounded, color: Colors.red, size: 48),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Oops! Something went wrong', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(_errorMessage!, style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                    },
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                    label: const Text('Try Again', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else if (_posts.isEmpty)
           Center(
-            child: Column(
-              children: [
-                Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 48),
-                const SizedBox(height: 8),
-                Text('No posts available at the moment.', style: TextStyle(color: AppColors.textSecondary)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
-                  },
-                  child: const Text('Refresh'),
-                ),
-              ],
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.surface, AppColors.surface.withOpacity(0.5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.05)]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.inbox_outlined, color: AppColors.secondary, size: 56),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('No Trips Available', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text('Check back later for new opportunities', style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                    },
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
+                    label: const Text('Refresh', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
@@ -217,189 +325,52 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _posts.length,
             itemBuilder: (context, index) {
-              return Padding(padding: const EdgeInsets.only(bottom: 12.0), child: PostCard(post: _posts[index]));
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: AnimatedOpacity(opacity: 1.0, duration: Duration(milliseconds: 300 + (index * 50)), child: PostCard(post: _posts[index])),
+              );
             },
           ),
       ],
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 1)));
-  }
-
-  // Header UI - From/To selector
-  Widget _buildHeaderLocationSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 6))],
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              _buildLocationRow(
-                label: 'From',
-                value: _fromLocation,
-                icon: Icons.my_location_rounded,
-                iconColor: Colors.green.shade600,
-                onTap: () => _openLocationInput(isFrom: true),
-              ),
-              const Divider(height: 16),
-              _buildLocationRow(label: 'To', value: _toLocation, icon: Icons.location_on_rounded, iconColor: Colors.red.shade600, onTap: () => _openLocationInput(isFrom: false)),
-              const SizedBox(height: 12),
-              // Swap locations button
-              if (_fromLocation != null || _toLocation != null)
-                Center(
-                  child: IconButton(
-                    onPressed: _swapLocations,
-                    icon: Icon(Icons.swap_vert_rounded, color: AppColors.secondary, size: 28),
-                    style: IconButton.styleFrom(backgroundColor: AppColors.secondary.withOpacity(0.1), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  ),
-                ),
-            ],
-          ),
+  // Search Box Widget
+  Widget _buildSearchBox() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [Colors.white, AppColors.surface.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: AppColors.secondary.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 6), spreadRadius: -2),
+            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+          border: Border.all(color: AppColors.secondary.withOpacity(0.08), width: 1),
         ),
-      ],
-    );
-  }
-
-  Widget _buildLocationRow({required String label, required String? value, required IconData icon, required Color iconColor, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, size: 20, color: iconColor),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                const SizedBox(height: 2),
-                Text(
-                  value == null || value.isEmpty ? 'Choose location' : value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+        child: Row(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.08)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.search_rounded, color: AppColors.secondary, size: 22),
             ),
-          ),
-          Icon(Icons.edit_location_alt_rounded, color: AppColors.textSecondary),
-        ],
+            Expanded(child: Text('Search trips, locations, or goods...', style: TextStyle(color: AppColors.textHint, fontSize: 15, fontWeight: FontWeight.w400))),
+          ],
+        ),
       ),
     );
-  }
-
-  Future<void> _openLocationInput({required bool isFrom}) async {
-    final controller = isFrom ? _fromController : _toController;
-    controller.text = isFrom ? (_fromLocation ?? '') : (_toLocation ?? '');
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setLocalState) {
-            List<String> filtered =
-                _sampleLocations.where((e) => controller.text.trim().isEmpty ? true : e.toLowerCase().contains(controller.text.trim().toLowerCase())).take(12).toList();
-
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text(isFrom ? 'Set From location' : 'Set To location'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: controller,
-                      autofocus: true,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (_) => setLocalState(() {}),
-                      onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
-                      decoration: InputDecoration(
-                        hintText: 'Type a place, area or city',
-                        prefixIcon: Icon(isFrom ? Icons.my_location_rounded : Icons.location_on_rounded),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (filtered.isNotEmpty)
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 240),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = filtered[index];
-                            return ListTile(
-                              dense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                              leading: Icon(Icons.place_rounded, color: AppColors.textSecondary),
-                              title: Text(item, maxLines: 1, overflow: TextOverflow.ellipsis),
-                              onTap: () => Navigator.pop(context, item),
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                ElevatedButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Save')),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (result != null) {
-      setState(() {
-        if (isFrom) {
-          _fromLocation = result;
-        } else {
-          _toLocation = result;
-        }
-      });
-
-      // Filter posts based on selected locations
-      _filterPostsByLocation();
-    }
-  }
-
-  void _swapLocations() {
-    if ((_fromLocation ?? '').isEmpty && (_toLocation ?? '').isEmpty) {
-      _showSnackBar('Nothing to swap');
-      return;
-    }
-    setState(() {
-      final temp = _fromLocation;
-      _fromLocation = _toLocation;
-      _toLocation = temp;
-    });
-
-    // Filter posts after swapping locations
-    _filterPostsByLocation();
-  }
-
-  void _filterPostsByLocation() {
-    // Fetch posts with location filters
-    context.read<PostsBloc>().add(FetchAllPosts(pickupLocation: _fromLocation, dropLocation: _toLocation, page: 1, limit: 20));
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:truck_app/core/constants/app_images.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../model/post.dart';
@@ -18,7 +17,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _pulseAnimation;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -38,7 +36,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedDate = '${widget.post.date.day}/${widget.post.date.month}/${widget.post.date.year}';
+    final String formattedDate = _formatDate(widget.post.tripStartDate ?? widget.post.date);
+    final pickupLocation = widget.post.tripStartLocation?.address ?? widget.post.pickupLocation ?? 'Pickup Location';
+    final dropLocation = widget.post.tripDestination?.address ?? widget.post.dropLocation ?? 'Drop Location';
+    final vehicleInfo = widget.post.vehicleDetails;
+    final goodsInfo = widget.post.goodsTypeDetails;
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
@@ -47,109 +49,344 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
           scale: _scaleAnimation.value,
           child: GestureDetector(
             onTapDown: (_) {
-              setState(() => _isPressed = true);
               _controller.forward();
             },
             onTapUp: (_) {
-              setState(() => _isPressed = false);
               _controller.reverse();
             },
             onTapCancel: () {
-              setState(() => _isPressed = false);
               _controller.reverse();
             },
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.surface, AppColors.surface.withOpacity(0.95)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(colors: [Colors.white, AppColors.surface.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.secondary.withOpacity(0.08), width: 1.5),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4)),
-                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
+                  BoxShadow(color: AppColors.secondary.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8), spreadRadius: -4),
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Enhanced Post Image with gradient overlay
-                    if (widget.post.imageUrl != null && widget.post.imageUrl!.isNotEmpty)
-                      Stack(
+                    // Header with Route Information
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.secondary.withOpacity(0.08), AppColors.secondary.withOpacity(0.03)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            height: 180,
-                            width: double.infinity,
-                            decoration: BoxDecoration(borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20))),
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                              child: Image.asset(
-                                AppImages.dummyPost,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [AppColors.border.withOpacity(0.3), AppColors.border.withOpacity(0.1)],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
+                          // Status Badge and Date
+                          Row(
+                            children: [
+                              if (widget.post.status != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600]),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, size: 12, color: Colors.white),
+                                      const SizedBox(width: 4),
+                                      Text(widget.post.status!.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.border.withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.calendar_today_rounded, size: 11, color: AppColors.textSecondary),
+                                    const SizedBox(width: 4),
+                                    Text(formattedDate, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              if (widget.post.distance != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.08)]),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.route_rounded, size: 12, color: AppColors.secondary),
+                                      const SizedBox(width: 4),
+                                      Text(widget.post.distance!.text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.secondary)),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Route Display (From -> To)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // From Location
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [Colors.green.shade50, Colors.green.shade100.withOpacity(0.3)]),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.green.shade200, width: 1.5),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade700]), shape: BoxShape.circle),
+                                                child: const Icon(Icons.my_location_rounded, size: 12, color: Colors.white),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text('FROM', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.green.shade700, letterSpacing: 0.8)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            pickupLocation,
+                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.2),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    child: Center(child: Icon(Icons.image_rounded, color: AppColors.textHint, size: 48)),
-                                  );
-                                },
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-                          // Gradient overlay for better text readability
-                          Container(
-                            height: 180,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [Colors.transparent, Colors.black.withOpacity(0.1)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                            ),
-                          ),
-                          // Date badge
-                          Positioned(
-                            top: 12,
-                            right: 12,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
+
+                              // Arrow
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)]),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.secondary),
+                                ),
                               ),
-                              child: Text(formattedDate, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                            ),
+
+                              // To Location
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [Colors.red.shade50, Colors.red.shade100.withOpacity(0.3)]),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.red.shade200, width: 1.5),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.shade600, Colors.red.shade700]), shape: BoxShape.circle),
+                                                child: const Icon(Icons.location_on_rounded, size: 12, color: Colors.white),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text('TO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.red.shade700, letterSpacing: 0.8)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            dropLocation,
+                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.2),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                    ),
 
-                    // Content section with enhanced padding and spacing
+                    // Trip Details Section
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title with improved typography
-                          Text(
-                            widget.post.title,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.2),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Description with better line height
-                          Text(widget.post.description, style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4), maxLines: 3, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 20),
-
-                          // Enhanced action buttons
+                          // Vehicle and Goods Info
                           Row(
                             children: [
-                              // Connect button with gradient and animation
+                              if (vehicleInfo != null)
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.background.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppColors.border.withOpacity(0.2)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(Icons.local_shipping_rounded, size: 14, color: AppColors.secondary),
+                                            const SizedBox(width: 6),
+                                            Text('VEHICLE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 0.8)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          vehicleInfo.vehicleNumber,
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        // if (vehicleInfo.vehicleNumber.isNotEmpty)
+                                        //   Text(
+                                        //     vehicleInfo.vehicleNumber,
+                                        //     style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                                        //     maxLines: 1,
+                                        //     overflow: TextOverflow.ellipsis,
+                                        //   ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              if (vehicleInfo != null && goodsInfo != null) const SizedBox(width: 10),
+                              if (goodsInfo != null)
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.background.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppColors.border.withOpacity(0.2)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(Icons.inventory_2_rounded, size: 14, color: AppColors.secondary),
+                                            const SizedBox(width: 6),
+                                            Text('CARGO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 0.8)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          goodsInfo.name,
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (widget.post.weight != null)
+                                          Text('${widget.post.weight} kg', style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Duration and Driver Info
+                          if (widget.post.duration != null || widget.post.driver != null)
+                            Row(
+                              children: [
+                                if (widget.post.duration != null)
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.08), AppColors.secondary.withOpacity(0.03)]),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.access_time_rounded, size: 16, color: AppColors.secondary),
+                                          const SizedBox(width: 8),
+                                          Text(widget.post.duration!.text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                if (widget.post.duration != null && widget.post.driver != null) const SizedBox(width: 10),
+                                if (widget.post.driver != null)
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.08), AppColors.secondary.withOpacity(0.03)]),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.person_rounded, size: 16, color: AppColors.secondary),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              widget.post.driver!.name,
+                                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+
+                          const SizedBox(height: 16),
+
+                          // Action Buttons
+                          Row(
+                            children: [
                               Expanded(
+                                flex: 2,
                                 child: AnimatedBuilder(
                                   animation: _pulseAnimation,
                                   builder: (context, child) {
@@ -157,28 +394,22 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                       scale: _pulseAnimation.value,
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
+                                          gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
                                           borderRadius: BorderRadius.circular(14),
-                                          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                                          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
                                         ),
                                         child: ElevatedButton.icon(
                                           onPressed: () {
-                                            _pulseController.forward().then((_) {
-                                              _pulseController.reverse();
-                                            });
+                                            _pulseController.forward().then((_) => _pulseController.reverse());
                                             _showSuccessDialog(context);
                                           },
-                                          icon: const Icon(Icons.connect_without_contact_rounded, size: 18, color: Colors.white),
-                                          label: const Text('Connect', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                                          icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
+                                          label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.transparent,
                                             shadowColor: Colors.transparent,
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            padding: const EdgeInsets.symmetric(vertical: 14),
                                           ),
                                         ),
                                       ),
@@ -186,21 +417,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 12),
-
-                              // Read More button with subtle styling
+                              const SizedBox(width: 10),
                               Container(
                                 decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
-                                child: TextButton.icon(
+                                child: IconButton(
                                   onPressed: () {
-                                    // Handle Read More logic here
+                                    // Handle view details
                                   },
-                                  icon: Icon(Icons.article_rounded, size: 16, color: AppColors.secondary),
-                                  label: Text('Read More', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 12)),
-                                  style: TextButton.styleFrom(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  ),
+                                  icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
+                                  style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                                 ),
                               ),
                             ],
@@ -216,6 +441,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         );
       },
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${date.day} ${months[date.month - 1]}, ${date.year}';
   }
 
   void _showSuccessDialog(BuildContext context) {

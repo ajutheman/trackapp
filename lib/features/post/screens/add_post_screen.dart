@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-giimport 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart'; // For date and time formatting
 import 'package:truck_app/features/post/screens/map_point_selector.dart';
 import 'package:truck_app/features/home/model/post.dart';
@@ -402,9 +402,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 // Vehicle & Driver Section
                 Text('Vehicle & Driver', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                 const SizedBox(height: 12),
-                _buildInputField(controller: _vehicleController, label: 'Vehicle ID (Optional)', hint: 'e.g., 68ac5e670d66969b0f50b125', icon: Icons.local_shipping_outlined),
+                _buildInputField(controller: _vehicleController, label: 'Vehicle', hint: 'e.g., KA01AB1234', icon: Icons.local_shipping_outlined),
                 const SizedBox(height: 16),
-                _buildInputField(controller: _driverController, label: 'Driver ID (Optional)', hint: 'e.g., 68ac5aba31cc29079926f2d9', icon: Icons.person_outline),
+                _buildInputField(controller: _driverController, label: 'Driver', hint: 'e.g., John Doe', icon: Icons.person_outline),
                 const SizedBox(height: 16),
                 _buildSelfDriveToggle(),
                 const SizedBox(height: 30),
@@ -412,7 +412,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 // Goods & Weight Section
                 Text('Goods & Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                 const SizedBox(height: 12),
-                _buildInputField(controller: _goodsTypeController, label: 'Goods Type ID (Optional)', hint: 'e.g., 684aa733b88048daeaebff93', icon: Icons.inventory_outlined),
+                _buildInputField(controller: _goodsTypeController, label: 'Goods Type', hint: 'e.g., Vegetables', icon: Icons.inventory_outlined),
                 const SizedBox(height: 16),
                 _buildInputField(
                   controller: _weightController,
