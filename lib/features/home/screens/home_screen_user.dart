@@ -160,7 +160,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 130,
+          height: 185,
           child:
               DummyData.userConnections.isEmpty
                   ? Center(

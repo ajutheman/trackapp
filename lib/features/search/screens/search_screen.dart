@@ -42,6 +42,12 @@ class _SearchScreenState extends State<SearchScreen> {
   ];
 
   @override
+  void initState() {
+    _searchTrips();
+    super.initState();
+  }
+
+  @override
   void dispose() {
     _fromController.dispose();
     _toController.dispose();

@@ -27,7 +27,6 @@ class PostsRepository {
 
     if (result.isSuccess) {
       try {
-        print(result.data);
         final List<dynamic> postsData = result.data is List ? result.data : (result.data['posts'] ?? result.data['data'] ?? []);
 
         final List<Post> posts = postsData.map((postJson) => Post.fromJson(postJson as Map<String, dynamic>)).toList();
