@@ -1,60 +1,9 @@
 // lib/features/post/screens/my_posts_screen.dart
 import 'package:flutter/material.dart';
-import 'package:truck_app/core/theme/app_colors.dart'; // Ensure this path is correct
-import 'package:truck_app/features/post/screens/add_post_screen.dart'; // Import the AddPostScreen
-
-// A simple model for a user's post (assuming a structure similar to add_post_screen)
-class UserPost {
-  final String id;
-  final String title;
-  final String description;
-  final String type; // e.g., 'Load', 'Truck'
-  final String? goodsType; // For Load posts
-  final String? vehicleType; // For Truck posts
-  final String pickupLocation;
-  final String dropLocation;
-  final DateTime postDate;
-  bool isActive; // To simulate if the post is still active/open
-
-  UserPost({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.type,
-    this.goodsType,
-    this.vehicleType,
-    required this.pickupLocation,
-    required this.dropLocation,
-    required this.postDate,
-    this.isActive = true,
-  });
-
-  // Helper method to create a copy with updated properties (useful for editing)
-  UserPost copyWith({
-    String? title,
-    String? description,
-    String? type,
-    String? goodsType,
-    String? vehicleType,
-    String? pickupLocation,
-    String? dropLocation,
-    DateTime? postDate,
-    bool? isActive,
-  }) {
-    return UserPost(
-      id: id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      type: type ?? this.type,
-      goodsType: goodsType ?? this.goodsType,
-      vehicleType: vehicleType ?? this.vehicleType,
-      pickupLocation: pickupLocation ?? this.pickupLocation,
-      dropLocation: dropLocation ?? this.dropLocation,
-      postDate: postDate ?? this.postDate,
-      isActive: isActive ?? this.isActive,
-    );
-  }
-}
+import 'package:truck_app/core/theme/app_colors.dart';
+import 'package:truck_app/features/post/screens/add_post_screen.dart';
+import 'package:truck_app/features/home/model/post.dart';
+import 'package:truck_app/features/home/widgets/post_card.dart';
 
 class MyPostsScreen extends StatefulWidget {
   const MyPostsScreen({super.key});
@@ -64,115 +13,150 @@ class MyPostsScreen extends StatefulWidget {
 }
 
 class _MyPostsScreenState extends State<MyPostsScreen> {
-  // Dummy data for user posts
-  // In a real application, this would come from a backend or state management
-  final List<UserPost> _myPosts = [
-    UserPost(
-      id: 'p1',
-      title: 'Need truck for furniture transport',
-      description: 'Looking for a small truck to move household furniture from Malappuram to Kochi. Flexible dates.',
-      type: 'Load',
-      goodsType: 'Furniture',
-      pickupLocation: 'Malappuram',
-      dropLocation: 'Kochi',
-      postDate: DateTime.now().subtract(const Duration(days: 2)),
+  // Dummy data for user posts using the Post model
+  final List<Post> _myPosts = [
+    Post(
+      id: '68ee48f0cfd19f82c673a512',
+      title: 'Fresh Vegetables Delivery to Kochi',
+      description: 'Transporting fresh vegetables from Pathanamthitta to Kochi via Kottayam.',
+      date: DateTime.now().subtract(const Duration(hours: 1)),
+      routeGeoJSON: RouteGeoJSON(
+        type: 'LineString',
+        coordinates: [
+          [76.7704, 9.2645],
+          [76.5212, 9.5916],
+          [76.3516, 10.1076],
+          [76.2875, 9.9674],
+        ],
+      ),
+      distance: Distance(value: 135.5, text: '135.5 km'),
+      duration: TripDuration(value: 150, text: '2 hours 30 mins'),
+      currentLocation: TripLocation(coordinates: [76.7704, 9.2645]),
+      tripAddedBy: User(id: '68e0156e2655da19d6948c7d', name: 'Current User', phone: '1212121212', email: '1212@sdasd.com'),
+      vehicleDetails: Vehicle(id: '68ee48c8cfd19f82c673a4da', vehicleNumber: 'KL12AB1212', vehicleType: 'Mini Truck', vehicleBodyType: 'Refrigerated'),
+      driver: User(id: '68e0156e2655da19d6948c7d', name: 'Self Drive', phone: '1212121212', email: '1212@sdasd.com'),
+      selfDrive: true,
+      goodsTypeDetails: GoodsType(id: '684aa733b88048daeaebff93', name: 'Food', description: 'Food products and consumables'),
+      tripStartLocation: TripLocation(address: 'Pathanamthitta Bus Stand, Kerala', coordinates: [76.7704, 9.2645]),
+      tripDestination: TripLocation(address: 'Kochi, Kerala', coordinates: [76.2875, 9.9674]),
+      tripStartDate: DateTime.now().add(const Duration(hours: 3)),
+      tripEndDate: DateTime.now().add(const Duration(hours: 6)),
+      isStarted: false,
       isActive: true,
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Vegetable+Delivery',
     ),
-    UserPost(
-      id: 'p2',
-      title: 'Available 10-wheel truck for long haul',
-      description: '10-wheel truck available for long haul, any goods. Ready to travel across South India.',
-      type: 'Truck',
-      vehicleType: '10-wheel truck',
-      pickupLocation: 'Coimbatore',
-      dropLocation: 'Bangalore',
-      // This might be a base or current location
-      postDate: DateTime.now().subtract(const Duration(days: 5)),
-      isActive: true,
-    ),
-    UserPost(
-      id: 'p3',
-      title: 'Urgent: Books transport to Thrissur',
-      description: 'Need a mini-truck for transporting 50 cartons of books from Kozhikode to Thrissur by tomorrow.',
-      type: 'Load',
-      goodsType: 'Books',
-      pickupLocation: 'Kozhikode',
-      dropLocation: 'Thrissur',
-      postDate: DateTime.now().subtract(const Duration(days: 10)),
-      isActive: false, // Example of an inactive/completed post
-    ),
-    UserPost(
-      id: 'p4',
-      title: 'Small van available for local delivery',
-      description: 'Small commercial van available for local deliveries within Malappuram district.',
-      type: 'Truck',
-      vehicleType: 'Van',
-      pickupLocation: 'Malappuram',
-      dropLocation: 'Malappuram',
-      postDate: DateTime.now().subtract(const Duration(days: 15)),
-      isActive: true,
+    Post(
+      id: '68ee49b9cfd19f82c673a5ab',
+      title: 'Bulk Construction Material Delivery to Palakkad',
+      description: 'Delivering cement and steel rods from Thrissur to Palakkad.',
+      date: DateTime.now().subtract(const Duration(days: 1)),
+      routeGeoJSON: RouteGeoJSON(
+        type: 'LineString',
+        coordinates: [
+          [76.2133, 10.5276],
+          [76.4650, 10.7740],
+        ],
+      ),
+      distance: Distance(value: 90.0, text: '90 km'),
+      duration: TripDuration(value: 120, text: '2 hours'),
+      currentLocation: TripLocation(coordinates: [76.2133, 10.5276]),
+      tripAddedBy: User(id: '68e0156e2655da19d6948c7d', name: 'Current User', phone: '7890123456', email: 'contact@buildlog.com'),
+      vehicleDetails: Vehicle(id: '68ee48c8cfd19f82c673a4dc', vehicleNumber: 'KL09XY9999', vehicleType: 'Heavy Truck', vehicleBodyType: 'Open Body'),
+      driver: User(id: '68e0156e2655da19d6948c80', name: 'Rajeev Menon', phone: '9988771122', email: 'rajeev@driver.com'),
+      selfDrive: false,
+      goodsTypeDetails: GoodsType(id: '684aa733b88048daeaebff95', name: 'Construction Materials', description: 'Cement, rods, and construction items'),
+      tripStartLocation: TripLocation(address: 'Thrissur Industrial Estate', coordinates: [76.2133, 10.5276]),
+      tripDestination: TripLocation(address: 'Palakkad Construction Site', coordinates: [76.4650, 10.7740]),
+      tripStartDate: DateTime.now().add(const Duration(days: 1)),
+      tripEndDate: DateTime.now().add(const Duration(days: 1, hours: 3)),
+      isStarted: false,
+      isActive: false,
+      imageUrl: 'https://via.placeholder.com/600x400.png?text=Construction+Delivery',
     ),
   ];
 
-  void _editPost(UserPost post) async {
+  void _editPost(Post post) async {
     // Navigate to AddPostScreen, passing the post to be edited
-    // final result = await Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => AddPostScreen(postToEdit: post),
-    //   ),
-    // );
-
-    // If the AddPostScreen returns a result (e.g., indicating an update)
-    // if (result != null && result is bool && result) {
-    //   // In a real app, you would refresh the data from your backend
-    //   // For this dummy data, we'll just show a success message
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(content: Text('Post "${post.title}" updated successfully!')),
-    //   );
-    //   // You might need to manually update the _myPosts list here if not fetching from a backend
-    //   // For now, we'll just re-render to reflect potential internal changes if any were made.
-    //   setState(() {});
-    // }
+    // In a real app, you would implement edit functionality
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit feature coming soon for "${post.title}"'), backgroundColor: AppColors.info));
   }
 
-  void _deletePost(UserPost post) {
+  void _deletePost(Post post) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Post'),
-          content: Text('Are you sure you want to delete "${post.title}"?'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textPrimary)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(20)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                  child: Icon(Icons.delete_outline_rounded, color: Colors.red, size: 48),
+                ),
+                const SizedBox(height: 16),
+                Text('Delete Post?', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                const SizedBox(height: 8),
+                Text(
+                  'Are you sure you want to delete "${post.title}"? This action cannot be undone.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: AppColors.border),
+                        ),
+                        child: Text('Cancel', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _myPosts.removeWhere((p) => p.id == post.id);
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post "${post.title}" deleted successfully'), backgroundColor: Colors.green));
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
-              onPressed: () {
-                setState(() {
-                  _myPosts.removeWhere((p) => p.id == post.id);
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post "${post.title}" deleted.')));
-              },
-            ),
-          ],
+          ),
         );
       },
     );
   }
 
-  void _togglePostStatus(UserPost post) {
+  void _togglePostStatus(Post post) {
     setState(() {
       final index = _myPosts.indexWhere((p) => p.id == post.id);
       if (index != -1) {
-        _myPosts[index].isActive = !_myPosts[index].isActive;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post "${post.title}" is now ${_myPosts[index].isActive ? 'active' : 'inactive'}.')));
+        final newStatus = !(post.isActive ?? true);
+        _myPosts[index] = post.copyWith(isActive: newStatus);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Post "${post.title}" is now ${newStatus ? 'active' : 'inactive'}'), backgroundColor: newStatus ? Colors.green : Colors.orange));
       }
     });
   }
@@ -193,33 +177,67 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Posts', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
-        foregroundColor: Colors.black,
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
+        titleSpacing: 0,
+        scrolledUnderElevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white, Colors.white.withOpacity(0.95)], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+        ),
         centerTitle: true,
+        title: Text('My Posts', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 22, letterSpacing: -0.5)),
       ),
       body:
           _myPosts.isEmpty
               ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.post_add_rounded, size: 80, color: AppColors.textSecondary.withOpacity(0.5)),
-                    const SizedBox(height: 16),
-                    Text('You haven\'t created any posts yet.', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _navigateToAddPostScreen,
-                      icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white),
-                      label: const Text('Create New Post', style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                child: Container(
+                  margin: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [AppColors.surface, AppColors.surface.withOpacity(0.5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.05)]),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.post_add_rounded, size: 64, color: AppColors.secondary),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      Text('No Posts Yet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'You haven\'t created any posts yet.\nStart by creating your first post!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.5),
+                      ),
+                      const SizedBox(height: 32),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: _navigateToAddPostScreen,
+                          icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
+                          label: const Text('Create New Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
               : ListView.builder(
@@ -227,138 +245,9 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                 itemCount: _myPosts.length,
                 itemBuilder: (context, index) {
                   final post = _myPosts[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12.0),
-                    color: AppColors.surface,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: post.isActive ? AppColors.secondary : AppColors.textSecondary.withOpacity(0.3), width: 0.5),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  post.title,
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: post.type == 'Load' ? AppColors.info.withOpacity(0.2) : AppColors.success.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  post.type,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: post.type == 'Load' ? AppColors.info : AppColors.success),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(post.description, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_rounded, size: 16, color: AppColors.textSecondary),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  '${post.pickupLocation} to ${post.dropLocation}',
-                                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (post.goodsType != null) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.category_rounded, size: 16, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text('Goods: ${post.goodsType}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                              ],
-                            ),
-                          ],
-                          if (post.vehicleType != null) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.local_shipping_rounded, size: 16, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text('Vehicle: ${post.vehicleType}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Divider(color: AppColors.textSecondary.withOpacity(0.2)),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(post.isActive ? Icons.check_circle_rounded : Icons.cancel_rounded, size: 16, color: post.isActive ? AppColors.success : AppColors.error),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    post.isActive ? 'Active' : 'Inactive',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: post.isActive ? AppColors.success : AppColors.error),
-                                  ),
-                                ],
-                              ),
-                              Text('Posted: ${_formatDate(post.postDate)}', style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withOpacity(0.7))),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton.icon(
-                                onPressed: () => _togglePostStatus(post),
-                                icon: Icon(post.isActive ? Icons.toggle_off_rounded : Icons.toggle_on_rounded, color: post.isActive ? AppColors.error : AppColors.success),
-                                label: Text(post.isActive ? 'Mark Inactive' : 'Mark Active', style: TextStyle(color: post.isActive ? AppColors.error : AppColors.success)),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton.icon(
-                                onPressed: () => _editPost(post),
-                                icon: const Icon(Icons.edit_rounded, color: AppColors.primary),
-                                label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton.icon(
-                                onPressed: () => _deletePost(post),
-                                icon: const Icon(Icons.delete_rounded, color: AppColors.error),
-                                label: const Text('Delete', style: TextStyle(color: AppColors.error)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return PostCard(post: post);
                 },
               ),
-      floatingActionButton:
-          _myPosts.isNotEmpty
-              ? FloatingActionButton.extended(
-                onPressed: _navigateToAddPostScreen,
-                label: const Text('Add New Post', style: TextStyle(color: Colors.white)),
-                icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white),
-                backgroundColor: AppColors.primary,
-              )
-              : null, // Don't show FAB if empty state has "Create New Post" button
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }
