@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             if (state.isDriver) {
               Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predicate) => false);
             } else {
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predicate) => false);
+              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenUser()), (predicate) => false);
             }
           } else if (state is SessionUnauthenticated) {
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);

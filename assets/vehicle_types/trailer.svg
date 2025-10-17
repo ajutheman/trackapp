@@ -1,15 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <path d="M10 55H5V35H20V55H15" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <rect x="20" y="28" width="70" height="27" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <circle cx="15" cy="62" r="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
-  <circle cx="40" cy="62" r="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
-  <circle cx="65" cy="62" r="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
-  <circle cx="85" cy="62" r="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
-  <line x1="28" y1="28" x2="28" y2="55" stroke="currentColor" stroke-width="2"/>
-  <line x1="38" y1="28" x2="38" y2="55" stroke="currentColor" stroke-width="2"/>
-  <line x1="48" y1="28" x2="48" y2="55" stroke="currentColor" stroke-width="2"/>
-  <line x1="58" y1="28" x2="58" y2="55" stroke="currentColor" stroke-width="2"/>
-  <line x1="68" y1="28" x2="68" y2="55" stroke="currentColor" stroke-width="2"/>
-  <line x1="78" y1="28" x2="78" y2="55" stroke="currentColor" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M3,5A2,2 0 0,0 1,7V16H3A3,3 0 0,0 6,19A3,3 0 0,0 9,16H11A3,3 0 0,0 14,19A3,3 0 0,0 17,16H19A3,3 0 0,0 22,19A3,3 0 0,0 25,16H23V7A2,2 0 0,0 21,5H3M3,7H21V15H3V7M6,13.5A1.5,1.5 0 0,1 7.5,15A1.5,1.5 0 0,1 6,16.5A1.5,1.5 0 0,1 4.5,15A1.5,1.5 0 0,1 6,13.5M14,13.5A1.5,1.5 0 0,1 15.5,15A1.5,1.5 0 0,1 14,16.5A1.5,1.5 0 0,1 12.5,15A1.5,1.5 0 0,1 14,13.5M22,13.5A1.5,1.5 0 0,1 23.5,15A1.5,1.5 0 0,1 22,16.5A1.5,1.5 0 0,1 20.5,15A1.5,1.5 0 0,1 22,13.5M5,8H8V10H5V8M9,8H12V10H9V8M13,8H16V10H13V8M17,8H20V10H17V8M5,11H8V13H5V11M9,11H12V13H9V11M13,11H16V13H13V11M17,11H20V13H17V11Z"/>
 </svg>
-
