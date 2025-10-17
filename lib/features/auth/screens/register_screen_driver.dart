@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/core/utils/messages.dart';
@@ -381,7 +382,12 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(_getVehicleIcon(vehicleType.name), size: 40, color: isSelected ? AppColors.secondary : AppColors.textSecondary),
+                            SvgPicture.asset(
+                              _getVehicleIcon(vehicleType.name),
+                              width: 40,
+                              height: 40,
+                              colorFilter: ColorFilter.mode(isSelected ? AppColors.secondary : AppColors.textSecondary, BlendMode.srcIn),
+                            ),
                             const SizedBox(height: 12),
                             Text(
                               vehicleType.name,
@@ -736,22 +742,22 @@ class _RegisterProfileScreenDriverState extends State<RegisterScreenDriver> with
     );
   }
 
-  IconData _getVehicleIcon(String vehicleType) {
+  String _getVehicleIcon(String vehicleType) {
     switch (vehicleType.toLowerCase()) {
       case 'small truck':
-        return Icons.local_shipping;
+        return 'assets/vehicle_types/small_truck.svg';
       case 'medium truck':
-        return Icons.fire_truck;
+        return 'assets/vehicle_types/medium_truck.svg';
       case 'large truck':
-        return Icons.airport_shuttle;
+        return 'assets/vehicle_types/large_truck.svg';
       case 'container truck':
-        return Icons.rv_hookup;
+        return 'assets/vehicle_types/container_truck.svg';
       case 'trailer':
-        return Icons.directions_bus;
+        return 'assets/vehicle_types/trailer.svg';
       case 'mini truck':
-        return Icons.delivery_dining;
+        return 'assets/vehicle_types/mini_truck.svg';
       default:
-        return Icons.local_shipping;
+        return 'assets/vehicle_types/small_truck.svg';
     }
   }
 

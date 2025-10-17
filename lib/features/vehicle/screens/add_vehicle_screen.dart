@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/features/vehicle/bloc/vehicle_metadata/vehicle_meta_bloc.dart';
 import 'package:truck_app/features/vehicle/model/vehicle_metadata.dart';
@@ -108,183 +108,190 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               },
             ),
           ],
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Add Vehicle Details', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
-                  const Text('Provide information about your vehicle and documents', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                  const SizedBox(height: 32),
+          child:
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Add Vehicle Details', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                          const SizedBox(height: 8),
+                          const Text('Provide information about your vehicle and documents', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                          const SizedBox(height: 32),
 
-                  // Vehicle Type Selection Grid
-                  const Text('Vehicle Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 120, // Adjust height as needed
-                    child: GridView.builder(
-                      scrollDirection: Axis.horizontal,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisSpacing: 16, childAspectRatio: 1.2),
-                      itemCount: _vehicleTypes.length,
-                      itemBuilder: (context, index) {
-                        final vehicleType = _vehicleTypes[index];
-                        final isSelected = _selectedVehicleType == vehicleType;
+                          // Vehicle Type Selection Grid
+                          const Text('Vehicle Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 120, // Adjust height as needed
+                            child: GridView.builder(
+                              scrollDirection: Axis.horizontal,
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisSpacing: 16, childAspectRatio: 1.2),
+                              itemCount: _vehicleTypes.length,
+                              itemBuilder: (context, index) {
+                                final vehicleType = _vehicleTypes[index];
+                                final isSelected = _selectedVehicleType == vehicleType;
 
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedVehicleType = vehicleType;
-                            });
-                            HapticFeedback.selectionClick();
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.secondary.withOpacity(0.1) : AppColors.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: isSelected ? AppColors.secondary : Colors.grey.shade300, width: isSelected ? 2 : 1),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(_getVehicleIcon(vehicleType.name), size: 40, color: isSelected ? AppColors.secondary : AppColors.textSecondary),
-                                const SizedBox(height: 12),
-                                Text(
-                                  vehicleType.name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isSelected ? AppColors.secondary : AppColors.textPrimary),
-                                ),
-                              ],
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedVehicleType = vehicleType;
+                                    });
+                                    HapticFeedback.selectionClick();
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppColors.secondary.withOpacity(0.1) : AppColors.surface,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: isSelected ? AppColors.secondary : Colors.grey.shade300, width: isSelected ? 2 : 1),
+                                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SvgPicture.asset(
+                                          _getVehicleIcon(vehicleType.name),
+                                          width: 40,
+                                          height: 40,
+                                          colorFilter: ColorFilter.mode(isSelected ? AppColors.secondary : AppColors.textSecondary, BlendMode.srcIn),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          vehicleType.name,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: isSelected ? AppColors.secondary : AppColors.textPrimary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                        );
-                      },
+                          const SizedBox(height: 20),
+
+                          // Vehicle Number
+                          _buildInputField(
+                            controller: _vehicleNumberController,
+                            focusNode: _vehicleNumberFocus,
+                            label: 'Vehicle Number',
+                            hint: 'e.g., KA01AB1234',
+                            icon: Icons.numbers_outlined,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Vehicle Capacity
+                          _buildInputField(
+                            controller: _vehicleCapacityController,
+                            focusNode: _vehicleCapacityFocus,
+                            label: 'Vehicle Capacity (in tons)',
+                            hint: 'e.g., 5.0',
+                            icon: Icons.scale_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Vehicle Body Type Dropdown
+                          _buildDropdownField<VehicleBodyType>(
+                            label: 'Vehicle Body Type',
+                            value: _selectedVehicleBodyType,
+                            items: _vehicleBodyTypes,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedVehicleBodyType = newValue!;
+                              });
+                            },
+                            icon: Icons.local_shipping_outlined,
+                            displayBuilder: (value) {
+                              return value.name;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Goods Accepted Chips
+                          const Text('Goods Accepted (Optional)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8.0,
+                            children:
+                                _goodsAcceptedList.map((goods) {
+                                  final isSelected = selectedGoodsAccepted.contains(goods);
+                                  return ChoiceChip(
+                                    label: Text(goods.name),
+                                    selected: isSelected,
+                                    selectedColor: AppColors.secondary.withOpacity(0.1),
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          selectedGoodsAccepted.add(goods);
+                                        } else {
+                                          selectedGoodsAccepted.remove(goods);
+                                        }
+                                      });
+                                    },
+                                    labelStyle: TextStyle(color: isSelected ? AppColors.secondary : AppColors.textSecondary),
+                                    side: BorderSide(color: isSelected ? AppColors.secondary : Colors.grey.shade300),
+                                    backgroundColor: AppColors.surface,
+                                  );
+                                }).toList(),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // File Uploads
+                          _buildFileUploadWidget(
+                            label: 'Upload RC (Registration Certificate)',
+                            file: _rcFile,
+                            onPick: () => _pickFile((file) => _rcFile = file),
+                            icon: Icons.description_outlined,
+                          ),
+                          const SizedBox(height: 20),
+
+                          _buildFileUploadWidget(
+                            label: 'Upload Driving License',
+                            file: _drivingLicenseFile,
+                            onPick: () => _pickFile((file) => _drivingLicenseFile = file),
+                            icon: Icons.credit_card_outlined,
+                          ),
+                          const SizedBox(height: 20),
+
+                          _buildMultiImageUploadWidget(label: 'Upload Truck Images (4 Sides)', images: _truckImages, onPick: _pickMultipleImages),
+                          const SizedBox(height: 20),
+
+                          _buildFileUploadWidget(
+                            label: 'Upload Vehicle Insurance',
+                            file: _vehicleInsuranceFile,
+                            onPick: () => _pickFile((file) => _vehicleInsuranceFile = file),
+                            icon: Icons.shield_outlined,
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Terms and Conditions Checkbox
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _termsAccepted,
+                                onChanged: (bool? newValue) {
+                                  setState(() {
+                                    _termsAccepted = newValue ?? false;
+                                  });
+                                },
+                                activeColor: AppColors.secondary,
+                              ),
+                              const Expanded(child: Text('I agree to the Terms and Conditions', style: TextStyle(fontSize: 14, color: AppColors.textPrimary))),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Submit Button
+                          _buildSubmitButton(),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Vehicle Number
-                  _buildInputField(
-                    controller: _vehicleNumberController,
-                    focusNode: _vehicleNumberFocus,
-                    label: 'Vehicle Number',
-                    hint: 'e.g., KA01AB1234',
-                    icon: Icons.numbers_outlined,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Vehicle Capacity
-                  _buildInputField(
-                    controller: _vehicleCapacityController,
-                    focusNode: _vehicleCapacityFocus,
-                    label: 'Vehicle Capacity (in tons)',
-                    hint: 'e.g., 5.0',
-                    icon: Icons.scale_outlined,
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Vehicle Body Type Dropdown
-                  _buildDropdownField<VehicleBodyType>(
-                    label: 'Vehicle Body Type',
-                    value: _selectedVehicleBodyType,
-                    items: _vehicleBodyTypes,
-                    onChanged: (newValue) {
-                      setState(() {
-                        _selectedVehicleBodyType = newValue!;
-                      });
-                    },
-                    icon: Icons.local_shipping_outlined,
-                    displayBuilder: (value) {
-                      return value.name;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Goods Accepted Chips
-                  const Text('Goods Accepted (Optional)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8.0,
-                    children: _goodsAcceptedList.map((goods) {
-                      final isSelected = selectedGoodsAccepted.contains(goods);
-                      return ChoiceChip(
-                        label: Text(goods.name),
-                        selected: isSelected,
-                        selectedColor: AppColors.secondary.withOpacity(0.1),
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              selectedGoodsAccepted.add(goods);
-                            } else {
-                              selectedGoodsAccepted.remove(goods);
-                            }
-                          });
-                        },
-                        labelStyle: TextStyle(color: isSelected ? AppColors.secondary : AppColors.textSecondary),
-                        side: BorderSide(color: isSelected ? AppColors.secondary : Colors.grey.shade300),
-                        backgroundColor: AppColors.surface,
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // File Uploads
-                  _buildFileUploadWidget(
-                    label: 'Upload RC (Registration Certificate)',
-                    file: _rcFile,
-                    onPick: () => _pickFile((file) => _rcFile = file),
-                    icon: Icons.description_outlined,
-                  ),
-                  const SizedBox(height: 20),
-
-                  _buildFileUploadWidget(
-                    label: 'Upload Driving License',
-                    file: _drivingLicenseFile,
-                    onPick: () => _pickFile((file) => _drivingLicenseFile = file),
-                    icon: Icons.credit_card_outlined,
-                  ),
-                  const SizedBox(height: 20),
-
-                  _buildMultiImageUploadWidget(label: 'Upload Truck Images (4 Sides)', images: _truckImages, onPick: _pickMultipleImages),
-                  const SizedBox(height: 20),
-
-                  _buildFileUploadWidget(
-                    label: 'Upload Vehicle Insurance',
-                    file: _vehicleInsuranceFile,
-                    onPick: () => _pickFile((file) => _vehicleInsuranceFile = file),
-                    icon: Icons.shield_outlined,
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Terms and Conditions Checkbox
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _termsAccepted,
-                        onChanged: (bool? newValue) {
-                          setState(() {
-                            _termsAccepted = newValue ?? false;
-                          });
-                        },
-                        activeColor: AppColors.secondary,
-                      ),
-                      const Expanded(child: Text('I agree to the Terms and Conditions', style: TextStyle(fontSize: 14, color: AppColors.textPrimary))),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Submit Button
-                  _buildSubmitButton(),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -351,39 +358,36 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.check_circle, color: AppColors.success, size: 50),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.check_circle, color: AppColors.success, size: 50),
+                ),
+                const SizedBox(height: 20),
+                const Text('Registration Successful!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                const SizedBox(height: 10),
+                const Text('Your vehicle has been added successfully.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            const Text('Registration Successful!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 10),
-            const Text(
-              'Your vehicle has been added successfully.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -410,22 +414,22 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     }
   }
 
-  IconData _getVehicleIcon(String vehicleType) {
+  String _getVehicleIcon(String vehicleType) {
     switch (vehicleType.toLowerCase()) {
       case 'small truck':
-        return Icons.local_shipping;
+        return 'assets/vehicle_types/small_truck.svg';
       case 'medium truck':
-        return Icons.fire_truck;
+        return 'assets/vehicle_types/medium_truck.svg';
       case 'large truck':
-        return Icons.airport_shuttle;
+        return 'assets/vehicle_types/large_truck.svg';
       case 'container truck':
-        return Icons.rv_hookup;
+        return 'assets/vehicle_types/container_truck.svg';
       case 'trailer':
-        return Icons.directions_bus;
+        return 'assets/vehicle_types/trailer.svg';
       case 'mini truck':
-        return Icons.delivery_dining;
+        return 'assets/vehicle_types/mini_truck.svg';
       default:
-        return Icons.local_shipping;
+        return 'assets/vehicle_types/small_truck.svg';
     }
   }
 
@@ -504,12 +508,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
               onChanged: onChanged,
               items:
-              items.map<DropdownMenuItem<T>>((T item) {
-                return DropdownMenuItem<T>(
-                  value: item,
-                  child: Text(displayBuilder(item)),
-                );
-              }).toList(),
+                  items.map<DropdownMenuItem<T>>((T item) {
+                    return DropdownMenuItem<T>(value: item, child: Text(displayBuilder(item)));
+                  }).toList(),
             ),
           ),
         ),
