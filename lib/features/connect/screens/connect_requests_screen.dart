@@ -1,32 +1,31 @@
+// lib/features/connect/screens/connect_requests_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:truck_app/core/theme/app_colors.dart';
+import 'package:truck_app/features/connect/bloc/connect_request_bloc.dart';
+import 'package:truck_app/features/connect/model/connect_request.dart';
+import 'package:truck_app/features/connect/widgets/connect_request_card.dart';
+import 'package:truck_app/features/connect/utils/connect_request_helper.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../model/connect_request.dart';
-import '../bloc/connect_request_bloc.dart';
-import '../utils/connect_request_helper.dart';
-import '../widgets/connect_request_card.dart';
-
-class ConnectScreen extends StatefulWidget {
-  const ConnectScreen({super.key});
+class ConnectRequestsScreen extends StatefulWidget {
+  const ConnectRequestsScreen({super.key});
 
   @override
-  State<ConnectScreen> createState() => _ConnectScreenState();
+  State<ConnectRequestsScreen> createState() => _ConnectRequestsScreenState();
 }
 
-class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateMixin {
+class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  
-  // State for API data
-  List<ConnectRequest> _requests = [];
+  List<ConnectRequest> _allRequests = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-
-    // Fetch from API
+    _tabController = TabController(length: 4, vsync: this);
+    
+    // Fetch connection requests on init
     ConnectRequestHelper.fetchRequests(
       context: context,
       page: 1,
@@ -43,7 +42,17 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
   void _showSnackBar(String message, {bool isSuccess = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(children: [Icon(isSuccess ? Icons.check_circle : Icons.error, color: Colors.white, size: 20), const SizedBox(width: 8), Expanded(child: Text(message))]),
+        content: Row(
+          children: [
+            Icon(
+              isSuccess ? Icons.check_circle : Icons.error,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
         backgroundColor: isSuccess ? AppColors.success : AppColors.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -53,7 +62,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 
-  void _handleAcceptRequest(ConnectRequest request) {
+  void _handleAccept(ConnectRequest request) {
     ConnectRequestHelper.respondToRequest(
       context: context,
       requestId: request.id!,
@@ -61,16 +70,14 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 
-  void _handleRejectRequest(ConnectRequest request) {
+  void _handleReject(ConnectRequest request) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Reject Request?'),
-          content: Text(
-            'Are you sure you want to reject the connection request from ${request.requester?.name ?? 'this user'}?',
-          ),
+          content: Text('Are you sure you want to reject the connection request from ${request.requester?.name ?? 'this user'}?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -97,16 +104,14 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 
-  void _handleDeleteRequest(ConnectRequest request) {
+  void _handleDelete(ConnectRequest request) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Delete Request?'),
-          content: const Text(
-            'Are you sure you want to delete this connection request? This action cannot be undone.',
-          ),
+          content: const Text('Are you sure you want to delete this connection request? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -139,16 +144,11 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 
-  // Helper to filter requests based on tab
   List<ConnectRequest> _getFilteredRequests(ConnectRequestStatus? filterStatus) {
     if (filterStatus == null) {
-      return _requests; // All
-    } else if (filterStatus == ConnectRequestStatus.pending) {
-      return _requests.where((r) => r.status == ConnectRequestStatus.pending || r.status == ConnectRequestStatus.rejected).toList();
-    } else if (filterStatus == ConnectRequestStatus.accepted) {
-      return _requests.where((r) => r.status == ConnectRequestStatus.accepted).toList();
+      return _allRequests;
     }
-    return [];
+    return _allRequests.where((r) => r.status == filterStatus).toList();
   }
 
   int _getTabCount(ConnectRequestStatus? filterStatus) {
@@ -160,10 +160,35 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Connections', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 20)),
+        title: const Text(
+          'Connection Requests',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary, size: 20),
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           IconButton(
             icon: Container(
@@ -171,7 +196,13 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 20),
             ),
@@ -188,7 +219,13 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: TabBar(
               controller: _tabController,
@@ -197,56 +234,28 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               unselectedLabelColor: AppColors.textSecondary,
               dividerHeight: 0,
               indicator: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               indicatorPadding: const EdgeInsets.all(2),
-              labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
               tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('All'),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                        child: Text('${_getTabCount(null)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-                      ),
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                     children: [
-                       const Text('Pending'),
-                       const SizedBox(width: 4),
-                       Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                         decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                         child: Text('${_getTabCount(ConnectRequestStatus.pending)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-                       ),
-                     ],
-                   ),
-                 ),
-                 Tab(
-                   child: Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                     children: [
-                       const Text('Accepted'),
-                       const SizedBox(width: 4),
-                       Container(
-                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                         decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                         child: Text('${_getTabCount(ConnectRequestStatus.accepted)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildTab('All', _getTabCount(null)),
+                _buildTab('Pending', _getTabCount(ConnectRequestStatus.pending)),
+                _buildTab('Accepted', _getTabCount(ConnectRequestStatus.accepted)),
+                _buildTab('Rejected', _getTabCount(ConnectRequestStatus.rejected)),
               ],
             ),
           ),
@@ -256,16 +265,19 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         listener: (context, state) {
           if (state is ConnectRequestsLoaded) {
             setState(() {
-              _requests = state.requests;
+              _allRequests = state.requests;
               _isLoading = false;
             });
           } else if (state is ConnectRequestLoading) {
             setState(() {
               _isLoading = true;
             });
+          } else if (state is ConnectRequestSent) {
+            _showSnackBar('Connection request sent successfully! 🎉');
+            ConnectRequestHelper.refreshRequests(context: context);
           } else if (state is ConnectRequestResponded) {
             final action = state.action == 'accept' ? 'accepted' : 'rejected';
-            _showSnackBar('Connection request $action!', isSuccess: state.action == 'accept');
+            _showSnackBar('Connection request $action successfully!', isSuccess: state.action == 'accept');
             ConnectRequestHelper.refreshRequests(context: context);
           } else if (state is ConnectRequestDeleted) {
             _showSnackBar('Connection request deleted successfully!');
@@ -282,17 +294,41 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         child: TabBarView(
           controller: _tabController,
           children: [
-            _buildRequestsList(null), // All requests
-            _buildRequestsList(ConnectRequestStatus.pending), // Pending/Rejected
-            _buildRequestsList(ConnectRequestStatus.accepted), // Accepted
+            _buildRequestsList(null),
+            _buildRequestsList(ConnectRequestStatus.pending),
+            _buildRequestsList(ConnectRequestStatus.accepted),
+            _buildRequestsList(ConnectRequestStatus.rejected),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildTab(String label, int count) {
+    return Tab(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label),
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.textSecondary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRequestsList(ConnectRequestStatus? filterStatus) {
-    if (_isLoading && _requests.isEmpty) {
+    if (_isLoading && _allRequests.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -303,7 +339,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
             ),
             const SizedBox(height: 16),
             Text(
-              'Loading connections...',
+              'Loading requests...',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 14,
@@ -338,9 +374,9 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
             transform: Matrix4.translationValues(0, 0, 0),
             child: ConnectRequestCard(
               request: request,
-              onAccept: () => _handleAcceptRequest(request),
-              onReject: () => _handleRejectRequest(request),
-              onDelete: () => _handleDeleteRequest(request),
+              onAccept: () => _handleAccept(request),
+              onReject: () => _handleReject(request),
+              onDelete: () => _handleDelete(request),
               onViewContacts: () => _handleViewContacts(request),
             ),
           );
@@ -350,6 +386,32 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
   }
 
   Widget _buildEmptyState(ConnectRequestStatus? filterStatus) {
+    IconData icon;
+    String title;
+    String message;
+
+    switch (filterStatus) {
+      case ConnectRequestStatus.pending:
+        icon = Icons.hourglass_empty_rounded;
+        title = 'No Pending Requests';
+        message = 'All connection requests have been\nhandled. Great job!';
+        break;
+      case ConnectRequestStatus.accepted:
+        icon = Icons.celebration_rounded;
+        title = 'No Accepted Requests';
+        message = 'Accepted connections will appear here.\nStart connecting with others!';
+        break;
+      case ConnectRequestStatus.rejected:
+        icon = Icons.block_rounded;
+        title = 'No Rejected Requests';
+        message = 'Rejected connection requests\nwill appear here.';
+        break;
+      default:
+        icon = Icons.connect_without_contact_rounded;
+        title = 'No Requests Yet';
+        message = 'Your connection requests will appear here\nonce you start networking.';
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -358,54 +420,39 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.textSecondary.withOpacity(0.1), AppColors.textSecondary.withOpacity(0.05)],
+                colors: [
+                  AppColors.textSecondary.withOpacity(0.1),
+                  AppColors.textSecondary.withOpacity(0.05),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(_getEmptyStateIcon(filterStatus), size: 60, color: AppColors.textSecondary.withOpacity(0.6)),
+            child: Icon(
+              icon,
+              size: 60,
+              color: AppColors.textSecondary.withOpacity(0.6),
+            ),
           ),
           const SizedBox(height: 20),
-          Text(_getEmptyStateTitle(filterStatus), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(_getEmptyStateMessage(filterStatus), style: TextStyle(fontSize: 14, color: AppColors.textSecondary), textAlign: TextAlign.center),
+          Text(
+            message,
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
-  }
-
-  IconData _getEmptyStateIcon(ConnectRequestStatus? filterStatus) {
-    switch (filterStatus) {
-      case ConnectRequestStatus.pending:
-        return Icons.hourglass_empty_rounded;
-      case ConnectRequestStatus.accepted:
-        return Icons.celebration_rounded;
-      default:
-        return Icons.connect_without_contact_rounded;
-    }
-  }
-
-  String _getEmptyStateTitle(ConnectRequestStatus? filterStatus) {
-    switch (filterStatus) {
-      case ConnectRequestStatus.pending:
-        return 'No Pending Connections';
-      case ConnectRequestStatus.accepted:
-        return 'No Accepted Connections';
-      default:
-        return 'No Connections Yet';
-    }
-  }
-
-  String _getEmptyStateMessage(ConnectRequestStatus? filterStatus) {
-    switch (filterStatus) {
-      case ConnectRequestStatus.pending:
-        return 'All connection requests have been\nhandled. Great job!';
-      case ConnectRequestStatus.accepted:
-        return 'No accepted connections yet.\nStart connecting with others!';
-      default:
-        return 'Your connections will appear here\nonce you start networking.';
-    }
   }
 
   void _showContactDetailsDialog(ContactDetails contactDetails) {
@@ -540,3 +587,4 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 }
+

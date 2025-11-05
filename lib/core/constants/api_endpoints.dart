@@ -1,8 +1,8 @@
 class ApiEndpoints {
-  static const String baseDevelopmentUrl = 'https://truck-api-qyew.onrender.com/';
+  static const String baseDevelopmentUrl = 'http://10.0.2.2:3000/';
   static const String baseProductionUrl = 'https://truck-api-qyew.onrender.com/';
 
-  static const String baseUrl = baseProductionUrl;
+  static const String baseUrl = baseDevelopmentUrl;
 
   static const String sendOTP = 'api/v1/auth/request-otp';
   static const String verifyOTP = 'api/v1/auth/verify-otp';
@@ -27,4 +27,7 @@ class ApiEndpoints {
   static const String getConnections = 'api/v1/connections';
   static const String createConnection = 'api/v1/connections';
   static const String updateConnectionStatus = 'api/v1/connections';
+
+  // Connect Requests endpoints
+  static const String connectRequests = 'api/v1/connect-requests';
 }

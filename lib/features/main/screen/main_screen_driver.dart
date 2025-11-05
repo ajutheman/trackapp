@@ -23,7 +23,7 @@ class _MainScreenDriverState extends State<MainScreenDriver>
   // List of screens to be displayed in the BottomNavigationBar for users
   final List<Widget> _screens = [
     const HomeScreenDriver(),
-    ConnectScreen(connections: DummyData.driverConnections),
+    ConnectScreen(),
     AddPostScreen(),
     MyPostsScreen(),
     const ProfileScreenDriver(),
@@ -74,7 +74,7 @@ class _MainScreenDriverState extends State<MainScreenDriver>
               _buildNavItem(Icons.home_rounded, Icons.home_outlined, 'Home', 0),
               _buildNavItem(Icons.chat_bubble_rounded, Icons.chat_bubble_outline, 'Connections', 1),
               const SizedBox(width: 48), // Space for FAB
-              _buildNavItem(Icons.description_rounded, Icons.description_outlined, 'My Posts', 3),
+              _buildNavItem(Icons.description_rounded, Icons.description_outlined, 'My Trips', 3),
               _buildNavItem(Icons.person_rounded, Icons.person_outline, 'Account', 4),
             ],
           ),

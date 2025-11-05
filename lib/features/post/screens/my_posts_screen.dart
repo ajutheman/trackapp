@@ -185,7 +185,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white, Colors.white.withOpacity(0.95)], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
         ),
         centerTitle: true,
-        title: Text('My Posts', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 22, letterSpacing: -0.5)),
+        title: Text('My Trips', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 22, letterSpacing: -0.5)),
       ),
       body:
           _myPosts.isEmpty

@@ -10,6 +10,8 @@ import '../model/post.dart';
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart';
 import '../bloc/posts_bloc.dart';
+import '../../post/screens/my_posts_screen.dart';
+import '../../post/screens/add_post_screen.dart';
 
 // Placeholder for a simple ConnectCard for Recent Connects
 
@@ -23,14 +25,18 @@ class HomeScreenUser extends StatefulWidget {
 class _HomeScreenUserState extends State<HomeScreenUser> {
   // Posts from API will be managed by BLoC
   List<Post> _posts = [];
+  List<Post> _myPosts = [];
   bool _isLoading = false;
+  bool _isLoadingMyPosts = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // Fetch posts when the screen initializes
+    // Fetch all posts when the screen initializes
     context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+    // Also fetch user's own posts
+    context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 10));
   }
 
   @override
@@ -46,6 +52,11 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               _isLoading = false;
               _errorMessage = null;
             });
+          } else if (state is UserPostsLoaded) {
+            setState(() {
+              _myPosts = state.posts;
+              _isLoadingMyPosts = false;
+            });
           } else if (state is PostsLoading) {
             setState(() {
               _isLoading = true;
@@ -56,14 +67,25 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               _isLoading = false;
               _errorMessage = state.message;
             });
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+            // Only show snackbar for critical errors, not for empty results
+            if (!state.message.toLowerCase().contains('no posts') && !state.message.toLowerCase().contains('empty')) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+            }
           }
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildSearchBox(), const SizedBox(height: 24), _buildRecentConnectsSection(), const SizedBox(height: 24), _buildListOfPostsSection()],
+            children: [
+              _buildSearchBox(),
+              const SizedBox(height: 24),
+              _buildRecentConnectsSection(),
+              const SizedBox(height: 24),
+              _buildMyPostsSection(),
+              const SizedBox(height: 24),
+              _buildListOfPostsSection(),
+            ],
           ),
         ),
       ),
@@ -190,8 +212,134 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     );
   }
 
+  Widget _buildMyPostsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.description_rounded, color: AppColors.secondary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text('My Posts', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            const Spacer(),
+            if (_myPosts.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  // Navigate to My Posts Screen
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPostsScreen()));
+                },
+                child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+            const SizedBox(width: 4),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 10));
+                },
+                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+                tooltip: 'Refresh',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_isLoadingMyPosts)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40.0),
+              child: Column(
+                children: [
+                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
+                  const SizedBox(height: 16),
+                  Text('Loading your posts...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+          )
+        else if (_myPosts.isEmpty)
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.surface, AppColors.surface.withOpacity(0.5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.05)]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.post_add_rounded, color: AppColors.secondary, size: 56),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('No Posts Yet', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text('Start by creating your first post', style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Navigate to add post screen
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPostScreen()));
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 20),
+                      label: const Text('Create Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 260,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              itemCount: _myPosts.length > 5 ? 5 : _myPosts.length, // Show max 5 posts
+              itemBuilder: (context, index) {
+                return Container(width: 320, margin: const EdgeInsets.only(right: 16), child: PostCard(post: _myPosts[index]));
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildListOfPostsSection() {
-    print(_errorMessage);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

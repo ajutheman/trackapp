@@ -22,7 +22,7 @@ class _MainScreenUserState extends State<MainScreenUser> {
   // List of screens to be displayed in the BottomNavigationBar for users
   final List<Widget> _screens = [
     const HomeScreenUser(),
-    ConnectScreen(connections: DummyData.userConnections),
+    ConnectScreen(),
     AddPostScreen(),
     MyPostsScreen(),
     const ProfileScreenUser(),
