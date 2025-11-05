@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
+import 'package:truck_app/features/connect/screens/my_friends_screen.dart';
 import 'package:truck_app/features/post/screens/my_posts_screen.dart';
 import 'package:truck_app/features/profile/model/profile.dart';
 import 'package:truck_app/features/profile/repo/profile_repo.dart';
@@ -186,6 +187,8 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
               icon: Icons.directions_car_filled_outlined,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VehicleListScreen())),
             ),
+            const SizedBox(height: 12),
+            _buildActionButton(label: 'My Friends', icon: Icons.people_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyFriendsScreen()))),
             const SizedBox(height: 12),
             _buildActionButton(
               label: 'Terms and Conditions',

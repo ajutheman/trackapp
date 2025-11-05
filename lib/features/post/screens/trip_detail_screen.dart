@@ -35,9 +35,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       });
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message ?? 'Failed to load trip details')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message ?? 'Failed to load trip details')));
         Navigator.of(context).pop();
       }
     }
@@ -93,10 +91,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: (trip.isActive ?? true) ? Colors.green.shade200 : Colors.orange.shade200,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: (trip.isActive ?? true) ? Colors.green.shade200 : Colors.orange.shade200, width: 1.5),
                 ),
                 child: Row(
                   children: [
@@ -111,17 +106,9 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         children: [
                           Text(
                             trip.status?.name ?? ((trip.isActive ?? true) ? 'Active' : 'Inactive'),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: (trip.isActive ?? true) ? Colors.green.shade700 : Colors.orange.shade700,
-                            ),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: (trip.isActive ?? true) ? Colors.green.shade700 : Colors.orange.shade700),
                           ),
-                          if (trip.status?.description != null)
-                            Text(
-                              trip.status!.description,
-                              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                            ),
+                          if (trip.status?.description != null) Text(trip.status!.description, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                         ],
                       ),
                     ),
@@ -156,10 +143,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade700]),
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade700]), shape: BoxShape.circle),
                           child: const Icon(Icons.my_location_rounded, size: 20, color: Colors.white),
                         ),
                         const SizedBox(width: 12),
@@ -188,32 +172,31 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   // Via Routes
                   if (trip.viaRoutes != null && trip.viaRoutes!.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    ...trip.viaRoutes!.map((via) => Padding(
-                          padding: const EdgeInsets.only(left: 20, bottom: 12),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.secondary.withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.route_rounded, size: 16, color: AppColors.secondary),
+                    ...trip.viaRoutes!.map(
+                      (via) => Padding(
+                        padding: const EdgeInsets.only(left: 20, bottom: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: AppColors.secondary.withOpacity(0.2), shape: BoxShape.circle),
+                              child: Icon(Icons.route_rounded, size: 16, color: AppColors.secondary),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('VIA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.secondary, letterSpacing: 1)),
+                                  const SizedBox(height: 4),
+                                  Text(via.address ?? 'Via Location', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                ],
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('VIA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.secondary, letterSpacing: 1)),
-                                    const SizedBox(height: 4),
-                                    Text(via.address ?? 'Via Location', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
 
                   const SizedBox(height: 12),
@@ -229,10 +212,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.red.shade600, Colors.red.shade700]),
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.shade600, Colors.red.shade700]), shape: BoxShape.circle),
                           child: const Icon(Icons.location_on_rounded, size: 20, color: Colors.white),
                         ),
                         const SizedBox(width: 12),
@@ -285,14 +265,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   _buildInfoRow('Start Date & Time', _formatDateTime(trip.tripStartDate), Icons.calendar_today_outlined),
                   const SizedBox(height: 12),
                   _buildInfoRow('End Date & Time', _formatDateTime(trip.tripEndDate), Icons.event_outlined),
-                  if (trip.distance != null) ...[
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Distance', trip.distance!.text, Icons.route_rounded),
-                  ],
-                  if (trip.duration != null) ...[
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Duration', trip.duration!.text, Icons.access_time_rounded),
-                  ],
+                  if (trip.distance != null) ...[const SizedBox(height: 12), _buildInfoRow('Distance', trip.distance!.text, Icons.route_rounded)],
+                  if (trip.duration != null) ...[const SizedBox(height: 12), _buildInfoRow('Duration', trip.duration!.text, Icons.access_time_rounded)],
                 ],
               ),
             ),
@@ -329,10 +303,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     const SizedBox(height: 12),
                     _buildInfoRow('Driver Phone', trip.driver!.phone, Icons.phone_outlined),
                   ],
-                  if (trip.tripAddedBy != null) ...[
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Trip Created By', trip.tripAddedBy!.name, Icons.person_add_outlined),
-                  ],
+                  if (trip.tripAddedBy != null) ...[const SizedBox(height: 12), _buildInfoRow('Trip Created By', trip.tripAddedBy!.name, Icons.person_add_outlined)],
                 ],
               ),
             ),
@@ -361,10 +332,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       _buildInfoRow('Description', trip.goodsTypeDetails!.description, Icons.info_outlined),
                     ],
                   ],
-                  if (trip.weight != null) ...[
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Weight', '${trip.weight} kg', Icons.scale_outlined),
-                  ],
+                  if (trip.weight != null) ...[const SizedBox(height: 12), _buildInfoRow('Weight', '${trip.weight} kg', Icons.scale_outlined)],
                 ],
               ),
             ),
@@ -389,14 +357,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   _buildInfoRow('Post Type', trip.postType ?? 'N/A', Icons.category_outlined),
                   const SizedBox(height: 12),
                   _buildInfoRow('Created At', _formatDateTime(trip.createdAt), Icons.calendar_today_outlined),
-                  if (trip.updatedAt != null) ...[
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Last Updated', _formatDateTime(trip.updatedAt), Icons.update_outlined),
-                  ],
-                  if (trip.isStarted != null) ...[
-                    const SizedBox(height: 12),
-                    _buildInfoRow('Trip Started', trip.isStarted == true ? 'Yes' : 'No', Icons.play_circle_outline),
-                  ],
+                  if (trip.updatedAt != null) ...[const SizedBox(height: 12), _buildInfoRow('Last Updated', _formatDateTime(trip.updatedAt), Icons.update_outlined)],
+                  if (trip.isStarted != null) ...[const SizedBox(height: 12), _buildInfoRow('Trip Started', trip.isStarted == true ? 'Yes' : 'No', Icons.play_circle_outline)],
                 ],
               ),
             ),
@@ -414,10 +376,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.secondary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: AppColors.secondary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, size: 18, color: AppColors.secondary),
         ),
         const SizedBox(width: 12),
