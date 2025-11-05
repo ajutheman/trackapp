@@ -41,16 +41,22 @@ class PostsRepository {
   }
 
   /// Fetches posts created by the current user.
-  Future<Result<List<Post>>> getUserPosts({int? page, int? limit}) async {
+  Future<Result<List<Post>>> getUserPosts({int? page, int? limit, String? status, String? search, String? dateFrom, String? dateTo, bool? includeAssigned}) async {
     final queryParams = <String, dynamic>{};
     if (page != null) queryParams['page'] = page;
     if (limit != null) queryParams['limit'] = limit;
+    if (status != null) queryParams['status'] = status;
+    if (search != null) queryParams['search'] = search;
+    if (dateFrom != null) queryParams['dateFrom'] = dateFrom;
+    if (dateTo != null) queryParams['dateTo'] = dateTo;
+    if (includeAssigned != null) queryParams['includeAssigned'] = includeAssigned.toString();
 
     final result = await apiService.get(ApiEndpoints.getUserPosts, queryParams: queryParams.isNotEmpty ? queryParams : null, isTokenRequired: true);
 
     if (result.isSuccess) {
       try {
-        final List<dynamic> postsData = result.data is List ? result.data : (result.data['posts'] ?? result.data['data'] ?? []);
+        // Backend returns trips directly as a list, or wrapped in data
+        final List<dynamic> postsData = result.data is List ? result.data : (result.data['trips'] ?? result.data['data'] ?? []);
 
         final List<Post> posts = postsData.map((postJson) => Post.fromJson(postJson as Map<String, dynamic>)).toList();
 
@@ -186,13 +192,33 @@ class PostsRepository {
 
     if (result.isSuccess) {
       try {
-        final Post post = Post.fromJson(result.data as Map<String, dynamic>);
+        // Backend may return trip wrapped in 'trip' key
+        final Map<String, dynamic> tripData = result.data is Map ? result.data : (result.data['trip'] ?? result.data);
+        final Post post = Post.fromJson(tripData);
         return Result.success(post);
       } catch (e) {
         return Result.error('Failed to parse post data: ${e.toString()}');
       }
     } else {
       return Result.error(result.message ?? 'Failed to fetch post');
+    }
+  }
+
+  /// Updates trip status (isActive)
+  Future<Result<Post>> updateTripStatus({required String tripId, required bool isActive}) async {
+    final result = await apiService.put('${ApiEndpoints.updatePost}/$tripId', body: {'isActive': isActive}, isTokenRequired: true);
+
+    if (result.isSuccess) {
+      try {
+        // Backend may return trip wrapped in 'trip' key
+        final Map<String, dynamic> tripData = result.data is Map ? result.data : (result.data['trip'] ?? result.data);
+        final Post post = Post.fromJson(tripData);
+        return Result.success(post);
+      } catch (e) {
+        return Result.error('Failed to parse updated trip: ${e.toString()}');
+      }
+    } else {
+      return Result.error(result.message ?? 'Failed to update trip status');
     }
   }
 }

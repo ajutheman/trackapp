@@ -30,11 +30,16 @@ class FetchAllPosts extends PostsEvent {
 class FetchUserPosts extends PostsEvent {
   final int? page;
   final int? limit;
+  final String? status;
+  final String? search;
+  final String? dateFrom;
+  final String? dateTo;
+  final bool? includeAssigned;
 
-  const FetchUserPosts({this.page, this.limit});
+  const FetchUserPosts({this.page, this.limit, this.status, this.search, this.dateFrom, this.dateTo, this.includeAssigned});
 
   @override
-  List<Object> get props => [page ?? 0, limit ?? 0];
+  List<Object> get props => [page ?? 0, limit ?? 0, status ?? '', search ?? '', dateFrom ?? '', dateTo ?? '', includeAssigned ?? false];
 }
 
 /// Event to create a new post
@@ -163,6 +168,17 @@ class DeletePost extends PostsEvent {
   List<Object> get props => [postId];
 }
 
+/// Event to toggle post/trip status (active/inactive)
+class TogglePostStatus extends PostsEvent {
+  final String postId;
+  final bool isActive;
+
+  const TogglePostStatus({required this.postId, required this.isActive});
+
+  @override
+  List<Object> get props => [postId, isActive];
+}
+
 /// Event to refresh posts
 class RefreshPosts extends PostsEvent {
   final String? postType;
@@ -263,6 +279,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
     on<CreatePost>(_onCreatePost);
     on<UpdatePost>(_onUpdatePost);
     on<DeletePost>(_onDeletePost);
+    on<TogglePostStatus>(_onTogglePostStatus);
     on<RefreshPosts>(_onRefreshPosts);
   }
 
@@ -292,7 +309,15 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
     emit(PostsLoading());
 
     try {
-      final result = await repository.getUserPosts(page: event.page, limit: event.limit);
+      final result = await repository.getUserPosts(
+        page: event.page,
+        limit: event.limit,
+        status: event.status,
+        search: event.search,
+        dateFrom: event.dateFrom,
+        dateTo: event.dateTo,
+        includeAssigned: event.includeAssigned,
+      );
 
       if (result.isSuccess) {
         emit(UserPostsLoaded(posts: result.data!, hasMore: result.data!.length >= (event.limit ?? 10), currentPage: event.page ?? 1));
@@ -378,6 +403,22 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
 
       if (result.isSuccess) {
         emit(PostDeleted(postId: event.postId));
+      } else {
+        emit(PostsError(message: result.message!));
+      }
+    } catch (e) {
+      emit(PostsError(message: 'An error occurred: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onTogglePostStatus(TogglePostStatus event, Emitter<PostsState> emit) async {
+    emit(PostsLoading());
+
+    try {
+      final result = await repository.updateTripStatus(tripId: event.postId, isActive: event.isActive);
+
+      if (result.isSuccess) {
+        emit(PostUpdated(post: result.data!));
       } else {
         emit(PostsError(message: result.message!));
       }

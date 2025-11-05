@@ -5,8 +5,11 @@ import '../model/post.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onToggleStatus;
 
-  const PostCard({super.key, required this.post});
+  const PostCard({super.key, required this.post, this.onEdit, this.onDelete, this.onToggleStatus});
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -385,49 +388,90 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                           // Action Buttons
                           Row(
                             children: [
-                              Expanded(
-                                flex: 2,
-                                child: AnimatedBuilder(
-                                  animation: _pulseAnimation,
-                                  builder: (context, child) {
-                                    return Transform.scale(
-                                      scale: _pulseAnimation.value,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
-                                          borderRadius: BorderRadius.circular(14),
-                                          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
-                                        ),
-                                        child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            _pulseController.forward().then((_) => _pulseController.reverse());
-                                            _showSuccessDialog(context);
-                                          },
-                                          icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
-                                          label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.transparent,
-                                            shadowColor: Colors.transparent,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                            padding: const EdgeInsets.symmetric(vertical: 14),
+                              // Show edit/delete/toggle buttons if callbacks are provided (for my posts screen)
+                              if (widget.onEdit != null || widget.onDelete != null || widget.onToggleStatus != null) ...[
+                                if (widget.onEdit != null)
+                                  Container(
+                                    decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
+                                    child: IconButton(
+                                      onPressed: widget.onEdit,
+                                      icon: Icon(Icons.edit_outlined, color: AppColors.secondary, size: 22),
+                                      style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                    ),
+                                  ),
+                                if (widget.onEdit != null && (widget.onDelete != null || widget.onToggleStatus != null)) const SizedBox(width: 10),
+                                if (widget.onToggleStatus != null)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: (widget.post.isActive ?? true) ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3), width: 1.5),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: IconButton(
+                                      onPressed: widget.onToggleStatus,
+                                      icon: Icon(
+                                        (widget.post.isActive ?? true) ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                        color: (widget.post.isActive ?? true) ? Colors.green : Colors.orange,
+                                        size: 22,
+                                      ),
+                                      style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                    ),
+                                  ),
+                                if (widget.onToggleStatus != null && widget.onDelete != null) const SizedBox(width: 10),
+                                if (widget.onDelete != null)
+                                  Container(
+                                    decoration: BoxDecoration(border: Border.all(color: Colors.red.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
+                                    child: IconButton(
+                                      onPressed: widget.onDelete,
+                                      icon: Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22),
+                                      style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                    ),
+                                  ),
+                              ] else ...[
+                                // Default action buttons for regular posts
+                                Expanded(
+                                  flex: 2,
+                                  child: AnimatedBuilder(
+                                    animation: _pulseAnimation,
+                                    builder: (context, child) {
+                                      return Transform.scale(
+                                        scale: _pulseAnimation.value,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
+                                            borderRadius: BorderRadius.circular(14),
+                                            boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                                          ),
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              _pulseController.forward().then((_) => _pulseController.reverse());
+                                              _showSuccessDialog(context);
+                                            },
+                                            icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
+                                            label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.transparent,
+                                              shadowColor: Colors.transparent,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  },
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
-                                child: IconButton(
-                                  onPressed: () {
-                                    // Handle view details
-                                  },
-                                  icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
-                                  style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                const SizedBox(width: 10),
+                                Container(
+                                  decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
+                                  child: IconButton(
+                                    onPressed: () {
+                                      // Handle view details
+                                    },
+                                    icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
+                                    style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ],
