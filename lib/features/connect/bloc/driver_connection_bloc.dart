@@ -37,10 +37,7 @@ class RespondToFriendRequest extends DriverConnectionEvent {
   final String connectionId;
   final String action; // 'accept' or 'reject'
 
-  const RespondToFriendRequest({
-    required this.connectionId,
-    required this.action,
-  });
+  const RespondToFriendRequest({required this.connectionId, required this.action});
 
   @override
   List<Object?> get props => [connectionId, action];
@@ -80,10 +77,7 @@ class FriendRequestsLoaded extends DriverConnectionState {
   final List<DriverConnection> requests;
   final String type;
 
-  const FriendRequestsLoaded({
-    required this.requests,
-    required this.type,
-  });
+  const FriendRequestsLoaded({required this.requests, required this.type});
 
   @override
   List<Object?> get props => [requests, type];
@@ -111,10 +105,7 @@ class FriendRequestResponded extends DriverConnectionState {
   final DriverConnection connection;
   final String action;
 
-  const FriendRequestResponded({
-    required this.connection,
-    required this.action,
-  });
+  const FriendRequestResponded({required this.connection, required this.action});
 
   @override
   List<Object?> get props => [connection, action];
@@ -152,10 +143,7 @@ class DriverConnectionBloc extends Bloc<DriverConnectionEvent, DriverConnectionS
     on<RefreshDriverConnections>(_onRefreshDriverConnections);
   }
 
-  Future<void> _onSendFriendRequest(
-    SendFriendRequest event,
-    Emitter<DriverConnectionState> emit,
-  ) async {
+  Future<void> _onSendFriendRequest(SendFriendRequest event, Emitter<DriverConnectionState> emit) async {
     emit(DriverConnectionLoading());
 
     try {
@@ -171,10 +159,7 @@ class DriverConnectionBloc extends Bloc<DriverConnectionEvent, DriverConnectionS
     }
   }
 
-  Future<void> _onFetchFriendRequests(
-    FetchFriendRequests event,
-    Emitter<DriverConnectionState> emit,
-  ) async {
+  Future<void> _onFetchFriendRequests(FetchFriendRequests event, Emitter<DriverConnectionState> emit) async {
     emit(DriverConnectionLoading());
 
     try {
@@ -190,17 +175,11 @@ class DriverConnectionBloc extends Bloc<DriverConnectionEvent, DriverConnectionS
     }
   }
 
-  Future<void> _onRespondToFriendRequest(
-    RespondToFriendRequest event,
-    Emitter<DriverConnectionState> emit,
-  ) async {
+  Future<void> _onRespondToFriendRequest(RespondToFriendRequest event, Emitter<DriverConnectionState> emit) async {
     emit(DriverConnectionLoading());
 
     try {
-      final result = await repository.respondToFriendRequest(
-        connectionId: event.connectionId,
-        action: event.action,
-      );
+      final result = await repository.respondToFriendRequest(connectionId: event.connectionId, action: event.action);
 
       if (result.isSuccess) {
         emit(FriendRequestResponded(connection: result.data!, action: event.action));
@@ -212,10 +191,7 @@ class DriverConnectionBloc extends Bloc<DriverConnectionEvent, DriverConnectionS
     }
   }
 
-  Future<void> _onFetchFriendsList(
-    FetchFriendsList event,
-    Emitter<DriverConnectionState> emit,
-  ) async {
+  Future<void> _onFetchFriendsList(FetchFriendsList event, Emitter<DriverConnectionState> emit) async {
     emit(DriverConnectionLoading());
 
     try {
@@ -231,10 +207,7 @@ class DriverConnectionBloc extends Bloc<DriverConnectionEvent, DriverConnectionS
     }
   }
 
-  Future<void> _onRemoveFriend(
-    RemoveFriend event,
-    Emitter<DriverConnectionState> emit,
-  ) async {
+  Future<void> _onRemoveFriend(RemoveFriend event, Emitter<DriverConnectionState> emit) async {
     emit(DriverConnectionLoading());
 
     try {
@@ -250,14 +223,33 @@ class DriverConnectionBloc extends Bloc<DriverConnectionEvent, DriverConnectionS
     }
   }
 
-  Future<void> _onRefreshDriverConnections(
-    RefreshDriverConnections event,
-    Emitter<DriverConnectionState> emit,
-  ) async {
-    // Fetch both friends list and requests
-    add(const FetchFriendsList());
-    add(const FetchFriendRequests(type: 'received'));
-    add(const FetchFriendRequests(type: 'sent'));
+  Future<void> _onRefreshDriverConnections(RefreshDriverConnections event, Emitter<DriverConnectionState> emit) async {
+    // Fetch all data sequentially to ensure proper state emissions
+    emit(DriverConnectionLoading());
+
+    try {
+      // Fetch friends list
+      final friendsResult = await repository.getFriendsList();
+      if (friendsResult.isSuccess) {
+        emit(FriendsListLoaded(friends: friendsResult.data!));
+      } else {
+        emit(DriverConnectionError(message: friendsResult.message ?? 'Failed to refresh friends list'));
+        return;
+      }
+
+      // Fetch received requests
+      final receivedResult = await repository.getFriendRequests(type: 'received');
+      if (receivedResult.isSuccess) {
+        emit(FriendRequestsLoaded(requests: receivedResult.data!, type: 'received'));
+      }
+
+      // Fetch sent requests
+      final sentResult = await repository.getFriendRequests(type: 'sent');
+      if (sentResult.isSuccess) {
+        emit(FriendRequestsLoaded(requests: sentResult.data!, type: 'sent'));
+      }
+    } catch (e) {
+      emit(DriverConnectionError(message: 'Failed to refresh connections: ${e.toString()}'));
+    }
   }
 }
-
