@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:intl/intl.dart'; // For date and time formatting
+import 'package:intl/intl.dart';
 import 'package:truck_app/features/post/screens/map_point_selector.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/home/utils/posts_api_helper.dart';
+import 'package:truck_app/features/vehicle/repo/vehicle_repo.dart';
+import 'package:truck_app/features/vehicle/repo/vehicle_metadata_repo.dart';
+import 'package:truck_app/features/vehicle/model/vehicle.dart' as VehicleModel;
+import 'package:truck_app/features/vehicle/model/vehicle_metadata.dart';
+import 'package:truck_app/services/network/api_service.dart';
 
-// Assuming AppColors is defined in this path
 import '../../../core/theme/app_colors.dart';
+import '../../../di/locator.dart';
 
 class AddPostScreen extends StatefulWidget {
   const AddPostScreen({super.key});
@@ -26,15 +31,22 @@ class _AddPostScreenState extends State<AddPostScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _vehicleController = TextEditingController();
-  final TextEditingController _driverController = TextEditingController();
-  final TextEditingController _goodsTypeController = TextEditingController();
 
-  // State for date and time pickers
-  DateTime? _selectedTripDate;
-  TimeOfDay? _selectedStartTime;
-  DateTime? _selectedTripEndDate;
-  TimeOfDay? _selectedEndTime;
+  // Dropdown selections (using IDs as required by backend)
+  String? _selectedVehicleId;
+  String? _selectedDriverId;
+  String? _selectedGoodsTypeId;
+
+  // Dropdown data
+  List<VehicleModel.Vehicle> _vehicles = [];
+  List<GoodsAccepted> _goodsTypes = [];
+  List<Map<String, dynamic>> _drivers = []; // Contains {_id, name, phone, isSelfDrive}
+
+  bool _isLoadingData = false;
+
+  // State for date and time pickers (combined)
+  DateTime? _selectedTripStartDateTime;
+  DateTime? _selectedTripEndDateTime;
 
   // Placeholder for map coordinates (in a real app, this would come from a map picker)
   String? _startLocationCoordinates;
@@ -51,92 +63,92 @@ class _AddPostScreenState extends State<AddPostScreen> {
   int? _duration; // in minutes
 
   @override
+  void initState() {
+    super.initState();
+    _loadDropdownData();
+  }
+
+  @override
   void dispose() {
     _startLocationAddressController.dispose();
     _destinationAddressController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _weightController.dispose();
-    _vehicleController.dispose();
-    _driverController.dispose();
-    _goodsTypeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDropdownData() async {
+    setState(() => _isLoadingData = true);
+    try {
+      // Load vehicles
+      final vehicleRepo = VehicleRepository(apiService: locator<ApiService>());
+      final vehiclesResult = await vehicleRepo.getVehicles();
+      if (vehiclesResult.isSuccess) {
+        setState(() => _vehicles = vehiclesResult.data ?? []);
+        if (_vehicles.isNotEmpty && _selectedVehicleId == null) {
+          _selectedVehicleId = _vehicles.first.id;
+        }
+      }
+
+      // Load goods types
+      final goodsRepo = VehicleMetaRepository(apiService: locator<ApiService>());
+      final goodsResult = await goodsRepo.getAllGoodsAccepted();
+      setState(() => _goodsTypes = goodsResult);
+      if (_goodsTypes.isNotEmpty && _selectedGoodsTypeId == null) {
+        _selectedGoodsTypeId = _goodsTypes.first.id;
+      }
+
+      // Load drivers (friends list from driver-connections API)
+      await _loadDrivers();
+
+      // Auto-select driver if self-drive is enabled
+      if (_isSelfDrive && _drivers.isNotEmpty) {
+        final selfDriveDriver = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+        _selectedDriverId = selfDriveDriver['_id'];
+      }
+    } catch (e) {
+      _showSnackBar('Error loading data: $e');
+    } finally {
+      setState(() => _isLoadingData = false);
+    }
+  }
+
+  Future<void> _loadDrivers() async {
+    try {
+      final apiService = locator<ApiService>();
+      final result = await apiService.get('api/v1/driver-connections/friends', isTokenRequired: true);
+      if (result.isSuccess) {
+        final data = result.data;
+        if (data is Map && data['friends'] != null) {
+          setState(() => _drivers = List<Map<String, dynamic>>.from(data['friends']));
+          if (_drivers.isNotEmpty && _selectedDriverId == null) {
+            // Auto-select self-drive option if available
+            final selfDrive = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+            _selectedDriverId = selfDrive['_id'];
+          }
+        }
+      }
+    } catch (e) {
+      // If friends API fails, we'll still allow self-drive
+      print('Error loading drivers: $e');
+    }
   }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
   }
 
-  // Function to pick trip date
-  Future<void> _selectTripDate(BuildContext context) async {
+  // Function to pick trip start date and time
+  Future<void> _selectTripStartDateTime(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialDate = _selectedTripStartDateTime ?? now.add(const Duration(hours: 1));
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedTripDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-      // 2 years from now
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.secondary, // Header background color
-              onPrimary: Colors.white, // Header text color
-              onSurface: AppColors.textPrimary, // Body text color
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.secondary, // Button text color
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedTripDate) {
-      setState(() {
-        _selectedTripDate = picked;
-      });
-    }
-  }
-
-  // Function to pick start time
-  Future<void> _selectStartTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedStartTime ?? TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.secondary, // Header background color
-              onPrimary: Colors.white, // Header text color
-              onSurface: AppColors.textPrimary, // Body text color
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.secondary, // Button text color
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedStartTime) {
-      setState(() {
-        _selectedStartTime = picked;
-      });
-    }
-  }
-
-  // Function to pick trip end date
-  Future<void> _selectTripEndDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedTripEndDate ?? (_selectedTripDate ?? DateTime.now()),
-      firstDate: _selectedTripDate ?? DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365 * 2)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -147,18 +159,41 @@ class _AddPostScreenState extends State<AddPostScreen> {
         );
       },
     );
-    if (picked != null && picked != _selectedTripEndDate) {
-      setState(() {
-        _selectedTripEndDate = picked;
-      });
+
+    if (picked != null) {
+      // After date is selected, pick time
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: _selectedTripStartDateTime != null ? TimeOfDay.fromDateTime(_selectedTripStartDateTime!) : TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(primary: AppColors.secondary, onPrimary: Colors.white, onSurface: AppColors.textPrimary),
+              textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.secondary)),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          _selectedTripStartDateTime = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+        });
+      }
     }
   }
 
-  // Function to pick end time
-  Future<void> _selectEndTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
+  // Function to pick trip end date and time
+  Future<void> _selectTripEndDateTime(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialDate = _selectedTripEndDateTime ?? (_selectedTripStartDateTime?.add(const Duration(hours: 4)) ?? now.add(const Duration(hours: 5)));
+
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialTime: _selectedEndTime ?? TimeOfDay.now(),
+      initialDate: initialDate,
+      firstDate: _selectedTripStartDateTime ?? now,
+      lastDate: now.add(const Duration(days: 365 * 2)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -169,33 +204,85 @@ class _AddPostScreenState extends State<AddPostScreen> {
         );
       },
     );
-    if (picked != null && picked != _selectedEndTime) {
-      setState(() {
-        _selectedEndTime = picked;
-      });
+
+    if (picked != null) {
+      // After date is selected, pick time
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: _selectedTripEndDateTime != null ? TimeOfDay.fromDateTime(_selectedTripEndDateTime!) : TimeOfDay.fromDateTime(initialDate),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(primary: AppColors.secondary, onPrimary: Colors.white, onSurface: AppColors.textPrimary),
+              textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.secondary)),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          _selectedTripEndDateTime = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+        });
+      }
     }
   }
 
   // Function to handle form submission
   void _submitPost() {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save(); // Save form fields
+      _formKey.currentState!.save();
 
-      // Validate required fields
+      // Validate required fields based on backend requirements
       if (startLocation == null || endLocation == null) {
         _showSnackBar('Please select both start and destination locations on the map');
         return;
       }
 
-      if (_selectedTripDate == null || _selectedStartTime == null) {
+      if (_startLocationAddressController.text.trim().length < 3) {
+        _showSnackBar('Start location address must be at least 3 characters');
+        return;
+      }
+
+      if (_destinationAddressController.text.trim().length < 3) {
+        _showSnackBar('Destination address must be at least 3 characters');
+        return;
+      }
+
+      if (_selectedTripStartDateTime == null) {
         _showSnackBar('Please select trip start date and time');
         return;
       }
 
-      // Create trip locations
-      final tripStartLocation = TripLocation(address: _startLocationAddressController.text, coordinates: [startLocation!.longitude, startLocation!.latitude]);
+      // Use the selected start date and time
+      final tripStartDateTime = _selectedTripStartDateTime!;
 
-      final tripDestination = TripLocation(address: _destinationAddressController.text, coordinates: [endLocation!.longitude, endLocation!.latitude]);
+      // Validate trip start date is in the future
+      if (tripStartDateTime.isBefore(DateTime.now())) {
+        _showSnackBar('Trip start date must be in the future');
+        return;
+      }
+
+      if (_selectedVehicleId == null) {
+        _showSnackBar('Please select a vehicle');
+        return;
+      }
+
+      if (_selectedDriverId == null) {
+        _showSnackBar('Please select a driver');
+        return;
+      }
+
+      if (_selectedGoodsTypeId == null) {
+        _showSnackBar('Please select a goods type');
+        return;
+      }
+
+      // Create trip locations with trimmed addresses
+      final tripStartLocation = TripLocation(address: _startLocationAddressController.text.trim(), coordinates: [startLocation!.longitude, startLocation!.latitude]);
+
+      final tripDestination = TripLocation(address: _destinationAddressController.text.trim(), coordinates: [endLocation!.longitude, endLocation!.latitude]);
 
       // Create route GeoJSON
       final routeGeoJSON = RouteGeoJSON(
@@ -206,12 +293,14 @@ class _AddPostScreenState extends State<AddPostScreen> {
         ],
       );
 
-      // Calculate trip dates
-      final tripStartDateTime = DateTime(_selectedTripDate!.year, _selectedTripDate!.month, _selectedTripDate!.day, _selectedStartTime!.hour, _selectedStartTime!.minute);
-
-      DateTime? tripEndDateTime;
-      if (_selectedTripEndDate != null && _selectedEndTime != null) {
-        tripEndDateTime = DateTime(_selectedTripEndDate!.year, _selectedTripEndDate!.month, _selectedTripEndDate!.day, _selectedEndTime!.hour, _selectedEndTime!.minute);
+      DateTime tripEndDateTime;
+      if (_selectedTripEndDateTime != null) {
+        tripEndDateTime = _selectedTripEndDateTime!;
+        // Validate end date is after start date
+        if (tripEndDateTime.isBefore(tripStartDateTime) || tripEndDateTime.isAtSameMomentAs(tripStartDateTime)) {
+          _showSnackBar('Trip end date must be after start date');
+          return;
+        }
       } else {
         // Default to 4 hours after start time if end time not specified
         tripEndDateTime = tripStartDateTime.add(const Duration(hours: 4));
@@ -228,31 +317,25 @@ class _AddPostScreenState extends State<AddPostScreen> {
         text: _formatDuration(_duration ?? _calculateDuration(tripStartDateTime, tripEndDateTime)),
       );
 
-      // Create the trip using the API
+      // Create the trip using the API with proper IDs
       PostsApiHelper.createPost(
         context: context,
-        title: _titleController.text,
-        description: _descriptionController.text,
-        postType: _postType,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
         tripStartLocation: tripStartLocation,
         tripDestination: tripDestination,
         viaRoutes: _viaRoutes.isNotEmpty ? _viaRoutes : null,
         routeGeoJSON: routeGeoJSON,
-        vehicle: _vehicleController.text.isNotEmpty ? _vehicleController.text : null,
+        vehicle: _selectedVehicleId!,
         selfDrive: _isSelfDrive,
-        driver: _driverController.text.isNotEmpty ? _driverController.text : null,
+        driver: _selectedDriverId!,
         distance: distance,
         duration: duration,
-        goodsTypeId: _goodsTypeController.text.isNotEmpty ? _goodsTypeController.text : null,
+        goodsTypeId: _selectedGoodsTypeId!,
         weight: _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
         tripStartDate: tripStartDateTime,
         tripEndDate: tripEndDateTime,
       );
-
-      _showSnackBar('Trip created successfully!');
-
-      // Clear form
-      _clearForm();
     }
   }
 
@@ -279,24 +362,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
     return '$mins mins';
   }
 
-  // Helper method to clear form
-  void _clearForm() {
-    _formKey.currentState!.reset();
-    setState(() {
-      _selectedTripDate = null;
-      _selectedStartTime = null;
-      _selectedTripEndDate = null;
-      _selectedEndTime = null;
-      _startLocationCoordinates = null;
-      _destinationCoordinates = null;
-      startLocation = null;
-      endLocation = null;
-      _viaRoutes.clear();
-      _distance = null;
-      _duration = null;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -307,183 +372,219 @@ class _AddPostScreenState extends State<AddPostScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: BlocListener<PostsBloc, PostsState>(
-        listener: (context, state) {
-          if (state is PostCreated) {
-            _showSnackBar('Trip created successfully!');
-            _clearForm();
-          } else if (state is PostsError) {
-            _showSnackBar('Error: ${state.message}');
-          }
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Post Type Selection
-                Text('Trip Type', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildPostTypeSelector(),
-                const SizedBox(height: 30),
-
-                // Start Location Section
-                Text('Start Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildInputField(
-                  controller: _startLocationAddressController,
-                  label: 'Address',
-                  hint: 'e.g., Thiruvananthapuram, Kerala',
-                  icon: Icons.location_on_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter start location address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildMapCoordinatesField(
-                  label: 'Map Coordinates',
-                  coordinates: _startLocationCoordinates,
-                  onTap: () async {
-                    LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
-                    setState(() {
-                      startLocation = location;
-                      _startLocationCoordinates = formatLatLng(location);
-                    });
-                  },
-                ),
-                const SizedBox(height: 30),
-
-                // Destination Section
-                Text('Destination', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildInputField(
-                  controller: _destinationAddressController,
-                  label: 'Address',
-                  hint: 'e.g., Kanyakumari, Tamil Nadu',
-                  icon: Icons.flag_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter destination address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildMapCoordinatesField(
-                  label: 'Map Coordinates',
-                  coordinates: _destinationCoordinates,
-                  onTap: () async {
-                    LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
-                    setState(() {
-                      endLocation = location;
-                      _destinationCoordinates = formatLatLng(location);
-                    });
-                  },
-                ),
-                const SizedBox(height: 30),
-
-                // Trip Details Section
-                Text('Trip Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildDatePickerField(label: 'Start Date', selectedDate: _selectedTripDate, onTap: () => _selectTripDate(context)),
-                const SizedBox(height: 16),
-                _buildTimePickerField(label: 'Start Time', selectedTime: _selectedStartTime, onTap: () => _selectStartTime(context)),
-                const SizedBox(height: 16),
-                _buildDatePickerField(label: 'End Date (Optional)', selectedDate: _selectedTripEndDate, onTap: () => _selectTripEndDate(context)),
-                const SizedBox(height: 16),
-                _buildTimePickerField(label: 'End Time (Optional)', selectedTime: _selectedEndTime, onTap: () => _selectEndTime(context)),
-                const SizedBox(height: 30),
-
-                // Vehicle & Driver Section
-                Text('Vehicle & Driver', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildInputField(controller: _vehicleController, label: 'Vehicle', hint: 'e.g., KA01AB1234', icon: Icons.local_shipping_outlined),
-                const SizedBox(height: 16),
-                _buildInputField(controller: _driverController, label: 'Driver', hint: 'e.g., John Doe', icon: Icons.person_outline),
-                const SizedBox(height: 16),
-                _buildSelfDriveToggle(),
-                const SizedBox(height: 30),
-
-                // Goods & Weight Section
-                Text('Goods & Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildInputField(controller: _goodsTypeController, label: 'Goods Type', hint: 'e.g., Vegetables', icon: Icons.inventory_outlined),
-                const SizedBox(height: 16),
-                _buildInputField(
-                  controller: _weightController,
-                  label: 'Weight (kg)',
-                  hint: 'e.g., 25',
-                  icon: Icons.scale_outlined,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      final weight = double.tryParse(value);
-                      if (weight == null || weight <= 0) {
-                        return 'Please enter a valid weight';
+      body:
+          _isLoadingData
+              ? const Center(child: CircularProgressIndicator())
+              : BlocConsumer<PostsBloc, PostsState>(
+                listenWhen: (previous, current) => current is PostCreated || current is PostsError,
+                listener: (context, state) {
+                  if (state is PostCreated) {
+                    // Show success message and navigate back after a short delay
+                    _showSnackBar('Trip created successfully!');
+                    // Use a delayed navigation to ensure snackbar is shown and widget is still mounted
+                    Future.delayed(const Duration(milliseconds: 800), () {
+                      if (mounted && context.mounted) {
+                        Navigator.of(context).pop(true); // Return true to indicate success
                       }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 30),
+                    });
+                  } else if (state is PostsError) {
+                    _showSnackBar('Error: ${state.message}');
+                  }
+                },
+                buildWhen: (previous, current) => !(current is PostCreated || current is PostsError),
+                builder: (context, state) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Post Type Selection
+                          Text('Trip Type', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildPostTypeSelector(),
+                          const SizedBox(height: 30),
 
-                // Post Content Section
-                Text('Trip Content', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                _buildInputField(
-                  controller: _titleController,
-                  label: 'Title',
-                  hint: 'e.g., Fresh Vegetables Delivery to Kochi',
-                  icon: Icons.title_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a title for your trip';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                _buildInputField(
-                  controller: _descriptionController,
-                  label: 'Description',
-                  hint: 'Provide details about the goods, size, weight, etc.',
-                  icon: Icons.description_outlined,
-                  maxLines: 4,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a description for your trip';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 40),
+                          // Start Location Section
+                          Text('Start Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildInputField(
+                            controller: _startLocationAddressController,
+                            label: 'Address',
+                            hint: 'e.g., Thiruvananthapuram, Kerala',
+                            icon: Icons.location_on_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter start location address';
+                              }
+                              if (value.trim().length < 3) {
+                                return 'Address must be at least 3 characters';
+                              }
+                              if (value.trim().length > 200) {
+                                return 'Address must not exceed 200 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _buildMapCoordinatesField(
+                            label: 'Map Coordinates',
+                            coordinates: _startLocationCoordinates,
+                            onTap: () async {
+                              LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
+                              setState(() {
+                                startLocation = location;
+                                _startLocationCoordinates = formatLatLng(location);
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 30),
 
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _submitPost,
-                    icon: const Icon(Icons.send_rounded, color: Colors.white),
-                    label: const Text('Create Trip', style: TextStyle(color: Colors.white, fontSize: 18)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 5,
-                      shadowColor: AppColors.secondary.withOpacity(0.4),
+                          // Destination Section
+                          Text('Destination', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildInputField(
+                            controller: _destinationAddressController,
+                            label: 'Address',
+                            hint: 'e.g., Kanyakumari, Tamil Nadu',
+                            icon: Icons.flag_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter destination address';
+                              }
+                              if (value.trim().length < 3) {
+                                return 'Address must be at least 3 characters';
+                              }
+                              if (value.trim().length > 200) {
+                                return 'Address must not exceed 200 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _buildMapCoordinatesField(
+                            label: 'Map Coordinates',
+                            coordinates: _destinationCoordinates,
+                            onTap: () async {
+                              LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
+                              setState(() {
+                                endLocation = location;
+                                _destinationCoordinates = formatLatLng(location);
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Trip Details Section
+                          Text('Trip Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildDateTimePickerField(label: 'Start Date & Time *', selectedDateTime: _selectedTripStartDateTime, onTap: () => _selectTripStartDateTime(context)),
+                          const SizedBox(height: 16),
+                          _buildDateTimePickerField(label: 'End Date & Time (Optional)', selectedDateTime: _selectedTripEndDateTime, onTap: () => _selectTripEndDateTime(context)),
+                          const SizedBox(height: 30),
+
+                          // Vehicle & Driver Section
+                          Text('Vehicle & Driver', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildVehicleDropdown(),
+                          const SizedBox(height: 16),
+                          _buildSelfDriveToggle(),
+                          const SizedBox(height: 16),
+                          _buildDriverDropdown(),
+                          const SizedBox(height: 30),
+
+                          // Goods & Weight Section
+                          Text('Goods & Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildGoodsTypeDropdown(),
+                          const SizedBox(height: 16),
+                          _buildInputField(
+                            controller: _weightController,
+                            label: 'Weight (kg)',
+                            hint: 'e.g., 25',
+                            icon: Icons.scale_outlined,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value != null && value.isNotEmpty) {
+                                final weight = double.tryParse(value);
+                                if (weight == null) {
+                                  return 'Please enter a valid weight';
+                                }
+                                if (weight < 0.1) {
+                                  return 'Weight must be at least 0.1 kg';
+                                }
+                                if (weight > 100) {
+                                  return 'Weight must not exceed 100 kg';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Post Content Section
+                          Text('Trip Content', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          const SizedBox(height: 12),
+                          _buildInputField(
+                            controller: _titleController,
+                            label: 'Title',
+                            hint: 'e.g., Fresh Vegetables Delivery to Kochi',
+                            icon: Icons.title_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a title for your trip';
+                              }
+                              if (value.trim().length < 5) {
+                                return 'Title must be at least 5 characters';
+                              }
+                              if (value.trim().length > 200) {
+                                return 'Title must not exceed 200 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInputField(
+                            controller: _descriptionController,
+                            label: 'Description',
+                            hint: 'Provide details about the goods, size, weight, etc.',
+                            icon: Icons.description_outlined,
+                            maxLines: 4,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a description for your trip';
+                              }
+                              if (value.trim().length > 500) {
+                                return 'Description must not exceed 500 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 40),
+
+                          // Submit Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _submitPost,
+                              icon: const Icon(Icons.send_rounded, color: Colors.white),
+                              label: const Text('Create Trip', style: TextStyle(color: Colors.white, fontSize: 18)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secondary,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 5,
+                                shadowColor: AppColors.secondary.withOpacity(0.4),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+                  );
+                },
+              ),
     );
   }
 
@@ -566,8 +667,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 
-  // Widget for date picker field
-  Widget _buildDatePickerField({required String label, required DateTime? selectedDate, required VoidCallback onTap}) {
+  // Widget for date and time picker field (combined)
+  Widget _buildDateTimePickerField({required String label, required DateTime? selectedDateTime, required VoidCallback onTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -590,46 +691,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    selectedDate != null ? DateFormat('dd MMM yyyy').format(selectedDate) : 'Select Date',
-                    style: TextStyle(color: selectedDate != null ? AppColors.textPrimary : AppColors.textSecondary),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Widget for time picker field
-  Widget _buildTimePickerField({required String label, required TimeOfDay? selectedTime, required VoidCallback onTap}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300, width: 1),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.access_time, color: AppColors.textSecondary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    selectedTime != null ? selectedTime.format(context) : 'Select Time',
-                    style: TextStyle(color: selectedTime != null ? AppColors.textPrimary : AppColors.textSecondary),
+                    selectedDateTime != null ? DateFormat('dd MMM yyyy, hh:mm a').format(selectedDateTime) : 'Select Date & Time',
+                    style: TextStyle(color: selectedDateTime != null ? AppColors.textPrimary : AppColors.textSecondary),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -701,9 +764,136 @@ class _AddPostScreenState extends State<AddPostScreen> {
               ],
             ),
           ),
-          Switch(value: _isSelfDrive, onChanged: (value) => setState(() => _isSelfDrive = value), activeColor: AppColors.secondary),
+          Switch(
+            value: _isSelfDrive,
+            onChanged: (value) {
+              setState(() {
+                _isSelfDrive = value;
+                // Auto-select self-drive driver when toggled on
+                if (value && _drivers.isNotEmpty) {
+                  final selfDriveDriver = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+                  _selectedDriverId = selfDriveDriver['_id'];
+                }
+              });
+            },
+            activeColor: AppColors.secondary,
+          ),
         ],
       ),
+    );
+  }
+
+  // Widget for vehicle dropdown
+  Widget _buildVehicleDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Vehicle *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedVehicleId,
+            decoration: InputDecoration(
+              hintText: 'Select Vehicle',
+              hintStyle: const TextStyle(color: AppColors.textSecondary),
+              prefixIcon: Icon(Icons.local_shipping_outlined, color: AppColors.textSecondary),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items:
+                _vehicles.map((vehicle) {
+                  return DropdownMenuItem<String>(
+                    value: vehicle.id,
+                    child: Text('${vehicle.vehicleNumber} - ${vehicle.type}', style: const TextStyle(color: AppColors.textPrimary)),
+                  );
+                }).toList(),
+            onChanged: (value) => setState(() => _selectedVehicleId = value),
+            validator: (value) => value == null ? 'Please select a vehicle' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget for driver dropdown
+  Widget _buildDriverDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Driver *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedDriverId,
+            decoration: InputDecoration(
+              hintText: 'Select Driver',
+              hintStyle: const TextStyle(color: AppColors.textSecondary),
+              prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items:
+                _drivers.map((driver) {
+                  return DropdownMenuItem<String>(
+                    value: driver['_id'],
+                    child: Text(
+                      driver['name'] ?? 'Unknown',
+                      style: TextStyle(color: AppColors.textPrimary, fontWeight: driver['isSelfDrive'] == true ? FontWeight.bold : FontWeight.normal),
+                    ),
+                  );
+                }).toList(),
+            onChanged: (value) => setState(() => _selectedDriverId = value),
+            validator: (value) => value == null ? 'Please select a driver' : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget for goods type dropdown
+  Widget _buildGoodsTypeDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Goods Type *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: DropdownButtonFormField<String>(
+            value: _selectedGoodsTypeId,
+            decoration: InputDecoration(
+              hintText: 'Select Goods Type',
+              hintStyle: const TextStyle(color: AppColors.textSecondary),
+              prefixIcon: Icon(Icons.inventory_outlined, color: AppColors.textSecondary),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            items:
+                _goodsTypes.map((goods) {
+                  return DropdownMenuItem<String>(value: goods.id, child: Text(goods.name, style: const TextStyle(color: AppColors.textPrimary)));
+                }).toList(),
+            onChanged: (value) => setState(() => _selectedGoodsTypeId = value),
+            validator: (value) => value == null ? 'Please select a goods type' : null,
+          ),
+        ),
+      ],
     );
   }
 

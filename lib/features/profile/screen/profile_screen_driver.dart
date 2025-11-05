@@ -2,13 +2,22 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
 import 'package:truck_app/features/post/screens/my_posts_screen.dart';
+import 'package:truck_app/features/profile/model/profile.dart';
+import 'package:truck_app/features/profile/repo/profile_repo.dart';
 import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
 import 'package:truck_app/services/local/local_services.dart';
+import 'package:truck_app/services/network/api_service.dart';
 
 // Assuming AppColors is defined in this path
+import '../../../core/constants/api_endpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/screens/welcome_screen.dart';
+import '../../legal/screens/terms_and_conditions_screen.dart';
+import '../../legal/screens/privacy_policy_screen.dart';
+import '../../legal/screens/help_screen.dart';
+import '../../legal/screens/customer_support_screen.dart';
 
 class ProfileScreenDriver extends StatefulWidget {
   const ProfileScreenDriver({super.key});
@@ -18,21 +27,31 @@ class ProfileScreenDriver extends StatefulWidget {
 }
 
 class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
+  // Repositories
+  final ApiService _apiService = ApiService();
+  late final ProfileRepository _profileRepository;
+  late final ImageUploadRepository _imageUploadRepository;
+
   // Controllers for user data fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _whatsappController = TextEditingController();
 
   File? _profileImage; // For profile picture
+  String? _profileImageUrl; // Network image URL
+  String? _profileImageId; // Uploaded image ID
   bool _isEditing = false; // To toggle edit mode
+  bool _isLoading = true; // Loading state
+  bool _isSaving = false; // Saving state
+  Profile? _profile; // Current profile data
 
   @override
   void initState() {
     super.initState();
-    // Initialize with mock user data
-    _nameController.text = 'John Doe';
-    _emailController.text = 'john.doe@example.com';
-    _phoneController.text = '9876543210';
+    _profileRepository = ProfileRepository(apiService: _apiService);
+    _imageUploadRepository = ImageUploadRepository(apiService: _apiService);
+    _loadProfile();
   }
 
   @override
@@ -40,11 +59,54 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _whatsappController.dispose();
     super.dispose();
+  }
+
+  // Load profile from API
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final result = await _profileRepository.getProfile();
+
+    if (result.isSuccess && result.data != null) {
+      setState(() {
+        _profile = result.data;
+        _nameController.text = _profile!.name;
+        _emailController.text = _profile!.email;
+        _phoneController.text = _profile!.phone;
+        _whatsappController.text = _profile!.whatsappNumber ?? '';
+        _profileImageUrl = _profile!.profilePictureUrl;
+        _profileImageId = _profile!.profilePictureId;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        _showSnackBar(result.message ?? 'Failed to load profile');
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('My Profile', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -53,11 +115,14 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
         elevation: 0,
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save_rounded : Icons.edit_rounded, color: AppColors.secondary),
-            onPressed: _toggleEditMode,
-            tooltip: _isEditing ? 'Save Profile' : 'Edit Profile',
-          ),
+          if (!_isSaving)
+            IconButton(
+              icon: Icon(_isEditing ? Icons.save_rounded : Icons.edit_rounded, color: AppColors.secondary),
+              onPressed: _toggleEditMode,
+              tooltip: _isEditing ? 'Save Profile' : 'Edit Profile',
+            )
+          else
+            const Padding(padding: EdgeInsets.all(16.0), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
         ],
       ),
       body: SingleChildScrollView(
@@ -73,8 +138,8 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
                   CircleAvatar(
                     radius: 60,
                     backgroundColor: AppColors.surface,
-                    backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-                    child: _profileImage == null ? Icon(Icons.person_rounded, size: 60, color: AppColors.textSecondary.withOpacity(0.5)) : null,
+                    backgroundImage: _getProfileImage(),
+                    child: _getProfileImage() == null ? Icon(Icons.person_rounded, size: 60, color: AppColors.textSecondary.withOpacity(0.5)) : null,
                   ),
                   if (_isEditing)
                     Positioned(
@@ -96,7 +161,21 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
             const SizedBox(height: 16),
             _buildProfileInputField(controller: _emailController, label: 'Email', icon: Icons.email_outlined, isEditable: _isEditing, keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 16),
-            _buildProfileInputField(controller: _phoneController, label: 'Phone', icon: Icons.phone_outlined, isEditable: _isEditing, keyboardType: TextInputType.phone),
+            _buildProfileInputField(
+              controller: _phoneController,
+              label: 'Phone',
+              icon: Icons.phone_outlined,
+              isEditable: false,
+              keyboardType: TextInputType.phone,
+            ), // Phone is read-only
+            const SizedBox(height: 16),
+            _buildProfileInputField(
+              controller: _whatsappController,
+              label: 'WhatsApp Number',
+              icon: Icons.chat_outlined,
+              isEditable: _isEditing,
+              keyboardType: TextInputType.phone,
+            ),
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
@@ -108,13 +187,25 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VehicleListScreen())),
             ),
             const SizedBox(height: 12),
-            _buildActionButton(label: 'Terms and Conditions', icon: Icons.description_outlined, onTap: () => _showSnackBar('Navigating to Terms and Conditions')),
+            _buildActionButton(
+              label: 'Terms and Conditions',
+              icon: Icons.description_outlined,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsAndConditionsScreen())),
+            ),
             const SizedBox(height: 12),
-            _buildActionButton(label: 'Privacy Policy', icon: Icons.privacy_tip_outlined, onTap: () => _showSnackBar('Navigating to Privacy Policy')),
+            _buildActionButton(
+              label: 'Privacy Policy',
+              icon: Icons.privacy_tip_outlined,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+            ),
             const SizedBox(height: 12),
-            _buildActionButton(label: 'Support', icon: Icons.support_agent_outlined, onTap: () => _showSnackBar('Navigating to Support')),
+            _buildActionButton(
+              label: 'Support',
+              icon: Icons.support_agent_outlined,
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerSupportScreen())),
+            ),
             const SizedBox(height: 12),
-            _buildActionButton(label: 'Help', icon: Icons.help_outline, onTap: () => _showSnackBar('Navigating to Help')),
+            _buildActionButton(label: 'Help', icon: Icons.help_outline, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpScreen()))),
             const SizedBox(height: 30),
 
             // Logout Button
@@ -204,8 +295,33 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
     );
   }
 
+  // Get profile image
+  ImageProvider? _getProfileImage() {
+    if (_profileImage != null) {
+      return FileImage(_profileImage!);
+    } else if (_profileImageUrl != null) {
+      // Construct full URL if relative path
+      String imageUrl = _profileImageUrl!;
+      if (!imageUrl.startsWith('http')) {
+        // Remove trailing slash from baseUrl and leading slash from imageUrl
+        String baseUrl = ApiEndpoints.baseUrl.replaceAll('/api/v1/', '');
+        if (baseUrl.endsWith('/')) {
+          baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+        }
+        if (imageUrl.startsWith('/')) {
+          imageUrl = imageUrl.substring(1);
+        }
+        imageUrl = '$baseUrl/$imageUrl';
+      }
+      return NetworkImage(imageUrl);
+    }
+    return null;
+  }
+
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
+    }
   }
 
   // Function to pick profile image
@@ -215,30 +331,78 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
     if (image != null) {
       setState(() {
         _profileImage = File(image.path);
+        _profileImageUrl = null; // Clear network image when local image is selected
       });
-      _showSnackBar('Profile picture updated!');
     }
   }
 
   // Function to toggle edit mode
   void _toggleEditMode() {
-    setState(() {
-      _isEditing = !_isEditing;
-      if (!_isEditing) {
-        // If exiting edit mode, save changes (mock save)
-        _saveProfileChanges();
-      }
-    });
+    if (_isEditing) {
+      // Save changes
+      _saveProfileChanges();
+    } else {
+      // Enter edit mode
+      setState(() {
+        _isEditing = true;
+      });
+    }
   }
 
-  // Function to save profile changes (mock implementation)
-  void _saveProfileChanges() {
-    // In a real app, you would send these updated values to a backend
-    print('Saving profile:');
-    print('Name: ${_nameController.text}');
-    print('Email: ${_emailController.text}');
-    print('Phone: ${_phoneController.text}');
-    _showSnackBar('Profile updated successfully!');
+  // Function to save profile changes
+  Future<void> _saveProfileChanges() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      String? profilePictureId = _profileImageId;
+
+      // Upload image if a new one was selected
+      if (_profileImage != null) {
+        final uploadResult = await _imageUploadRepository.uploadImage(type: 'profile', imageFile: _profileImage!);
+
+        if (uploadResult.isSuccess) {
+          profilePictureId = uploadResult.data;
+        } else {
+          setState(() {
+            _isSaving = false;
+          });
+          _showSnackBar('Failed to upload profile picture: ${uploadResult.message}');
+          return;
+        }
+      }
+
+      // Update profile
+      final updateResult = await _profileRepository.updateProfile(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        whatsappNumber: _whatsappController.text.trim().isNotEmpty ? _whatsappController.text.trim() : null,
+        profilePictureId: profilePictureId,
+      );
+
+      if (updateResult.isSuccess && updateResult.data != null) {
+        setState(() {
+          _profile = updateResult.data;
+          _profileImageUrl = _profile!.profilePictureUrl;
+          _profileImageId = _profile!.profilePictureId;
+          _profileImage = null; // Clear local image after successful upload
+          _isEditing = false;
+          _isSaving = false;
+        });
+        _showSnackBar('Profile updated successfully!');
+      } else {
+        setState(() {
+          _isSaving = false;
+        });
+        _showSnackBar(updateResult.message ?? 'Failed to update profile');
+      }
+    } catch (e) {
+      setState(() {
+        _isSaving = false;
+      });
+      _showSnackBar('Error updating profile: ${e.toString()}');
+    }
   }
 
   // Function to handle logout
@@ -288,8 +452,27 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
               child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+              onPressed: () async {
+                Navigator.of(context).pop(); // Dismiss dialog
+
+                // Show loading
+                showDialog(context: context, barrierDismissible: false, builder: (context) => const Center(child: CircularProgressIndicator()));
+
+                final result = await _profileRepository.deleteAccount();
+
+                if (mounted) {
+                  Navigator.of(context).pop(); // Dismiss loading
+
+                  if (result.isSuccess) {
+                    // Clear tokens and navigate to welcome screen
+                    await LocalService.deleteTokens();
+                    if (mounted) {
+                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+                    }
+                  } else {
+                    _showSnackBar(result.message ?? 'Failed to delete account');
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               child: const Text('Delete', style: TextStyle(color: Colors.white)),

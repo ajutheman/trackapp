@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../model/post.dart';
+import '../../post/screens/trip_detail_screen.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -56,6 +57,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             },
             onTapUp: (_) {
               _controller.reverse();
+              if (widget.post.id != null) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
+              }
             },
             onTapCancel: () {
               _controller.reverse();
@@ -465,7 +469,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                   decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
                                   child: IconButton(
                                     onPressed: () {
-                                      // Handle view details
+                                      if (widget.post.id != null) {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
+                                      }
                                     },
                                     icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
                                     style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
