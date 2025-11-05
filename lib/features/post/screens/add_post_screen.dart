@@ -376,19 +376,35 @@ class _AddPostScreenState extends State<AddPostScreen> {
           _isLoadingData
               ? const Center(child: CircularProgressIndicator())
               : BlocConsumer<PostsBloc, PostsState>(
-                listenWhen: (previous, current) => current is PostCreated || current is PostsError,
+                listenWhen: (previous, current) {
+                  // Only listen when transitioning TO PostCreated or PostsError
+                  // This prevents multiple listeners from firing
+                  return (previous is! PostCreated && current is PostCreated) || (previous is! PostsError && current is PostsError);
+                },
                 listener: (context, state) {
                   if (state is PostCreated) {
+                    // Only handle navigation if this screen is still mounted and active
+                    final route = ModalRoute.of(context);
+                    if (!mounted || route == null || !route.isCurrent) {
+                      return; // Don't navigate if screen is not active
+                    }
                     // Show success message and navigate back after a short delay
                     _showSnackBar('Trip created successfully!');
                     // Use a delayed navigation to ensure snackbar is shown and widget is still mounted
                     Future.delayed(const Duration(milliseconds: 800), () {
                       if (mounted && context.mounted) {
-                        Navigator.of(context).pop(true); // Return true to indicate success
+                        final currentRoute = ModalRoute.of(context);
+                        if (currentRoute != null && currentRoute.isCurrent) {
+                          Navigator.of(context).pop(true); // Return true to indicate success
+                        }
                       }
                     });
                   } else if (state is PostsError) {
-                    _showSnackBar('Error: ${state.message}');
+                    // Only show error if screen is still active
+                    final route = ModalRoute.of(context);
+                    if (mounted && route != null && route.isCurrent) {
+                      _showSnackBar('Error: ${state.message}');
+                    }
                   }
                 },
                 buildWhen: (previous, current) => !(current is PostCreated || current is PostsError),

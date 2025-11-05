@@ -20,6 +20,9 @@ class MyFriendsScreen extends StatefulWidget {
 
 class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderStateMixin {
   late TabController _tabController;
+  List<DriverFriend>? _cachedFriendsList; // Cache friends list to show during refresh
+  List<DriverConnection>? _cachedReceivedRequests; // Cache received requests
+  List<DriverConnection>? _cachedSentRequests; // Cache sent requests
 
   @override
   void initState() {
@@ -310,14 +313,27 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
             } else if (state is FriendRequestResponded) {
               final action = state.action == 'accept' ? 'accepted' : 'rejected';
               _showSnackBar('Friend request $action successfully!', isSuccess: state.action == 'accept');
-              // Refresh all lists after responding
+              // Clear caches and refresh all lists after responding
+              _cachedReceivedRequests = null;
+              _cachedSentRequests = null;
               context.read<DriverConnectionBloc>().add(const FetchFriendsList());
               context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
               context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
             } else if (state is FriendRemoved) {
               _showSnackBar('Friend removed successfully!');
-              // Refresh friends list
+              // Clear cache and refresh friends list
+              _cachedFriendsList = null;
               context.read<DriverConnectionBloc>().add(const FetchFriendsList());
+            } else if (state is FriendsListLoaded) {
+              // Update cache when friends list is loaded
+              _cachedFriendsList = state.friends;
+            } else if (state is FriendRequestsLoaded) {
+              // Update cache when requests are loaded
+              if (state.type == 'received') {
+                _cachedReceivedRequests = state.requests;
+              } else if (state.type == 'sent') {
+                _cachedSentRequests = state.requests;
+              }
             } else if (state is DriverConnectionError) {
               _showSnackBar(state.message, isSuccess: false);
             }
@@ -329,34 +345,39 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
   }
 
   Widget _buildFriendsList() {
-    return BlocBuilder<DriverConnectionBloc, DriverConnectionState>(
+    return BlocConsumer<DriverConnectionBloc, DriverConnectionState>(
+      listenWhen: (previous, current) => current is FriendsListLoaded,
+      listener: (context, state) {
+        // Update cache when friends list is loaded
+        if (state is FriendsListLoaded) {
+          _cachedFriendsList = state.friends;
+        }
+      },
       buildWhen: (previous, current) {
-        // Rebuild when friends list is loaded, when removing friend, or when responding
-        return current is FriendsListLoaded || current is FriendRemoved || current is FriendRequestResponded;
+        // Rebuild when friends list is loaded, when removing friend, when responding, or when loading starts
+        return current is FriendsListLoaded ||
+            current is FriendRemoved ||
+            current is FriendRequestResponded ||
+            (current is DriverConnectionLoading && previous is FriendsListLoaded);
       },
       builder: (context, state) {
-        if (state is DriverConnectionLoading) {
-          // Check if we have cached data
-          final bloc = context.read<DriverConnectionBloc>();
-          final currentState = bloc.state;
-          if (currentState is! FriendsListLoaded) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-                  const SizedBox(height: 16),
-                  Text('Loading friends...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-                ],
-              ),
-            );
-          }
-        }
+        // Use cached data during loading if available
+        List<DriverFriend>? friendsToShow;
 
         if (state is FriendsListLoaded) {
-          final friends = state.friends;
+          friendsToShow = state.friends;
+          _cachedFriendsList = state.friends; // Update cache
+        } else if (state is DriverConnectionLoading && _cachedFriendsList != null) {
+          // Show cached data during refresh
+          friendsToShow = _cachedFriendsList;
+        } else if (_cachedFriendsList != null) {
+          // Fallback to cached data if available
+          friendsToShow = _cachedFriendsList;
+        }
 
-          if (friends.isEmpty) {
+        // Show cached or loaded friends list
+        if (friendsToShow != null) {
+          if (friendsToShow.isEmpty) {
             return _buildEmptyState(icon: Icons.people_outline_rounded, title: 'No Friends Yet', message: 'Start connecting with other drivers\nby sending friend requests!');
           }
 
@@ -368,58 +389,120 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
             color: AppColors.secondary,
             child: ListView.builder(
               padding: const EdgeInsets.all(20.0),
-              itemCount: friends.length,
+              itemCount: friendsToShow.length,
               itemBuilder: (context, index) {
-                final friend = friends[index];
+                final friend = friendsToShow![index];
                 return _buildFriendCard(friend);
               },
             ),
           );
         }
 
-        return _buildEmptyState(icon: Icons.people_outline_rounded, title: 'No Friends Yet', message: 'Start connecting with other drivers\nby sending friend requests!');
-      },
-    );
-  }
-
-  Widget _buildRequestsList(String type) {
-    return BlocBuilder<DriverConnectionBloc, DriverConnectionState>(
-      buildWhen: (previous, current) {
-        // Always rebuild when this type is loaded
-        if (current is FriendRequestsLoaded && current.type == type) {
-          return true;
-        }
-        // Rebuild when responding - this will trigger refresh in listener
-        if (current is FriendRequestResponded || current is FriendRequestSent) {
-          return true;
-        }
-        // Rebuild on loading only if we don't have previous data for this type
-        if (current is DriverConnectionLoading) {
-          // If we had data before, keep showing it during refresh
-          if (previous is FriendRequestsLoaded && previous.type == type) {
-            return false; // Don't rebuild, keep showing previous data
-          }
-          return true; // No previous data, show loading
-        }
-        return false;
-      },
-      builder: (context, state) {
-        // If we just responded, show loading while refreshing
-        // The listener will trigger refresh which will emit new FriendRequestsLoaded state
-        if (state is FriendRequestResponded || state is FriendRequestSent) {
+        // Show loading only if we don't have cached data
+        if (state is DriverConnectionLoading) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
                 const SizedBox(height: 16),
-                Text('Updating...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+                Text('Loading friends...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
               ],
             ),
           );
         }
 
-        // Show loading only if we don't have data for this type yet
+        // Default empty state
+        return _buildEmptyState(icon: Icons.people_outline_rounded, title: 'No Friends Yet', message: 'Start connecting with other drivers\nby sending friend requests!');
+      },
+    );
+  }
+
+  Widget _buildRequestsList(String type) {
+    return BlocConsumer<DriverConnectionBloc, DriverConnectionState>(
+      listenWhen: (previous, current) => current is FriendRequestsLoaded && current.type == type,
+      listener: (context, state) {
+        // Update cache when requests are loaded
+        if (state is FriendRequestsLoaded && state.type == type) {
+          if (type == 'received') {
+            _cachedReceivedRequests = state.requests;
+          } else if (type == 'sent') {
+            _cachedSentRequests = state.requests;
+          }
+        }
+      },
+      buildWhen: (previous, current) {
+        // Always rebuild when this type is loaded
+        if (current is FriendRequestsLoaded && current.type == type) {
+          return true;
+        }
+        // Rebuild on loading only if we don't have cached data for this type
+        if (current is DriverConnectionLoading) {
+          final hasCachedData = (type == 'received' && _cachedReceivedRequests != null) || (type == 'sent' && _cachedSentRequests != null);
+          return !hasCachedData; // Only rebuild if we don't have cached data
+        }
+        // Rebuild on error
+        if (current is DriverConnectionError) {
+          return true;
+        }
+        return false;
+      },
+      builder: (context, state) {
+        // Get cached data for this type
+        List<DriverConnection>? requestsToShow;
+
+        if (type == 'received') {
+          requestsToShow = _cachedReceivedRequests;
+        } else if (type == 'sent') {
+          requestsToShow = _cachedSentRequests;
+        }
+
+        // If we have loaded state for this type, use it
+        if (state is FriendRequestsLoaded && state.type == type) {
+          requestsToShow = state.requests;
+          // Update cache
+          if (type == 'received') {
+            _cachedReceivedRequests = state.requests;
+          } else if (type == 'sent') {
+            _cachedSentRequests = state.requests;
+          }
+        }
+
+        // Show cached or loaded requests list
+        if (requestsToShow != null) {
+          if (requestsToShow.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
+                await Future.delayed(const Duration(seconds: 1));
+              },
+              color: AppColors.secondary,
+              child: _buildEmptyState(
+                icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
+                title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
+                message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            color: AppColors.secondary,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20.0),
+              itemCount: requestsToShow.length,
+              itemBuilder: (context, index) {
+                final request = requestsToShow![index];
+                return _buildRequestCard(request, type);
+              },
+            ),
+          );
+        }
+
+        // Show loading only if we don't have cached data
         if (state is DriverConnectionLoading) {
           return Center(
             child: Column(
@@ -433,38 +516,18 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
           );
         }
 
-        if (state is FriendRequestsLoaded && state.type == type) {
-          final requests = state.requests;
-
-          if (requests.isEmpty) {
-            return _buildEmptyState(
-              icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
-              title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
-              message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
-              await Future.delayed(const Duration(seconds: 1));
-            },
-            color: AppColors.secondary,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20.0),
-              itemCount: requests.length,
-              itemBuilder: (context, index) {
-                final request = requests[index];
-                return _buildRequestCard(request, type);
-              },
-            ),
-          );
-        }
-
-        return _buildEmptyState(
-          icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
-          title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
-          message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
+        // Default empty state
+        return RefreshIndicator(
+          onRefresh: () async {
+            context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
+            await Future.delayed(const Duration(seconds: 1));
+          },
+          color: AppColors.secondary,
+          child: _buildEmptyState(
+            icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
+            title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
+            message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
+          ),
         );
       },
     );
@@ -624,27 +687,33 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
   }
 
   Widget _buildEmptyState({required IconData icon, required String title, required String message}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.textSecondary.withOpacity(0.1), AppColors.textSecondary.withOpacity(0.05)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height - 200, // Ensure enough height for centering
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.textSecondary.withOpacity(0.1), AppColors.textSecondary.withOpacity(0.05)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 60, color: AppColors.textSecondary.withOpacity(0.6)),
               ),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 60, color: AppColors.textSecondary.withOpacity(0.6)),
+              const SizedBox(height: 20),
+              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Text(message, style: TextStyle(fontSize: 14, color: AppColors.textSecondary), textAlign: TextAlign.center),
+            ],
           ),
-          const SizedBox(height: 20),
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          Text(message, style: TextStyle(fontSize: 14, color: AppColors.textSecondary), textAlign: TextAlign.center),
-        ],
+        ),
       ),
     );
   }

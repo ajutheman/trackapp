@@ -102,9 +102,11 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 
   void _navigateToAddPostScreen() async {
-    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddPostScreen()));
-    // If a new post was successfully added, refresh the list
-    if (result != null && result is bool && result) {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddPostScreen()));
+    // Refresh the list when returning from AddPostScreen
+    // The PostCreated state handler will also refresh, but this ensures refresh happens
+    // even if navigation happens before state is emitted
+    if (mounted) {
       context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
     }
   }
@@ -133,8 +135,26 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         ],
       ),
       body: BlocConsumer<PostsBloc, PostsState>(
+        listenWhen: (previous, current) {
+          // Only listen when transitioning to these states (prevents duplicate handling)
+          return (previous is! PostCreated && current is PostCreated) ||
+              (previous is! PostDeleted && current is PostDeleted) ||
+              (previous is! PostUpdated && current is PostUpdated) ||
+              (previous is! PostsError && current is PostsError);
+        },
         listener: (context, state) {
-          if (state is PostDeleted) {
+          // Only handle if screen is still mounted and visible
+          final route = ModalRoute.of(context);
+          if (!mounted || route == null || !route.isCurrent) {
+            return;
+          }
+          if (state is PostCreated) {
+            // Only show snackbar if not already navigating back from add_post_screen
+            // The add_post_screen will handle its own navigation
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post created successfully!'), backgroundColor: Colors.green));
+            // Refresh the list after creation
+            context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
+          } else if (state is PostDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted successfully'), backgroundColor: Colors.green));
             // Refresh the list after deletion
             context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));

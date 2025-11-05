@@ -45,7 +45,17 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
       body: BlocListener<PostsBloc, PostsState>(
+        listenWhen: (previous, current) {
+          // Only listen to states that affect this screen's data
+          // Don't listen to PostCreated/PostUpdated/PostDeleted as those are handled by other screens
+          return current is PostsLoaded || current is UserPostsLoaded || current is PostsLoading || current is PostsError;
+        },
         listener: (context, state) {
+          // Only handle if screen is still mounted and visible
+          final route = ModalRoute.of(context);
+          if (!mounted || route == null || !route.isCurrent) {
+            return;
+          }
           if (state is PostsLoaded) {
             setState(() {
               _posts = state.posts;
