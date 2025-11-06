@@ -5,6 +5,7 @@ import 'package:truck_app/features/auth/bloc/user/user_bloc.dart';
 import 'package:truck_app/features/vehicle/bloc/vehicle_metadata/vehicle_meta_bloc.dart';
 import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/connect/bloc/connect_request_bloc.dart';
+import 'package:truck_app/features/post/bloc/customer_request_bloc.dart';
 
 import '../di/locator.dart';
 import '../features/connect/bloc/driver_connection_bloc.dart';
@@ -21,4 +22,5 @@ List<BlocProvider> globalBlocProviders = [
   BlocProvider<PostsBloc>(create: (_) => locator()),
   BlocProvider<ConnectRequestBloc>(create: (_) => locator()),
   BlocProvider<DriverConnectionBloc>(create: (_) => locator()),
+  BlocProvider<CustomerRequestBloc>(create: (_) => locator()),
 ];

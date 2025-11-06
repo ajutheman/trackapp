@@ -37,4 +37,12 @@ class ApiEndpoints {
 
   // Connect Requests endpoints
   static const String connectRequests = 'api/v1/connect-requests';
+
+  // Customer Request (Post) endpoints
+  static const String getAllCustomerRequests = 'api/v1/customer-requests';
+  static const String createCustomerRequest = 'api/v1/customer-requests';
+  static const String getMyCustomerRequests = 'api/v1/customer-requests/my';
+  static const String getCustomerRequestById = 'api/v1/customer-requests';
+  static const String updateCustomerRequest = 'api/v1/customer-requests';
+  static const String deleteCustomerRequest = 'api/v1/customer-requests';
 }

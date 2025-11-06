@@ -127,6 +127,64 @@ class TripStatus {
   }
 }
 
+// Package details for customer requests
+class PackageDetails {
+  final double? weight; // in kg
+  final Dimensions? dimensions;
+  final String? description;
+
+  PackageDetails({
+    this.weight,
+    this.dimensions,
+    this.description,
+  });
+
+  factory PackageDetails.fromJson(Map<String, dynamic> json) {
+    return PackageDetails(
+      weight: json['weight'] != null ? (json['weight'] as num).toDouble() : null,
+      dimensions: json['dimensions'] != null ? Dimensions.fromJson(json['dimensions']) : null,
+      description: json['description'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (weight != null) 'weight': weight,
+      if (dimensions != null) 'dimensions': dimensions!.toJson(),
+      if (description != null) 'description': description,
+    };
+  }
+}
+
+// Dimensions for package details
+class Dimensions {
+  final double? length;
+  final double? width;
+  final double? height;
+
+  Dimensions({
+    this.length,
+    this.width,
+    this.height,
+  });
+
+  factory Dimensions.fromJson(Map<String, dynamic> json) {
+    return Dimensions(
+      length: json['length'] != null ? (json['length'] as num).toDouble() : null,
+      width: json['width'] != null ? (json['width'] as num).toDouble() : null,
+      height: json['height'] != null ? (json['height'] as num).toDouble() : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (length != null) 'length': length,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+    };
+  }
+}
+
 class Post {
   final String? id;
   final String title;
@@ -163,6 +221,14 @@ class Post {
   final TripStatus? status;
   final bool? isStarted;
 
+  // Customer request-specific fields
+  final TripLocation? pickupLocationObj; // For customer requests (pickupLocation)
+  final TripLocation? dropoffLocationObj; // For customer requests (dropoffLocation)
+  final PackageDetails? packageDetails;
+  final List<String>? images; // Image IDs
+  final List<String>? documents; // Document IDs
+  final DateTime? pickupTime;
+
   Post({
     this.id,
     required this.title,
@@ -196,10 +262,37 @@ class Post {
     this.tripAddedBy,
     this.status,
     this.isStarted,
+    this.pickupLocationObj,
+    this.dropoffLocationObj,
+    this.packageDetails,
+    this.images,
+    this.documents,
+    this.pickupTime,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
     try {
+      // Handle user field - can be String (ID) or Map (object)
+      String? userId;
+      if (json['userId'] != null) {
+        userId = json['userId'].toString();
+      } else if (json['user'] != null) {
+        if (json['user'] is Map) {
+          userId = json['user']?['_id']?.toString();
+        } else if (json['user'] is String) {
+          userId = json['user'];
+        }
+      }
+      userId ??= json['tripAddedBy']?['_id']?.toString();
+
+      String? userName;
+      if (json['userName'] != null) {
+        userName = json['userName'].toString();
+      } else if (json['user'] != null && json['user'] is Map) {
+        userName = json['user']?['name']?.toString();
+      }
+      userName ??= json['tripAddedBy']?['name']?.toString();
+
       return Post(
         id: json['_id'] ?? json['id'],
         title: json['title'] ?? '',
@@ -207,17 +300,29 @@ class Post {
         date: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
         imageUrl: json['imageUrl'] ?? json['image'],
         postType: json['postType'] ?? json['type'],
-        pickupLocation: json['pickupLocation'] ?? json['from'] ?? json['tripStartLocation']?['address'],
-        dropLocation: json['dropLocation'] ?? json['to'] ?? json['tripDestination']?['address'],
+        pickupLocation: json['pickupLocation'] != null && json['pickupLocation'] is Map
+            ? json['pickupLocation']['address']
+            : (json['pickupLocation'] ?? json['from'] ?? json['tripStartLocation']?['address']),
+        dropLocation: json['dropoffLocation'] != null && json['dropoffLocation'] is Map
+            ? json['dropoffLocation']['address']
+            : (json['dropLocation'] ?? json['to'] ?? json['tripDestination']?['address']),
         goodsType: json['goodsType'] is String ? json['goodsType'] : (json['goodsType'] is Map ? json['goodsType']['name'] : json['goods']),
         vehicleType: json['vehicleType'] is String ? json['vehicleType'] : (json['vehicle'] is Map ? json['vehicle']['vehicleNumber'] : null),
-        userId: json['userId'] ?? json['user']?['_id'] ?? json['tripAddedBy']?['_id'],
-        userName: json['userName'] ?? json['user']?['name'] ?? json['tripAddedBy']?['name'],
+        userId: userId,
+        userName: userName,
         isActive: json['isActive'] ?? true,
         createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
         updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-        tripStartLocation: json['tripStartLocation'] != null ? TripLocation.fromJson(json['tripStartLocation']) : null,
-        tripDestination: json['tripDestination'] != null ? TripLocation.fromJson(json['tripDestination']) : null,
+        tripStartLocation: json['tripStartLocation'] != null
+            ? TripLocation.fromJson(json['tripStartLocation'])
+            : (json['pickupLocation'] != null && json['pickupLocation'] is Map
+                ? TripLocation.fromJson(json['pickupLocation'])
+                : null),
+        tripDestination: json['tripDestination'] != null
+            ? TripLocation.fromJson(json['tripDestination'])
+            : (json['dropoffLocation'] != null && json['dropoffLocation'] is Map
+                ? TripLocation.fromJson(json['dropoffLocation'])
+                : null),
         viaRoutes: json['viaRoutes'] != null ? (json['viaRoutes'] as List).map((route) => TripLocation.fromJson(route)).toList() : null,
         routeGeoJSON: json['routeGeoJSON'] != null ? RouteGeoJSON.fromJson(json['routeGeoJSON']) : null,
         vehicleDetails: json['vehicle'] != null && json['vehicle'] is Map ? Vehicle.fromJson(json['vehicle']) : null,
@@ -233,6 +338,29 @@ class Post {
         tripAddedBy: json['tripAddedBy'] != null ? User.fromJson(json['tripAddedBy']) : null,
         status: json['status'] != null && json['status'] is Map ? TripStatus.fromJson(json['status']) : null,
         isStarted: json['isStarted'],
+        // Customer request fields
+        pickupLocationObj: json['pickupLocation'] != null && json['pickupLocation'] is Map ? TripLocation.fromJson(json['pickupLocation']) : null,
+        dropoffLocationObj: json['dropoffLocation'] != null && json['dropoffLocation'] is Map ? TripLocation.fromJson(json['dropoffLocation']) : null,
+        packageDetails: json['packageDetails'] != null ? PackageDetails.fromJson(json['packageDetails']) : null,
+        images: json['images'] != null 
+            ? (json['images'] as List).map((e) {
+                if (e is Map) {
+                  // Extract URL if available, otherwise use _id
+                  return e['url']?.toString() ?? e['_id']?.toString() ?? e.toString();
+                }
+                return e.toString();
+              }).toList() 
+            : null,
+        documents: json['documents'] != null 
+            ? (json['documents'] as List).map((e) {
+                if (e is Map) {
+                  // Extract URL if available, otherwise use _id
+                  return e['url']?.toString() ?? e['_id']?.toString() ?? e.toString();
+                }
+                return e.toString();
+              }).toList() 
+            : null,
+        pickupTime: json['pickupTime'] != null ? DateTime.parse(json['pickupTime']) : null,
       );
     } catch (e) {
       print('Error parsing Post from JSON: $e');
@@ -271,6 +399,13 @@ class Post {
       if (tripAddedBy != null) 'tripAddedBy': tripAddedBy!.toJson(),
       if (status != null) 'status': status!.toJson(),
       if (isStarted != null) 'isStarted': isStarted,
+      // Customer request fields
+      if (pickupLocationObj != null) 'pickupLocation': pickupLocationObj!.toJson(),
+      if (dropoffLocationObj != null) 'dropoffLocation': dropoffLocationObj!.toJson(),
+      if (packageDetails != null) 'packageDetails': packageDetails!.toJson(),
+      if (images != null) 'images': images,
+      if (documents != null) 'documents': documents,
+      if (pickupTime != null) 'pickupTime': pickupTime!.toIso8601String(),
     };
   }
 
@@ -308,6 +443,12 @@ class Post {
     User? tripAddedBy,
     TripStatus? status,
     bool? isStarted,
+    TripLocation? pickupLocationObj,
+    TripLocation? dropoffLocationObj,
+    PackageDetails? packageDetails,
+    List<String>? images,
+    List<String>? documents,
+    DateTime? pickupTime,
   }) {
     return Post(
       id: id ?? this.id,
@@ -342,6 +483,12 @@ class Post {
       tripAddedBy: tripAddedBy ?? this.tripAddedBy,
       status: status ?? this.status,
       isStarted: isStarted ?? this.isStarted,
+      pickupLocationObj: pickupLocationObj ?? this.pickupLocationObj,
+      dropoffLocationObj: dropoffLocationObj ?? this.dropoffLocationObj,
+      packageDetails: packageDetails ?? this.packageDetails,
+      images: images ?? this.images,
+      documents: documents ?? this.documents,
+      pickupTime: pickupTime ?? this.pickupTime,
     );
   }
 }

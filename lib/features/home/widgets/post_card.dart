@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../services/local/local_services.dart';
 import '../model/post.dart';
 import '../../post/screens/trip_detail_screen.dart';
+import '../../connect/screens/select_trip_or_request_dialog.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -21,6 +23,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _pulseAnimation;
+  bool? _isDriver;
+  bool _isLoadingUserType = true;
 
   @override
   void initState() {
@@ -29,6 +33,98 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _pulseController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this);
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _loadUserType();
+  }
+
+  Future<void> _loadUserType() async {
+    final isDriver = await LocalService.getIsDriver();
+    if (mounted) {
+      setState(() {
+        _isDriver = isDriver ?? false;
+        _isLoadingUserType = false;
+      });
+    }
+  }
+
+  /// Determines if the post is a trip (driver post) or customer request (user post)
+  bool _isTrip() {
+    // Trip has tripStartLocation and tripAddedBy
+    // Customer request has pickupLocationObj and user (not tripAddedBy)
+    return widget.post.tripStartLocation != null && widget.post.tripAddedBy != null;
+  }
+
+  /// Determines if the current user owns this post
+  bool _isOwnPost() {
+    // For trips: check if tripAddedBy matches current user
+    // For customer requests: check if user matches current user
+    // Note: We need to get current user ID, but for now we'll check based on available data
+    // This is a simplified check - in production, you'd compare with actual logged-in user ID
+    return false; // Will be enhanced when we have access to current user ID
+  }
+
+  /// Determines if connect button should be shown
+  bool _shouldShowConnectButton() {
+    if (_isLoadingUserType || _isOwnPost()) return false;
+    
+    final isTrip = _isTrip();
+    
+    // Driver sees customer request (post) -> can connect
+    if (_isDriver == true && !isTrip) {
+      return true;
+    }
+    
+    // User sees trip -> can connect
+    if (_isDriver == false && isTrip) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// Gets the recipient ID and name from the post
+  String? _getRecipientId() {
+    if (_isTrip()) {
+      // For trips, recipient is the tripAddedBy (driver)
+      return widget.post.tripAddedBy?.id;
+    } else {
+      // For customer requests, recipient is the user (customer)
+      return widget.post.userId;
+    }
+  }
+
+  String? _getRecipientName() {
+    if (_isTrip()) {
+      return widget.post.tripAddedBy?.name;
+    } else {
+      return widget.post.userName;
+    }
+  }
+
+  void _handleConnect() {
+    final recipientId = _getRecipientId();
+    if (recipientId == null || widget.post.id == null) return;
+
+    if (_isDriver == true) {
+      // Driver connecting to customer request - need to select trip
+      showDialog(
+        context: context,
+        builder: (context) => SelectTripDialog(
+          customerRequestId: widget.post.id!,
+          recipientId: recipientId,
+          recipientName: _getRecipientName(),
+        ),
+      );
+    } else if (_isDriver == false) {
+      // User connecting to trip - need to select customer request
+      showDialog(
+        context: context,
+        builder: (context) => SelectCustomerRequestDialog(
+          tripId: widget.post.id!,
+          recipientId: recipientId,
+          recipientName: _getRecipientName(),
+        ),
+      );
+    }
   }
 
   @override
@@ -432,39 +528,40 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                   ),
                               ] else ...[
                                 // Default action buttons for regular posts
-                                Expanded(
-                                  flex: 2,
-                                  child: AnimatedBuilder(
-                                    animation: _pulseAnimation,
-                                    builder: (context, child) {
-                                      return Transform.scale(
-                                        scale: _pulseAnimation.value,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
-                                            borderRadius: BorderRadius.circular(14),
-                                            boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
-                                          ),
-                                          child: ElevatedButton.icon(
-                                            onPressed: () {
-                                              _pulseController.forward().then((_) => _pulseController.reverse());
-                                              _showSuccessDialog(context);
-                                            },
-                                            icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
-                                            label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.transparent,
-                                              shadowColor: Colors.transparent,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                if (_shouldShowConnectButton())
+                                  Expanded(
+                                    flex: 2,
+                                    child: AnimatedBuilder(
+                                      animation: _pulseAnimation,
+                                      builder: (context, child) {
+                                        return Transform.scale(
+                                          scale: _pulseAnimation.value,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
+                                              borderRadius: BorderRadius.circular(14),
+                                              boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                                            ),
+                                            child: ElevatedButton.icon(
+                                              onPressed: () {
+                                                _pulseController.forward().then((_) => _pulseController.reverse());
+                                                _handleConnect();
+                                              },
+                                              icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
+                                              label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.transparent,
+                                                shadowColor: Colors.transparent,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
+                                if (_shouldShowConnectButton()) const SizedBox(width: 10),
                                 Container(
                                   decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
                                   child: IconButton(
@@ -498,81 +595,4 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     return '${date.day} ${months[date.month - 1]}, ${date.year}';
   }
 
-  void _showSuccessDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10))],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Animated success icon
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 600),
-                  tween: Tween<double>(begin: 0.0, end: 1.0),
-                  builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 5))],
-                        ),
-                        child: Icon(Icons.check_circle_rounded, color: AppColors.secondary, size: 60),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                const Text('🎉 Connection Request Sent!', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                Text(
-                  'Your connection request has been successfully sent. We\'ll notify you once it\'s accepted.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 15, height: 1.4),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Awesome!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }

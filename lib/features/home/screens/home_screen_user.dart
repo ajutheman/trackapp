@@ -10,8 +10,9 @@ import '../model/post.dart';
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart';
 import '../bloc/posts_bloc.dart';
-import '../../post/screens/my_trip_screen.dart';
-import '../../post/screens/add_trip_screen.dart';
+import '../../post/screens/my_post_screen.dart';
+import '../../post/screens/add_post_screen.dart';
+import '../../post/bloc/customer_request_bloc.dart';
 
 // Placeholder for a simple ConnectCard for Recent Connects
 
@@ -26,17 +27,21 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   // Posts from API will be managed by BLoC
   List<Post> _posts = [];
   List<Post> _myPosts = [];
+  List<Post> _trips = [];
   bool _isLoading = false;
   bool _isLoadingMyPosts = false;
+  bool _isLoadingTrips = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // Fetch all posts when the screen initializes
+    // Fetch all customer requests (posts) when the screen initializes
+    context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
+    // Also fetch user's own customer requests (posts)
+    context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 10));
+    // Fetch trips for users to see and connect
     context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
-    // Also fetch user's own posts
-    context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 10));
   }
 
   @override
@@ -44,45 +49,78 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: BlocListener<PostsBloc, PostsState>(
-        listenWhen: (previous, current) {
-          // Only listen to states that affect this screen's data
-          // Don't listen to PostCreated/PostUpdated/PostDeleted as those are handled by other screens
-          return current is PostsLoaded || current is UserPostsLoaded || current is PostsLoading || current is PostsError;
-        },
-        listener: (context, state) {
-          // Only handle if screen is still mounted and visible
-          final route = ModalRoute.of(context);
-          if (!mounted || route == null || !route.isCurrent) {
-            return;
-          }
-          if (state is PostsLoaded) {
-            setState(() {
-              _posts = state.posts;
-              _isLoading = false;
-              _errorMessage = null;
-            });
-          } else if (state is UserPostsLoaded) {
-            setState(() {
-              _myPosts = state.posts;
-              _isLoadingMyPosts = false;
-            });
-          } else if (state is PostsLoading) {
-            setState(() {
-              _isLoading = true;
-              _errorMessage = null;
-            });
-          } else if (state is PostsError) {
-            setState(() {
-              _isLoading = false;
-              _errorMessage = state.message;
-            });
-            // Only show snackbar for critical errors, not for empty results
-            if (!state.message.toLowerCase().contains('no posts') && !state.message.toLowerCase().contains('empty')) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-            }
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<CustomerRequestBloc, CustomerRequestState>(
+            listenWhen: (previous, current) {
+              return current is CustomerRequestsLoaded ||
+                  current is MyCustomerRequestsLoaded ||
+                  current is CustomerRequestLoading ||
+                  current is CustomerRequestError;
+            },
+            listener: (context, state) {
+              final route = ModalRoute.of(context);
+              if (!mounted || route == null || !route.isCurrent) {
+                return;
+              }
+              if (state is CustomerRequestsLoaded) {
+                setState(() {
+                  _posts = state.requests;
+                  _isLoading = false;
+                  _errorMessage = null;
+                });
+              } else if (state is MyCustomerRequestsLoaded) {
+                setState(() {
+                  _myPosts = state.requests;
+                  _isLoadingMyPosts = false;
+                });
+              } else if (state is CustomerRequestLoading) {
+                setState(() {
+                  _isLoading = true;
+                  _errorMessage = null;
+                });
+              } else if (state is CustomerRequestError) {
+                setState(() {
+                  _isLoading = false;
+                  _errorMessage = state.message;
+                });
+                if (!state.message.toLowerCase().contains('no posts') &&
+                    !state.message.toLowerCase().contains('empty')) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+          ),
+          BlocListener<PostsBloc, PostsState>(
+            listenWhen: (previous, current) {
+              return current is PostsLoaded ||
+                  current is PostsLoading ||
+                  current is PostsError;
+            },
+            listener: (context, state) {
+              final route = ModalRoute.of(context);
+              if (!mounted || route == null || !route.isCurrent) {
+                return;
+              }
+              if (state is PostsLoaded) {
+                setState(() {
+                  _trips = state.posts;
+                  _isLoadingTrips = false;
+                });
+              } else if (state is PostsLoading) {
+                setState(() {
+                  _isLoadingTrips = true;
+                });
+              } else if (state is PostsError) {
+                setState(() {
+                  _isLoadingTrips = false;
+                });
+              }
+            },
+          ),
+        ],
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -93,6 +131,8 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               _buildRecentConnectsSection(),
               const SizedBox(height: 24),
               _buildMyPostsSection(),
+              const SizedBox(height: 24),
+              _buildTripsSection(),
               const SizedBox(height: 24),
               _buildListOfPostsSection(),
             ],
@@ -246,8 +286,8 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             if (_myPosts.isNotEmpty)
               TextButton(
                 onPressed: () {
-                  // Navigate to My Posts Screen
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTripScreen()));
+                  // Navigate to My Posts Screen (Customer Requests)
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPostScreen()));
                 },
                 child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
               ),
@@ -259,7 +299,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               ),
               child: IconButton(
                 onPressed: () {
-                  context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 10));
+                  context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 10));
                 },
                 icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
                 tooltip: 'Refresh',
@@ -315,8 +355,8 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
                     ),
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // Navigate to add post screen
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTripScreen()));
+                        // Navigate to add post screen (customer request)
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPostScreen()));
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 20),
                       label: const Text('Create Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -349,6 +389,101 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     );
   }
 
+  Widget _buildTripsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.route_rounded, color: AppColors.secondary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text('Available Trips', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            const Spacer(),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                },
+                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+                tooltip: 'Refresh',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_isLoadingTrips)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40.0),
+              child: Column(
+                children: [
+                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
+                  const SizedBox(height: 16),
+                  Text('Loading trips...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+          )
+        else if (_trips.isEmpty)
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.surface, AppColors.surface.withOpacity(0.5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.05)]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.route_outlined, color: AppColors.secondary, size: 56),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('No Trips Available', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text('Check back later for new trips', style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _trips.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: AnimatedOpacity(opacity: 1.0, duration: Duration(milliseconds: 300 + (index * 50)), child: PostCard(post: _trips[index])),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
   Widget _buildListOfPostsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,7 +503,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               child: Icon(Icons.local_shipping_rounded, color: AppColors.secondary, size: 20),
             ),
             const SizedBox(width: 12),
-            Text('Available Trips', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            Text('Available Posts', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
             const Spacer(),
             Container(
               decoration: BoxDecoration(
@@ -377,7 +512,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               ),
               child: IconButton(
                 onPressed: () {
-                  context.read<PostsBloc>().add(const RefreshPosts());
+                  context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
                 },
                 icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
                 tooltip: 'Refresh',

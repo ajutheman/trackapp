@@ -10,6 +10,8 @@ import 'package:truck_app/features/home/repo/posts_repo.dart';
 import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/connect/repo/connect_request_repo.dart';
 import 'package:truck_app/features/connect/bloc/connect_request_bloc.dart';
+import 'package:truck_app/features/post/repo/customer_request_repo.dart';
+import 'package:truck_app/features/post/bloc/customer_request_bloc.dart';
 
 import '../features/auth/bloc/image_upload/image_upload_bloc.dart';
 import '../features/auth/repo/auth_repo.dart';
@@ -34,6 +36,7 @@ void setupLocator() {
   locator.registerLazySingleton(() => PostsRepository(apiService: locator()));
   locator.registerLazySingleton(() => ConnectRequestRepository(apiService: locator()));
   locator.registerLazySingleton(() => DriverConnectionRepository(apiService: locator()));
+  locator.registerLazySingleton(() => CustomerRequestRepository(apiService: locator()));
 
   // BLoCs
   locator.registerFactory(() => AuthBloc(repository: locator()));
@@ -45,4 +48,5 @@ void setupLocator() {
   locator.registerFactory(() => PostsBloc(repository: locator()));
   locator.registerFactory(() => ConnectRequestBloc(repository: locator()));
   locator.registerFactory(() => DriverConnectionBloc(repository: locator()));
+  locator.registerFactory(() => CustomerRequestBloc(repository: locator()));
 }

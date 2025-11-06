@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/constants/dummy_data.dart';
 import 'package:truck_app/features/notification/screen/notification_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +8,7 @@ import '../../../core/constants/app_images.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../connect/widgets/connect_card.dart';
 import '../../search/screens/search_screen.dart';
+import '../../post/bloc/customer_request_bloc.dart';
 import '../model/post.dart';
 import '../widgets/post_card.dart';
 
@@ -18,74 +20,15 @@ class HomeScreenDriver extends StatefulWidget {
 }
 
 class _HomeScreenDriverState extends State<HomeScreenDriver> {
-  // Mock data for Latest Posts
-  final List<Post> _latestPosts = [
-    Post(
-      id: '68ee48f0cfd19f82c673a512',
-      title: 'Fresh Vegetables Delivery to Kochi',
-      description: 'Transporting fresh vegetables from Pathanamthitta to Kochi via Kottayam.',
-      date: DateTime.now().subtract(const Duration(hours: 1)),
-      routeGeoJSON: RouteGeoJSON(
-        type: 'LineString',
-        coordinates: [
-          [76.7704, 9.2645],
-          [76.5212, 9.5916],
-          [76.3516, 10.1076],
-          [76.2875, 9.9674],
-        ],
-      ),
-      distance: Distance(value: 135.5, text: '135.5 km'),
-      duration: TripDuration(value: 150, text: '2 hours 30 mins'),
-      currentLocation: TripLocation(coordinates: [76.7704, 9.2645]),
-      tripAddedBy: User(id: '68e0156e2655da19d6948c7d', name: 'SDSDsd', phone: '1212121212', email: '1212@sdasd.com'),
-      vehicleDetails: Vehicle(id: '68ee48c8cfd19f82c673a4da', vehicleNumber: 'KL12AB1212', vehicleType: 'Mini Truck', vehicleBodyType: 'Refrigerated'),
-      driver: User(id: '68e0156e2655da19d6948c7d', name: 'SDSDsd', phone: '1212121212', email: '1212@sdasd.com'),
-      selfDrive: true,
-      goodsTypeDetails: GoodsType(id: '684aa733b88048daeaebff93', name: 'Food', description: 'Food products and consumables'),
-      tripStartLocation: TripLocation(address: 'Pathanamthitta Bus Stand, Kerala', coordinates: [76.7704, 9.2645]),
-      tripDestination: TripLocation(address: 'Kochi, Kerala', coordinates: [76.2875, 9.9674]),
-      tripStartDate: DateTime.now().add(const Duration(hours: 3)),
-      tripEndDate: DateTime.now().add(const Duration(hours: 6)),
-      isStarted: false,
-      isActive: true,
-      imageUrl: 'https://via.placeholder.com/600x400.png?text=Vegetable+Delivery',
-    ),
-    Post(
-      id: '68ee49b9cfd19f82c673a5ab',
-      title: 'Bulk Construction Material Delivery to Palakkad',
-      description: 'Delivering cement and steel rods from Thrissur to Palakkad.',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      routeGeoJSON: RouteGeoJSON(
-        type: 'LineString',
-        coordinates: [
-          [76.2133, 10.5276],
-          [76.4650, 10.7740],
-        ],
-      ),
-      distance: Distance(value: 90.0, text: '90 km'),
-      duration: TripDuration(value: 120, text: '2 hours'),
-      currentLocation: TripLocation(coordinates: [76.2133, 10.5276]),
-      tripAddedBy: User(id: '68e0156e2655da19d6948c7f', name: 'BuildLogistics', phone: '7890123456', email: 'contact@buildlog.com'),
-      vehicleDetails: Vehicle(id: '68ee48c8cfd19f82c673a4dc', vehicleNumber: 'KL09XY9999', vehicleType: 'Heavy Truck', vehicleBodyType: 'Open Body'),
-      driver: User(id: '68e0156e2655da19d6948c80', name: 'Rajeev Menon', phone: '9988771122', email: 'rajeev@driver.com'),
-      selfDrive: false,
-      goodsTypeDetails: GoodsType(id: '684aa733b88048daeaebff95', name: 'Construction Materials', description: 'Cement, rods, and construction items'),
-      tripStartLocation: TripLocation(address: 'Thrissur Industrial Estate', coordinates: [76.2133, 10.5276]),
-      tripDestination: TripLocation(address: 'Palakkad Construction Site', coordinates: [76.4650, 10.7740]),
-      tripStartDate: DateTime.now().add(const Duration(days: 1)),
-      tripEndDate: DateTime.now().add(const Duration(days: 1, hours: 3)),
-      isStarted: false,
-      isActive: true,
-      imageUrl: 'https://via.placeholder.com/600x400.png?text=Construction+Delivery',
-    ),
-  ];
-
+  List<Post> _latestPosts = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    // Fetch customer requests (posts) for drivers
+    context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
   }
 
   @override
@@ -93,11 +36,37 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_buildSearchBox(), const SizedBox(height: 24), _buildListOfPostsSection(), const SizedBox(height: 24), _buildConnectRequestsSection()],
+      body: BlocListener<CustomerRequestBloc, CustomerRequestState>(
+        listenWhen: (previous, current) {
+          return current is CustomerRequestsLoaded ||
+              current is CustomerRequestLoading ||
+              current is CustomerRequestError;
+        },
+        listener: (context, state) {
+          if (state is CustomerRequestsLoaded) {
+            setState(() {
+              _latestPosts = state.requests;
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          } else if (state is CustomerRequestLoading) {
+            setState(() {
+              _isLoading = true;
+              _errorMessage = null;
+            });
+          } else if (state is CustomerRequestError) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = state.message;
+            });
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_buildSearchBox(), const SizedBox(height: 24), _buildListOfPostsSection(), const SizedBox(height: 24), _buildConnectRequestsSection()],
+          ),
         ),
       ),
     );
@@ -250,17 +219,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               ),
               child: IconButton(
                 onPressed: () {
-                  setState(() {
-                    _isLoading = true;
-                    _errorMessage = null;
-                  });
-                  // Simulate loading
-                  Future.delayed(const Duration(seconds: 1), () {
-                    setState(() {
-                      _isLoading = false;
-                    });
-                    _showSnackBar('Refreshed successfully!');
-                  });
+                  context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
                 },
                 icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
                 tooltip: 'Refresh',
