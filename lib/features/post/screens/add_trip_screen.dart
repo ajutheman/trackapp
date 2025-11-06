@@ -15,14 +15,14 @@ import 'package:truck_app/services/network/api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
 
-class AddPostScreen extends StatefulWidget {
-  const AddPostScreen({super.key});
+class AddTripScreen extends StatefulWidget {
+  const AddTripScreen({super.key});
 
   @override
-  State<AddPostScreen> createState() => _AddPostScreenState();
+  State<AddTripScreen> createState() => _AddTripScreenState();
 }
 
-class _AddPostScreenState extends State<AddPostScreen> {
+class _AddTripScreenState extends State<AddTripScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers for text fields

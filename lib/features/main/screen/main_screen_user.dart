@@ -6,8 +6,8 @@ import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
 
 import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../post/screens/add_post_screen.dart';
-import '../../post/screens/my_posts_screen.dart';
+import '../../post/screens/add_trip_screen.dart';
+import '../../post/screens/my_trip_screen.dart';
 
 class MainScreenUser extends StatefulWidget {
   const MainScreenUser({super.key});
@@ -23,15 +23,15 @@ class _MainScreenUserState extends State<MainScreenUser> {
   final List<Widget> _screens = [
     const HomeScreenUser(),
     ConnectScreen(),
-    AddPostScreen(),
-    MyPostsScreen(),
+    AddTripScreen(),
+    MyTripScreen(),
     const ProfileScreenUser(),
   ];
 
   void _onItemTapped(int index) {
     if (index == 2) {
       // Handle center button (Sell)
-      Navigator.push(context, MaterialPageRoute(builder: (_) => AddPostScreen()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => AddTripScreen()));
       return;
     }
     setState(() {

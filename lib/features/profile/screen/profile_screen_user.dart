@@ -13,7 +13,7 @@ import 'package:truck_app/services/network/api_service.dart';
 // Assuming AppColors is defined in this path
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../post/screens/my_posts_screen.dart';
+import '../../post/screens/my_trip_screen.dart';
 import '../../legal/screens/terms_and_conditions_screen.dart';
 import '../../legal/screens/privacy_policy_screen.dart';
 import '../../legal/screens/help_screen.dart';
@@ -179,7 +179,7 @@ class _ProfileScreenUserState extends State<ProfileScreenUser> {
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
-            _buildActionButton(label: 'My Posts', icon: Icons.assignment_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen()))),
+            _buildActionButton(label: 'My Posts', icon: Icons.assignment_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyTripScreen()))),
             const SizedBox(height: 12),
             _buildActionButton(
               label: 'Terms and Conditions',

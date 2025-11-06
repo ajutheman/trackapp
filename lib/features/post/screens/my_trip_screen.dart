@@ -1,20 +1,20 @@
-// lib/features/post/screens/my_posts_screen.dart
+// lib/features/post/screens/my_trip_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/home/widgets/post_card.dart';
-import 'package:truck_app/features/post/screens/add_post_screen.dart';
+import 'package:truck_app/features/post/screens/add_trip_screen.dart';
 
-class MyPostsScreen extends StatefulWidget {
-  const MyPostsScreen({super.key});
+class MyTripScreen extends StatefulWidget {
+  const MyTripScreen({super.key});
 
   @override
-  State<MyPostsScreen> createState() => _MyPostsScreenState();
+  State<MyTripScreen> createState() => _MyTripScreenState();
 }
 
-class _MyPostsScreenState extends State<MyPostsScreen> {
+class _MyTripScreenState extends State<MyTripScreen> {
   List<Post> posts = [];
 
   @override
@@ -25,7 +25,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 
   void _editPost(Post post) async {
-    // Navigate to AddPostScreen, passing the post to be edited
+    // Navigate to AddTripScreen, passing the post to be edited
     // In a real app, you would implement edit functionality
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit feature coming soon for "${post.title}"'), backgroundColor: AppColors.info));
   }
@@ -103,9 +103,9 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
   }
 
-  void _navigateToAddPostScreen() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddPostScreen()));
-    // Refresh the list when returning from AddPostScreen
+  void _navigateToAddTripScreen() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddTripScreen()));
+    // Refresh the list when returning from AddTripScreen
     // The PostCreated state handler will also refresh, but this ensures refresh happens
     // even if navigation happens before state is emitted
     if (mounted) {
@@ -237,7 +237,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                         boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: _navigateToAddPostScreen,
+                        onPressed: _navigateToAddTripScreen,
                         icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 24),
                         label: const Text('Create New Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
                         style: ElevatedButton.styleFrom(

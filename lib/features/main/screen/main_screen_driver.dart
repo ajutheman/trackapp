@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:truck_app/core/constants/dummy_data.dart';
 import 'package:truck_app/features/connect/screens/connect_screen.dart';
-import 'package:truck_app/features/post/screens/add_post_screen.dart';
+import 'package:truck_app/features/post/screens/add_trip_screen.dart';
 import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../home/screens/home_screen_driver.dart';
-import '../../post/screens/my_posts_screen.dart';
+import '../../post/screens/my_trip_screen.dart';
 import '../../profile/screen/profile_screen_driver.dart';
 
 class MainScreenDriver extends StatefulWidget {
@@ -24,15 +24,15 @@ class _MainScreenDriverState extends State<MainScreenDriver>
   final List<Widget> _screens = [
     const HomeScreenDriver(),
     ConnectScreen(),
-    AddPostScreen(),
-    MyPostsScreen(),
+    AddTripScreen(),
+    MyTripScreen(),
     const ProfileScreenDriver(),
   ];
 
   void _onItemTapped(int index) {
     if (index == 2) {
       // Handle center button (Sell)
-      Navigator.push(context, MaterialPageRoute(builder: (_) => AddPostScreen()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => AddTripScreen()));
       return;
     }
     setState(() {

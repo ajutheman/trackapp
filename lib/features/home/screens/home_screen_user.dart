@@ -10,8 +10,8 @@ import '../model/post.dart';
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart';
 import '../bloc/posts_bloc.dart';
-import '../../post/screens/my_posts_screen.dart';
-import '../../post/screens/add_post_screen.dart';
+import '../../post/screens/my_trip_screen.dart';
+import '../../post/screens/add_trip_screen.dart';
 
 // Placeholder for a simple ConnectCard for Recent Connects
 
@@ -247,7 +247,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               TextButton(
                 onPressed: () {
                   // Navigate to My Posts Screen
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPostsScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTripScreen()));
                 },
                 child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
               ),
@@ -316,7 +316,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         // Navigate to add post screen
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPostScreen()));
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AddTripScreen()));
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 20),
                       label: const Text('Create Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),

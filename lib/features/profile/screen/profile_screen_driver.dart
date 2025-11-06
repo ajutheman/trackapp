@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
 import 'package:truck_app/features/connect/screens/my_friends_screen.dart';
-import 'package:truck_app/features/post/screens/my_posts_screen.dart';
+import 'package:truck_app/features/post/screens/my_trip_screen.dart';
 import 'package:truck_app/features/profile/model/profile.dart';
 import 'package:truck_app/features/profile/repo/profile_repo.dart';
 import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
@@ -180,7 +180,7 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
             const SizedBox(height: 40),
 
             // Action Buttons/ListTiles
-            _buildActionButton(label: 'My Posts', icon: Icons.assignment_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyPostsScreen()))),
+            _buildActionButton(label: 'My Posts', icon: Icons.assignment_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyTripScreen()))),
             const SizedBox(height: 12),
             _buildActionButton(
               label: 'My Vehicle',
