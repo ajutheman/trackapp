@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
-import 'package:truck_app/features/post/screens/add_post_screen.dart';
+import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/home/widgets/post_card.dart';
-import 'package:truck_app/features/home/bloc/posts_bloc.dart';
+import 'package:truck_app/features/post/screens/add_post_screen.dart';
 
 class MyPostsScreen extends StatefulWidget {
   const MyPostsScreen({super.key});
@@ -15,6 +15,8 @@ class MyPostsScreen extends StatefulWidget {
 }
 
 class _MyPostsScreenState extends State<MyPostsScreen> {
+  List<Post> posts = [];
+
   @override
   void initState() {
     super.initState();
@@ -169,6 +171,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
             context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
           } else if (state is PostsError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+          } else if (state is UserPostsLoaded) {
+            posts = state.posts;
           }
         },
         builder: (context, state) {
@@ -195,8 +199,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
               ),
             );
           }
-
-          final posts = state is UserPostsLoaded ? state.posts : <Post>[];
 
           if (posts.isEmpty) {
             return Center(

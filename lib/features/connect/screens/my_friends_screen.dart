@@ -220,16 +220,27 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => DriverConnectionBloc(repository: DriverConnectionRepository(apiService: locator<ApiService>()))..add(const RefreshDriverConnections()),
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('My Friends', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 20)),
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('My Friends', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 20)),
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+            ),
+            child: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary, size: 20),
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -237,109 +248,95 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
               ),
-              child: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary, size: 20),
+              child: Icon(Icons.add_rounded, color: AppColors.secondary, size: 20),
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: _showSendRequestDialog,
+            tooltip: 'Send Friend Request',
           ),
-          actions: [
-            IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-                ),
-                child: Icon(Icons.add_rounded, color: AppColors.secondary, size: 20),
-              ),
-              onPressed: _showSendRequestDialog,
-              tooltip: 'Send Friend Request',
-            ),
-            IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-                ),
-                child: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 20),
-              ),
-              onPressed: () {
-                // Refresh all lists
-                context.read<DriverConnectionBloc>().add(const FetchFriendsList());
-                context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
-                context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
-              },
-            ),
-            const SizedBox(width: 8),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(60),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
               ),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Colors.white,
-                indicatorSize: TabBarIndicatorSize.tab,
-                unselectedLabelColor: AppColors.textSecondary,
-                dividerHeight: 0,
-                indicator: BoxDecoration(
-                  gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
-                ),
-                indicatorPadding: const EdgeInsets.all(2),
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                tabs: const [Tab(text: 'Friends'), Tab(text: 'Received'), Tab(text: 'Sent')],
-              ),
+              child: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 20),
             ),
-          ),
-        ),
-        body: BlocListener<DriverConnectionBloc, DriverConnectionState>(
-          listener: (context, state) {
-            if (state is FriendRequestSent) {
-              _showSnackBar('Friend request sent successfully! 🎉');
+            onPressed: () {
               // Refresh all lists
               context.read<DriverConnectionBloc>().add(const FetchFriendsList());
               context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
               context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
-            } else if (state is FriendRequestResponded) {
-              final action = state.action == 'accept' ? 'accepted' : 'rejected';
-              _showSnackBar('Friend request $action successfully!', isSuccess: state.action == 'accept');
-              // Clear caches and refresh all lists after responding
-              _cachedReceivedRequests = null;
-              _cachedSentRequests = null;
-              context.read<DriverConnectionBloc>().add(const FetchFriendsList());
-              context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
-              context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
-            } else if (state is FriendRemoved) {
-              _showSnackBar('Friend removed successfully!');
-              // Clear cache and refresh friends list
-              _cachedFriendsList = null;
-              context.read<DriverConnectionBloc>().add(const FetchFriendsList());
-            } else if (state is FriendsListLoaded) {
-              // Update cache when friends list is loaded
-              _cachedFriendsList = state.friends;
-            } else if (state is FriendRequestsLoaded) {
-              // Update cache when requests are loaded
-              if (state.type == 'received') {
-                _cachedReceivedRequests = state.requests;
-              } else if (state.type == 'sent') {
-                _cachedSentRequests = state.requests;
-              }
-            } else if (state is DriverConnectionError) {
-              _showSnackBar(state.message, isSuccess: false);
-            }
-          },
-          child: TabBarView(controller: _tabController, children: [_buildFriendsList(), _buildRequestsList('received'), _buildRequestsList('sent')]),
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.white,
+              indicatorSize: TabBarIndicatorSize.tab,
+              unselectedLabelColor: AppColors.textSecondary,
+              dividerHeight: 0,
+              indicator: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
+              ),
+              indicatorPadding: const EdgeInsets.all(2),
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              tabs: const [Tab(text: 'Friends'), Tab(text: 'Received'), Tab(text: 'Sent')],
+            ),
+          ),
         ),
+      ),
+      body: BlocListener<DriverConnectionBloc, DriverConnectionState>(
+        listener: (context, state) {
+          if (state is FriendRequestSent) {
+            _showSnackBar('Friend request sent successfully! 🎉');
+            // Refresh all lists
+            context.read<DriverConnectionBloc>().add(const FetchFriendsList());
+            context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
+            context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
+          } else if (state is FriendRequestResponded) {
+            final action = state.action == 'accept' ? 'accepted' : 'rejected';
+            _showSnackBar('Friend request $action successfully!', isSuccess: state.action == 'accept');
+            // Clear caches and refresh all lists after responding
+            _cachedReceivedRequests = null;
+            _cachedSentRequests = null;
+            context.read<DriverConnectionBloc>().add(const FetchFriendsList());
+            context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
+            context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
+          } else if (state is FriendRemoved) {
+            _showSnackBar('Friend removed successfully!');
+            // Clear cache and refresh friends list
+            _cachedFriendsList = null;
+            context.read<DriverConnectionBloc>().add(const FetchFriendsList());
+          } else if (state is FriendsListLoaded) {
+            // Update cache when friends list is loaded
+            _cachedFriendsList = state.friends;
+          } else if (state is FriendRequestsLoaded) {
+            // Update cache when requests are loaded
+            if (state.type == 'received') {
+              _cachedReceivedRequests = state.requests;
+            } else if (state.type == 'sent') {
+              _cachedSentRequests = state.requests;
+            }
+          } else if (state is DriverConnectionError) {
+            _showSnackBar(state.message, isSuccess: false);
+          }
+        },
+        child: TabBarView(controller: _tabController, children: [_buildFriendsList(), _buildRequestsList('received'), _buildRequestsList('sent')]),
       ),
     );
   }
