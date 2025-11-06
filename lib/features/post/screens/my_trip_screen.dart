@@ -15,6 +15,7 @@ class MyTripScreen extends StatefulWidget {
 }
 
 class _MyTripScreenState extends State<MyTripScreen> {
+  // Data variable - assigned in listener when success
   List<Post> posts = [];
 
   @override
@@ -137,28 +138,16 @@ class _MyTripScreenState extends State<MyTripScreen> {
         ],
       ),
       body: BlocConsumer<PostsBloc, PostsState>(
-        listenWhen: (previous, current) {
-          // Only listen when transitioning to these states (prevents duplicate handling)
-          return (previous is! PostCreated && current is PostCreated) ||
-              (previous is! PostDeleted && current is PostDeleted) ||
-              (previous is! PostUpdated && current is PostUpdated) ||
-              (previous is! PostsError && current is PostsError);
-        },
         listener: (context, state) {
-          // Only handle if screen is still mounted and visible
-          final route = ModalRoute.of(context);
-          if (!mounted || route == null || !route.isCurrent) {
-            return;
-          }
-          if (state is PostCreated) {
-            // Only show snackbar if not already navigating back from add_post_screen
-            // The add_post_screen will handle its own navigation
+          if (state is UserPostsLoaded) {
+            setState(() {
+              posts = state.posts;
+            });
+          } else if (state is PostCreated) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post created successfully!'), backgroundColor: Colors.green));
-            // Refresh the list after creation
             context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
           } else if (state is PostDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted successfully'), backgroundColor: Colors.green));
-            // Refresh the list after deletion
             context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
           } else if (state is PostUpdated) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -167,12 +156,9 @@ class _MyTripScreenState extends State<MyTripScreen> {
                 backgroundColor: state.post.isActive == true ? Colors.green : Colors.orange,
               ),
             );
-            // Refresh the list after status update
             context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
           } else if (state is PostsError) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-          } else if (state is UserPostsLoaded) {
-            posts = state.posts;
           }
         },
         builder: (context, state) {

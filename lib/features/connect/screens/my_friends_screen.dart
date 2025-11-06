@@ -5,11 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../di/locator.dart';
-import '../../../services/network/api_service.dart';
 import '../bloc/driver_connection_bloc.dart';
 import '../model/driver_connection.dart';
-import '../repo/driver_connection_repo.dart';
 
 class MyFriendsScreen extends StatefulWidget {
   const MyFriendsScreen({super.key});
@@ -20,9 +17,10 @@ class MyFriendsScreen extends StatefulWidget {
 
 class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  List<DriverFriend>? _cachedFriendsList; // Cache friends list to show during refresh
-  List<DriverConnection>? _cachedReceivedRequests; // Cache received requests
-  List<DriverConnection>? _cachedSentRequests; // Cache sent requests
+  // Data variables - assigned in listener when success
+  List<DriverFriend> _friends = [];
+  List<DriverConnection> _receivedRequests = [];
+  List<DriverConnection> _sentRequests = [];
 
   @override
   void initState() {
@@ -300,233 +298,135 @@ class _MyFriendsScreenState extends State<MyFriendsScreen> with TickerProviderSt
           ),
         ),
       ),
-      body: BlocListener<DriverConnectionBloc, DriverConnectionState>(
+      body: BlocConsumer<DriverConnectionBloc, DriverConnectionState>(
         listener: (context, state) {
-          if (state is FriendRequestSent) {
+          if (state is FriendsListLoaded) {
+            setState(() {
+              _friends = state.friends;
+            });
+          } else if (state is FriendRequestsLoaded) {
+            setState(() {
+              if (state.type == 'received') {
+                _receivedRequests = state.requests;
+              } else if (state.type == 'sent') {
+                _sentRequests = state.requests;
+              }
+            });
+          } else if (state is FriendRequestSent) {
             _showSnackBar('Friend request sent successfully! 🎉');
-            // Refresh all lists
             context.read<DriverConnectionBloc>().add(const FetchFriendsList());
             context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
             context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
           } else if (state is FriendRequestResponded) {
             final action = state.action == 'accept' ? 'accepted' : 'rejected';
             _showSnackBar('Friend request $action successfully!', isSuccess: state.action == 'accept');
-            // Clear caches and refresh all lists after responding
-            _cachedReceivedRequests = null;
-            _cachedSentRequests = null;
             context.read<DriverConnectionBloc>().add(const FetchFriendsList());
             context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'received'));
             context.read<DriverConnectionBloc>().add(const FetchFriendRequests(type: 'sent'));
           } else if (state is FriendRemoved) {
             _showSnackBar('Friend removed successfully!');
-            // Clear cache and refresh friends list
-            _cachedFriendsList = null;
             context.read<DriverConnectionBloc>().add(const FetchFriendsList());
-          } else if (state is FriendsListLoaded) {
-            // Update cache when friends list is loaded
-            _cachedFriendsList = state.friends;
-          } else if (state is FriendRequestsLoaded) {
-            // Update cache when requests are loaded
-            if (state.type == 'received') {
-              _cachedReceivedRequests = state.requests;
-            } else if (state.type == 'sent') {
-              _cachedSentRequests = state.requests;
-            }
           } else if (state is DriverConnectionError) {
             _showSnackBar(state.message, isSuccess: false);
           }
         },
-        child: TabBarView(controller: _tabController, children: [_buildFriendsList(), _buildRequestsList('received'), _buildRequestsList('sent')]),
+        builder: (context, state) {
+          return TabBarView(controller: _tabController, children: [_buildFriendsList(state), _buildRequestsList(state, 'received'), _buildRequestsList(state, 'sent')]);
+        },
       ),
     );
   }
 
-  Widget _buildFriendsList() {
-    return BlocConsumer<DriverConnectionBloc, DriverConnectionState>(
-      listenWhen: (previous, current) => current is FriendsListLoaded,
-      listener: (context, state) {
-        // Update cache when friends list is loaded
-        if (state is FriendsListLoaded) {
-          _cachedFriendsList = state.friends;
-        }
+  Widget _buildFriendsList(DriverConnectionState state) {
+    final isLoading = state is DriverConnectionLoading;
+
+    if (isLoading && _friends.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
+            const SizedBox(height: 16),
+            Text('Loading friends...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      );
+    }
+
+    if (_friends.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async {
+          context.read<DriverConnectionBloc>().add(const FetchFriendsList());
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        color: AppColors.secondary,
+        child: _buildEmptyState(icon: Icons.people_outline_rounded, title: 'No Friends Yet', message: 'Start connecting with other drivers\nby sending friend requests!'),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<DriverConnectionBloc>().add(const FetchFriendsList());
+        await Future.delayed(const Duration(seconds: 1));
       },
-      buildWhen: (previous, current) {
-        // Rebuild when friends list is loaded, when removing friend, when responding, or when loading starts
-        return current is FriendsListLoaded ||
-            current is FriendRemoved ||
-            current is FriendRequestResponded ||
-            (current is DriverConnectionLoading && previous is FriendsListLoaded);
-      },
-      builder: (context, state) {
-        // Use cached data during loading if available
-        List<DriverFriend>? friendsToShow;
-
-        if (state is FriendsListLoaded) {
-          friendsToShow = state.friends;
-          _cachedFriendsList = state.friends; // Update cache
-        } else if (state is DriverConnectionLoading && _cachedFriendsList != null) {
-          // Show cached data during refresh
-          friendsToShow = _cachedFriendsList;
-        } else if (_cachedFriendsList != null) {
-          // Fallback to cached data if available
-          friendsToShow = _cachedFriendsList;
-        }
-
-        // Show cached or loaded friends list
-        if (friendsToShow != null) {
-          if (friendsToShow.isEmpty) {
-            return _buildEmptyState(icon: Icons.people_outline_rounded, title: 'No Friends Yet', message: 'Start connecting with other drivers\nby sending friend requests!');
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              context.read<DriverConnectionBloc>().add(const FetchFriendsList());
-              await Future.delayed(const Duration(seconds: 1));
-            },
-            color: AppColors.secondary,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20.0),
-              itemCount: friendsToShow.length,
-              itemBuilder: (context, index) {
-                final friend = friendsToShow![index];
-                return _buildFriendCard(friend);
-              },
-            ),
-          );
-        }
-
-        // Show loading only if we don't have cached data
-        if (state is DriverConnectionLoading) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-                const SizedBox(height: 16),
-                Text('Loading friends...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-              ],
-            ),
-          );
-        }
-
-        // Default empty state
-        return _buildEmptyState(icon: Icons.people_outline_rounded, title: 'No Friends Yet', message: 'Start connecting with other drivers\nby sending friend requests!');
-      },
+      color: AppColors.secondary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20.0),
+        itemCount: _friends.length,
+        itemBuilder: (context, index) {
+          final friend = _friends[index];
+          return _buildFriendCard(friend);
+        },
+      ),
     );
   }
 
-  Widget _buildRequestsList(String type) {
-    return BlocConsumer<DriverConnectionBloc, DriverConnectionState>(
-      listenWhen: (previous, current) => current is FriendRequestsLoaded && current.type == type,
-      listener: (context, state) {
-        // Update cache when requests are loaded
-        if (state is FriendRequestsLoaded && state.type == type) {
-          if (type == 'received') {
-            _cachedReceivedRequests = state.requests;
-          } else if (type == 'sent') {
-            _cachedSentRequests = state.requests;
-          }
-        }
+  Widget _buildRequestsList(DriverConnectionState state, String type) {
+    final isLoading = state is DriverConnectionLoading;
+    final requests = type == 'received' ? _receivedRequests : _sentRequests;
+
+    if (isLoading && requests.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
+            const SizedBox(height: 16),
+            Text('Loading requests...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      );
+    }
+
+    if (requests.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async {
+          context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        color: AppColors.secondary,
+        child: _buildEmptyState(
+          icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
+          title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
+          message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
+        await Future.delayed(const Duration(seconds: 1));
       },
-      buildWhen: (previous, current) {
-        // Always rebuild when this type is loaded
-        if (current is FriendRequestsLoaded && current.type == type) {
-          return true;
-        }
-        // Rebuild on loading only if we don't have cached data for this type
-        if (current is DriverConnectionLoading) {
-          final hasCachedData = (type == 'received' && _cachedReceivedRequests != null) || (type == 'sent' && _cachedSentRequests != null);
-          return !hasCachedData; // Only rebuild if we don't have cached data
-        }
-        // Rebuild on error
-        if (current is DriverConnectionError) {
-          return true;
-        }
-        return false;
-      },
-      builder: (context, state) {
-        // Get cached data for this type
-        List<DriverConnection>? requestsToShow;
-
-        if (type == 'received') {
-          requestsToShow = _cachedReceivedRequests;
-        } else if (type == 'sent') {
-          requestsToShow = _cachedSentRequests;
-        }
-
-        // If we have loaded state for this type, use it
-        if (state is FriendRequestsLoaded && state.type == type) {
-          requestsToShow = state.requests;
-          // Update cache
-          if (type == 'received') {
-            _cachedReceivedRequests = state.requests;
-          } else if (type == 'sent') {
-            _cachedSentRequests = state.requests;
-          }
-        }
-
-        // Show cached or loaded requests list
-        if (requestsToShow != null) {
-          if (requestsToShow.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
-                await Future.delayed(const Duration(seconds: 1));
-              },
-              color: AppColors.secondary,
-              child: _buildEmptyState(
-                icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
-                title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
-                message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
-              await Future.delayed(const Duration(seconds: 1));
-            },
-            color: AppColors.secondary,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20.0),
-              itemCount: requestsToShow.length,
-              itemBuilder: (context, index) {
-                final request = requestsToShow![index];
-                return _buildRequestCard(request, type);
-              },
-            ),
-          );
-        }
-
-        // Show loading only if we don't have cached data
-        if (state is DriverConnectionLoading) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-                const SizedBox(height: 16),
-                Text('Loading requests...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-              ],
-            ),
-          );
-        }
-
-        // Default empty state
-        return RefreshIndicator(
-          onRefresh: () async {
-            context.read<DriverConnectionBloc>().add(FetchFriendRequests(type: type));
-            await Future.delayed(const Duration(seconds: 1));
-          },
-          color: AppColors.secondary,
-          child: _buildEmptyState(
-            icon: type == 'received' ? Icons.inbox_outlined : Icons.send_outlined,
-            title: type == 'received' ? 'No Received Requests' : 'No Sent Requests',
-            message: type == 'received' ? 'Friend requests you receive will\nappear here.' : 'Friend requests you send will\nappear here.',
-          ),
-        );
-      },
+      color: AppColors.secondary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20.0),
+        itemCount: requests.length,
+        itemBuilder: (context, index) {
+          final request = requests[index];
+          return _buildRequestCard(request, type);
+        },
+      ),
     );
   }
 

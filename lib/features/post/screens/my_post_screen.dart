@@ -15,6 +15,7 @@ class MyPostScreen extends StatefulWidget {
 }
 
 class _MyPostScreenState extends State<MyPostScreen> {
+  // Data variable - assigned in listener when success
   List<Post> posts = [];
 
   @override
@@ -128,38 +129,22 @@ class _MyPostScreenState extends State<MyPostScreen> {
         ],
       ),
       body: BlocConsumer<CustomerRequestBloc, CustomerRequestState>(
-        listenWhen: (previous, current) {
-          // Only listen when transitioning to these states (prevents duplicate handling)
-          return (previous is! CustomerRequestCreated && current is CustomerRequestCreated) ||
-              (previous is! CustomerRequestDeleted && current is CustomerRequestDeleted) ||
-              (previous is! CustomerRequestUpdated && current is CustomerRequestUpdated) ||
-              (previous is! CustomerRequestError && current is CustomerRequestError) ||
-              (previous is! MyCustomerRequestsLoaded && current is MyCustomerRequestsLoaded);
-        },
         listener: (context, state) {
-          // Only handle if screen is still mounted and visible
-          final route = ModalRoute.of(context);
-          if (!mounted || route == null || !route.isCurrent) {
-            return;
-          }
-          if (state is CustomerRequestCreated) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post created successfully!'), backgroundColor: Colors.green));
-            // Refresh the list after creation
-            context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
-          } else if (state is CustomerRequestDeleted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted successfully'), backgroundColor: Colors.green));
-            // Refresh the list after deletion
-            context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
-          } else if (state is CustomerRequestUpdated) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post "${state.request.title}" updated successfully'), backgroundColor: Colors.green));
-            // Refresh the list after update
-            context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
-          } else if (state is CustomerRequestError) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-          } else if (state is MyCustomerRequestsLoaded) {
+          if (state is MyCustomerRequestsLoaded) {
             setState(() {
               posts = state.requests;
             });
+          } else if (state is CustomerRequestCreated) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post created successfully!'), backgroundColor: Colors.green));
+            context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
+          } else if (state is CustomerRequestDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted successfully'), backgroundColor: Colors.green));
+            context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
+          } else if (state is CustomerRequestUpdated) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post "${state.request.title}" updated successfully'), backgroundColor: Colors.green));
+            context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
+          } else if (state is CustomerRequestError) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
           }
         },
         builder: (context, state) {
@@ -187,10 +172,7 @@ class _MyPostScreenState extends State<MyPostScreen> {
             );
           }
 
-          // Use state.requests if available, otherwise use local posts list
-          final displayPosts = state is MyCustomerRequestsLoaded ? state.requests : posts;
-
-          if (displayPosts.isEmpty) {
+          if (posts.isEmpty) {
             return Center(
               child: Container(
                 margin: const EdgeInsets.all(32),
@@ -246,9 +228,9 @@ class _MyPostScreenState extends State<MyPostScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16.0),
-            itemCount: displayPosts.length,
+            itemCount: posts.length,
             itemBuilder: (context, index) {
-              final post = displayPosts[index];
+              final post = posts[index];
               return PostCard(
                 post: post,
                 onEdit: () => _editPost(post),

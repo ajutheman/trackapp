@@ -24,14 +24,10 @@ class HomeScreenUser extends StatefulWidget {
 }
 
 class _HomeScreenUserState extends State<HomeScreenUser> {
-  // Posts from API will be managed by BLoC
+  // Data variables - assigned in listeners when success
   List<Post> _posts = [];
   List<Post> _myPosts = [];
   List<Post> _trips = [];
-  bool _isLoading = false;
-  bool _isLoadingMyPosts = false;
-  bool _isLoadingTrips = false;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -49,95 +45,52 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<CustomerRequestBloc, CustomerRequestState>(
-            listenWhen: (previous, current) {
-              return current is CustomerRequestsLoaded ||
-                  current is MyCustomerRequestsLoaded ||
-                  current is CustomerRequestLoading ||
-                  current is CustomerRequestError;
-            },
+      body: BlocConsumer<CustomerRequestBloc, CustomerRequestState>(
+        listener: (context, state) {
+          if (state is CustomerRequestsLoaded) {
+            setState(() {
+              _posts = state.requests;
+            });
+          } else if (state is MyCustomerRequestsLoaded) {
+            setState(() {
+              _myPosts = state.requests;
+            });
+          } else if (state is CustomerRequestError) {
+            if (!state.message.toLowerCase().contains('no posts') && !state.message.toLowerCase().contains('empty')) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+            }
+          }
+        },
+        builder: (context, customerRequestState) {
+          return BlocConsumer<PostsBloc, PostsState>(
             listener: (context, state) {
-              final route = ModalRoute.of(context);
-              if (!mounted || route == null || !route.isCurrent) {
-                return;
-              }
-              if (state is CustomerRequestsLoaded) {
-                setState(() {
-                  _posts = state.requests;
-                  _isLoading = false;
-                  _errorMessage = null;
-                });
-              } else if (state is MyCustomerRequestsLoaded) {
-                setState(() {
-                  _myPosts = state.requests;
-                  _isLoadingMyPosts = false;
-                });
-              } else if (state is CustomerRequestLoading) {
-                setState(() {
-                  _isLoading = true;
-                  _errorMessage = null;
-                });
-              } else if (state is CustomerRequestError) {
-                setState(() {
-                  _isLoading = false;
-                  _errorMessage = state.message;
-                });
-                if (!state.message.toLowerCase().contains('no posts') &&
-                    !state.message.toLowerCase().contains('empty')) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-                  );
-                }
-              }
-            },
-          ),
-          BlocListener<PostsBloc, PostsState>(
-            listenWhen: (previous, current) {
-              return current is PostsLoaded ||
-                  current is PostsLoading ||
-                  current is PostsError;
-            },
-            listener: (context, state) {
-              final route = ModalRoute.of(context);
-              if (!mounted || route == null || !route.isCurrent) {
-                return;
-              }
               if (state is PostsLoaded) {
                 setState(() {
                   _trips = state.posts;
-                  _isLoadingTrips = false;
-                });
-              } else if (state is PostsLoading) {
-                setState(() {
-                  _isLoadingTrips = true;
-                });
-              } else if (state is PostsError) {
-                setState(() {
-                  _isLoadingTrips = false;
                 });
               }
             },
-          ),
-        ],
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSearchBox(),
-              const SizedBox(height: 24),
-              _buildRecentConnectsSection(),
-              const SizedBox(height: 24),
-              _buildMyPostsSection(),
-              const SizedBox(height: 24),
-              _buildTripsSection(),
-              const SizedBox(height: 24),
-              _buildListOfPostsSection(),
-            ],
-          ),
-        ),
+            builder: (context, postsState) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSearchBox(),
+                    const SizedBox(height: 24),
+                    _buildRecentConnectsSection(),
+                    const SizedBox(height: 24),
+                    _buildMyPostsSection(customerRequestState),
+                    const SizedBox(height: 24),
+                    _buildTripsSection(postsState),
+                    const SizedBox(height: 24),
+                    _buildListOfPostsSection(customerRequestState),
+                  ],
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -262,7 +215,9 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     );
   }
 
-  Widget _buildMyPostsSection() {
+  Widget _buildMyPostsSection(CustomerRequestState state) {
+    final isLoading = state is CustomerRequestLoading;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,7 +263,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           ],
         ),
         const SizedBox(height: 16),
-        if (_isLoadingMyPosts)
+        if (isLoading)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(40.0),
@@ -389,7 +344,9 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     );
   }
 
-  Widget _buildTripsSection() {
+  Widget _buildTripsSection(PostsState state) {
+    final isLoading = state is PostsLoading;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -426,7 +383,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           ],
         ),
         const SizedBox(height: 16),
-        if (_isLoadingTrips)
+        if (isLoading)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(40.0),
@@ -484,7 +441,9 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     );
   }
 
-  Widget _buildListOfPostsSection() {
+  Widget _buildListOfPostsSection(CustomerRequestState state) {
+    final isLoading = state is CustomerRequestLoading;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -521,7 +480,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           ],
         ),
         const SizedBox(height: 16),
-        if (_isLoading)
+        if (isLoading)
           Center(
             child: Padding(
               padding: const EdgeInsets.all(40.0),
@@ -529,12 +488,12 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
                 children: [
                   CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
                   const SizedBox(height: 16),
-                  Text('Loading trips...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
+                  Text('Loading posts...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
           )
-        else if (_errorMessage != null)
+        else if (state is CustomerRequestError)
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 20),
@@ -551,11 +510,11 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
                   const SizedBox(height: 16),
                   Text('Oops! Something went wrong', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
-                  Text(_errorMessage!, style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                  Text(state.message, style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                      context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
                     },
                     icon: const Icon(Icons.refresh_rounded, color: Colors.white),
                     label: const Text('Try Again', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -597,7 +556,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
-                      context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                      context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
                     },
                     icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
                     label: const Text('Refresh', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
