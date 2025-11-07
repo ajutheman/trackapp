@@ -272,27 +272,6 @@ class Post {
 
   factory Post.fromJson(Map<String, dynamic> json) {
     try {
-      // Handle user field - can be String (ID) or Map (object)
-      String? userId;
-      if (json['userId'] != null) {
-        userId = json['userId'].toString();
-      } else if (json['user'] != null) {
-        if (json['user'] is Map) {
-          userId = json['user']?['_id']?.toString();
-        } else if (json['user'] is String) {
-          userId = json['user'];
-        }
-      }
-      userId ??= json['tripAddedBy']?['_id']?.toString();
-
-      String? userName;
-      if (json['userName'] != null) {
-        userName = json['userName'].toString();
-      } else if (json['user'] != null && json['user'] is Map) {
-        userName = json['user']?['name']?.toString();
-      }
-      userName ??= json['tripAddedBy']?['name']?.toString();
-
       return Post(
         id: json['_id'] ?? json['id'],
         title: json['title'] ?? '',
@@ -308,8 +287,8 @@ class Post {
             : (json['dropLocation'] ?? json['to'] ?? json['tripDestination']?['address']),
         goodsType: json['goodsType'] is String ? json['goodsType'] : (json['goodsType'] is Map ? json['goodsType']['name'] : json['goods']),
         vehicleType: json['vehicleType'] is String ? json['vehicleType'] : (json['vehicle'] is Map ? json['vehicle']['vehicleNumber'] : null),
-        userId: userId,
-        userName: userName,
+        userId: json['userId'] ?? json['user']?['_id'] ?? json['tripAddedBy']?['_id'],
+        userName: json['userName'] ?? json['user']?['name'] ?? json['tripAddedBy']?['name'],
         isActive: json['isActive'] ?? true,
         createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
         updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -339,27 +318,11 @@ class Post {
         status: json['status'] != null && json['status'] is Map ? TripStatus.fromJson(json['status']) : null,
         isStarted: json['isStarted'],
         // Customer request fields
-        pickupLocationObj: json['pickupLocation'] != null && json['pickupLocation'] is Map ? TripLocation.fromJson(json['pickupLocation']) : null,
-        dropoffLocationObj: json['dropoffLocation'] != null && json['dropoffLocation'] is Map ? TripLocation.fromJson(json['dropoffLocation']) : null,
+        pickupLocationObj: json['pickupLocation'] != null ? TripLocation.fromJson(json['pickupLocation']) : null,
+        dropoffLocationObj: json['dropoffLocation'] != null ? TripLocation.fromJson(json['dropoffLocation']) : null,
         packageDetails: json['packageDetails'] != null ? PackageDetails.fromJson(json['packageDetails']) : null,
-        images: json['images'] != null 
-            ? (json['images'] as List).map((e) {
-                if (e is Map) {
-                  // Extract URL if available, otherwise use _id
-                  return e['url']?.toString() ?? e['_id']?.toString() ?? e.toString();
-                }
-                return e.toString();
-              }).toList() 
-            : null,
-        documents: json['documents'] != null 
-            ? (json['documents'] as List).map((e) {
-                if (e is Map) {
-                  // Extract URL if available, otherwise use _id
-                  return e['url']?.toString() ?? e['_id']?.toString() ?? e.toString();
-                }
-                return e.toString();
-              }).toList() 
-            : null,
+        images: json['images'] != null ? (json['images'] as List).map((e) => e.toString()).toList() : null,
+        documents: json['documents'] != null ? (json['documents'] as List).map((e) => e.toString()).toList() : null,
         pickupTime: json['pickupTime'] != null ? DateTime.parse(json['pickupTime']) : null,
       );
     } catch (e) {

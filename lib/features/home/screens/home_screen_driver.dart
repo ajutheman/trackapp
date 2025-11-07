@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/constants/dummy_data.dart';
-import 'package:truck_app/features/notification/screen/notification_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_images.dart';
@@ -11,6 +10,7 @@ import '../../search/screens/search_screen.dart';
 import '../../post/bloc/customer_request_bloc.dart';
 import '../model/post.dart';
 import '../widgets/post_card.dart';
+import '../widgets/location_dropdown.dart';
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});
@@ -23,6 +23,12 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   List<Post> _latestPosts = [];
   bool _isLoading = false;
   String? _errorMessage;
+  
+  // Location related state
+  String _currentLocation = 'Current location';
+  bool _isLoadingLocation = false;
+  double? _currentLatitude; // Can be used for filtering posts by location
+  double? _currentLongitude; // Can be used for filtering posts by location
 
   @override
   void initState() {
@@ -30,6 +36,20 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     // Fetch customer requests (posts) for drivers
     context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
   }
+
+  /// Handle location selection from dropdown
+  void _handleLocationSelection(String location, double? latitude, double? longitude) {
+    setState(() {
+      _currentLocation = location;
+      _currentLatitude = latitude;
+      _currentLongitude = longitude;
+      _isLoadingLocation = false;
+    });
+    
+    // You can use the coordinates for filtering posts or other purposes
+    debugPrint('Selected location: $location ($latitude, $longitude)');
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -170,24 +190,10 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   Widget _buildLocationButton() {
-    return GestureDetector(
-      onTap: () {
-        _showSnackBar('Location feature coming soon!');
-        // TODO: Implement location picker
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.location_on_outlined, color: AppColors.textPrimary, size: 18),
-            const SizedBox(width: 6),
-            Text('Current location', style: TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
-            const SizedBox(width: 4),
-            Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 18),
-          ],
-        ),
-      ),
+    return LocationDropdown(
+      currentLocation: _currentLocation,
+      isLoading: _isLoadingLocation,
+      onLocationSelected: _handleLocationSelection,
     );
   }
 
