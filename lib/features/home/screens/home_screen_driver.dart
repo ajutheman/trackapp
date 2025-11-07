@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:truck_app/core/constants/dummy_data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_images.dart';
@@ -9,8 +8,11 @@ import '../../connect/widgets/connect_card.dart';
 import '../../search/screens/search_screen.dart';
 import '../../post/bloc/customer_request_bloc.dart';
 import '../model/post.dart';
+import '../model/connect.dart';
 import '../widgets/post_card.dart';
 import '../widgets/location_dropdown.dart';
+import '../../connect/bloc/connect_request_bloc.dart';
+import '../../connect/model/connect_request.dart';
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});
@@ -21,7 +23,9 @@ class HomeScreenDriver extends StatefulWidget {
 
 class _HomeScreenDriverState extends State<HomeScreenDriver> {
   List<Post> _latestPosts = [];
+  List<ConnectRequest> _connectRequests = [];
   bool _isLoading = false;
+  bool _isLoadingConnections = false;
   String? _errorMessage;
   
   // Location related state
@@ -33,8 +37,20 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   @override
   void initState() {
     super.initState();
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
     // Fetch customer requests (posts) for drivers
     context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
+    // Fetch connect requests for drivers
+    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+  }
+
+  Future<void> _refreshAllData() async {
+    _loadInitialData();
+    // Wait a bit for data to load
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   /// Handle location selection from dropdown
@@ -56,38 +72,61 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: BlocListener<CustomerRequestBloc, CustomerRequestState>(
-        listenWhen: (previous, current) {
-          return current is CustomerRequestsLoaded ||
-              current is CustomerRequestLoading ||
-              current is CustomerRequestError;
-        },
+      body: BlocListener<ConnectRequestBloc, ConnectRequestState>(
         listener: (context, state) {
-          if (state is CustomerRequestsLoaded) {
+          if (state is ConnectRequestsLoaded) {
             setState(() {
-              _latestPosts = state.requests;
-              _isLoading = false;
-              _errorMessage = null;
+              _connectRequests = state.requests;
+              _isLoadingConnections = false;
             });
-          } else if (state is CustomerRequestLoading) {
+          } else if (state is ConnectRequestLoading) {
             setState(() {
-              _isLoading = true;
-              _errorMessage = null;
+              _isLoadingConnections = true;
             });
-          } else if (state is CustomerRequestError) {
+          } else if (state is ConnectRequestError) {
             setState(() {
-              _isLoading = false;
-              _errorMessage = state.message;
+              _isLoadingConnections = false;
             });
           }
         },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildSearchBox(), const SizedBox(height: 24), _buildListOfPostsSection(), const SizedBox(height: 24), _buildConnectRequestsSection()],
+        child: BlocListener<CustomerRequestBloc, CustomerRequestState>(
+          listenWhen: (previous, current) {
+            return current is CustomerRequestsLoaded ||
+                current is CustomerRequestLoading ||
+                current is CustomerRequestError;
+          },
+          listener: (context, state) {
+            if (state is CustomerRequestsLoaded) {
+              setState(() {
+                _latestPosts = state.requests;
+                _isLoading = false;
+                _errorMessage = null;
+              });
+            } else if (state is CustomerRequestLoading) {
+              setState(() {
+                _isLoading = true;
+                _errorMessage = null;
+              });
+            } else if (state is CustomerRequestError) {
+              setState(() {
+                _isLoading = false;
+                _errorMessage = state.message;
+              });
+            }
+          },
+          child: RefreshIndicator(
+            onRefresh: _refreshAllData,
+            color: AppColors.secondary,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [_buildSearchBox(), const SizedBox(height: 24), _buildListOfPostsSection(), const SizedBox(height: 24), _buildConnectRequestsSection()],
+              ),
+            ),
           ),
-        ),
+      ),
       ),
     );
   }
@@ -137,56 +176,135 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
             const SizedBox(width: 12),
             Text('Connect Requests', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
             const Spacer(),
-            TextButton(
-              onPressed: () {
-                _showSnackBar('View All Requests tapped!');
-              },
-              child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+            if (_connectRequests.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/connect-requests');
+                },
+                child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+            const SizedBox(width: 4),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+                },
+                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+                tooltip: 'Refresh',
+              ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         // Display Connect Cards
-        DummyData.driverConnections.isEmpty
+        _isLoadingConnections
             ? Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 32),
-                    const SizedBox(height: 8),
-                    Text('No connect requests yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                    strokeWidth: 3,
+                  ),
                 ),
-              ),
-            )
-            : Column(
-              children:
-                  DummyData.driverConnections
-                      .map(
-                        (connect) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: ConnectCard(
-                            connect: connect,
-                            onAccept: (connect) {
-                              _showSnackBar('Accepted connect from ${connect.replyUserName}');
-                              // Implement actual accept logic
-                            },
-                            onReject: (connect) {
-                              _showSnackBar('Rejected connect from ${connect.replyUserName}');
-                              // Implement actual reject logic
-                            },
-                            onCall: (phoneNumber) => _makePhoneCall(phoneNumber),
-                            onWhatsApp: (phoneNumber) => _launchWhatsApp(phoneNumber),
-                          ),
-                        ),
-                      )
-                      .toList(),
-            ),
+              )
+            : _connectRequests.isEmpty
+                ? Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border.withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 32),
+                          const SizedBox(height: 8),
+                          Text('No connect requests yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: _connectRequests
+                        .map(
+                          (request) {
+                            final connect = _convertConnectRequestToConnect(request);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: ConnectCard(
+                                connect: connect,
+                                onAccept: (connect) {
+                                  _handleAcceptConnect(request);
+                                },
+                                onReject: (connect) {
+                                  _handleRejectConnect(request);
+                                },
+                                onCall: (phoneNumber) => _makePhoneCall(phoneNumber),
+                                onWhatsApp: (phoneNumber) => _launchWhatsApp(phoneNumber),
+                              ),
+                            );
+                          },
+                        )
+                        .toList(),
+                  ),
       ],
     );
+  }
+
+  // Helper method to convert ConnectRequest to Connect model for display
+  Connect _convertConnectRequestToConnect(ConnectRequest request) {
+    final String userName = request.requester?.name ?? request.recipient?.name ?? 'Unknown';
+    
+    String postTitle = request.message ?? '';
+    if (request.trip != null) {
+      postTitle = request.trip!.title ?? 'Trip to ${request.trip!.destination ?? "Unknown"}';
+    } else if (request.customerRequest != null) {
+      postTitle = request.customerRequest!.details ?? 'Customer Request';
+    }
+    
+    return Connect(
+      id: request.id ?? '',
+      postName: request.tripId != null ? 'Trip Request' : 'Customer Request',
+      replyUserName: userName,
+      postTitle: postTitle,
+      dateTime: request.createdAt ?? DateTime.now(),
+      status: _mapConnectRequestStatus(request.status),
+      isUser: false, // Driver view
+    );
+  }
+
+  ConnectStatus _mapConnectRequestStatus(ConnectRequestStatus status) {
+    switch (status) {
+      case ConnectRequestStatus.accepted:
+        return ConnectStatus.accepted;
+      case ConnectRequestStatus.rejected:
+        return ConnectStatus.rejected;
+      case ConnectRequestStatus.cancelled:
+        return ConnectStatus.rejected;
+      case ConnectRequestStatus.pending:
+      default:
+        return ConnectStatus.pending;
+    }
+  }
+
+  void _handleAcceptConnect(ConnectRequest request) {
+    if (request.id != null) {
+      context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'accept'));
+      _showSnackBar('Accepted connect from ${request.requester?.name ?? "user"}');
+    }
+  }
+
+  void _handleRejectConnect(ConnectRequest request) {
+    if (request.id != null) {
+      context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'reject'));
+      _showSnackBar('Rejected connect from ${request.requester?.name ?? "user"}');
+    }
   }
 
   Widget _buildLocationButton() {

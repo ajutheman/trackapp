@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/constants/app_images.dart';
 
-import '../../../core/constants/dummy_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../notification/screen/notification_screen.dart';
 import '../../search/screens/search_screen.dart';
 import '../model/post.dart';
+import '../model/connect.dart';
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart';
 import '../bloc/posts_bloc.dart';
 import '../../post/screens/my_post_screen.dart';
 import '../../post/screens/add_post_screen.dart';
 import '../../post/bloc/customer_request_bloc.dart';
+import '../../connect/bloc/connect_request_bloc.dart';
+import '../../connect/model/connect_request.dart';
 
 // Placeholder for a simple ConnectCard for Recent Connects
 
@@ -28,16 +30,30 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   List<Post> _posts = [];
   List<Post> _myPosts = [];
   List<Post> _trips = [];
+  List<ConnectRequest> _recentConnections = [];
+  bool _isLoadingConnections = false;
 
   @override
   void initState() {
     super.initState();
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
     // Fetch all customer requests (posts) when the screen initializes
     context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
     // Also fetch user's own customer requests (posts)
     context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 10));
     // Fetch trips for users to see and connect
     context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+    // Fetch recent connections
+    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 5));
+  }
+
+  Future<void> _refreshAllData() async {
+    _loadInitialData();
+    // Wait a bit for data to load
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   @override
@@ -45,48 +61,73 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: BlocConsumer<CustomerRequestBloc, CustomerRequestState>(
+      body: BlocConsumer<ConnectRequestBloc, ConnectRequestState>(
         listener: (context, state) {
-          if (state is CustomerRequestsLoaded) {
+          if (state is ConnectRequestsLoaded) {
             setState(() {
-              _posts = state.requests;
+              _recentConnections = state.requests;
+              _isLoadingConnections = false;
             });
-          } else if (state is MyCustomerRequestsLoaded) {
+          } else if (state is ConnectRequestLoading) {
             setState(() {
-              _myPosts = state.requests;
+              _isLoadingConnections = true;
             });
-          } else if (state is CustomerRequestError) {
-            if (!state.message.toLowerCase().contains('no posts') && !state.message.toLowerCase().contains('empty')) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-            }
+          } else if (state is ConnectRequestError) {
+            setState(() {
+              _isLoadingConnections = false;
+            });
           }
         },
-        builder: (context, customerRequestState) {
-          return BlocConsumer<PostsBloc, PostsState>(
+        builder: (context, connectState) {
+          return BlocConsumer<CustomerRequestBloc, CustomerRequestState>(
             listener: (context, state) {
-              if (state is PostsLoaded) {
+              if (state is CustomerRequestsLoaded) {
                 setState(() {
-                  _trips = state.posts;
+                  _posts = state.requests;
                 });
+              } else if (state is MyCustomerRequestsLoaded) {
+                setState(() {
+                  _myPosts = state.requests;
+                });
+              } else if (state is CustomerRequestError) {
+                if (!state.message.toLowerCase().contains('no posts') && !state.message.toLowerCase().contains('empty')) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+                }
               }
             },
-            builder: (context, postsState) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSearchBox(),
-                    const SizedBox(height: 24),
-                    _buildRecentConnectsSection(),
-                    const SizedBox(height: 24),
-                    _buildMyPostsSection(customerRequestState),
-                    const SizedBox(height: 24),
-                    _buildTripsSection(postsState),
-                    const SizedBox(height: 24),
-                    _buildListOfPostsSection(customerRequestState),
-                  ],
+            builder: (context, customerRequestState) {
+              return BlocConsumer<PostsBloc, PostsState>(
+                listener: (context, state) {
+                  if (state is PostsLoaded) {
+                    setState(() {
+                      _trips = state.posts;
+                    });
+                  }
+                },
+                builder: (context, postsState) {
+              return RefreshIndicator(
+                onRefresh: _refreshAllData,
+                color: AppColors.secondary,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSearchBox(),
+                      const SizedBox(height: 24),
+                      _buildRecentConnectsSection(),
+                      const SizedBox(height: 24),
+                      _buildMyPostsSection(customerRequestState),
+                      const SizedBox(height: 24),
+                      _buildTripsSection(postsState),
+                      const SizedBox(height: 24),
+                      _buildListOfPostsSection(customerRequestState),
+                    ],
+                  ),
                 ),
+              );
+                },
               );
             },
           );
@@ -175,44 +216,114 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             const SizedBox(width: 12),
             Text('Recent Connects', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
             const Spacer(),
-            TextButton(
-              onPressed: () {
-                // Navigate to all connects
-              },
-              child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+            if (_recentConnections.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  // Navigate to all connects
+                  Navigator.pushNamed(context, '/connect-requests');
+                },
+                child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+            const SizedBox(width: 4),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 5));
+                },
+                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+                tooltip: 'Refresh',
+              ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         SizedBox(
           height: 185,
-          child:
-              DummyData.userConnections.isEmpty
-                  ? Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.people_outline, color: AppColors.textSecondary, size: 32),
-                          const SizedBox(height: 8),
-                          Text('No recent connects yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  )
-                  : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    itemCount: DummyData.userConnections.length,
-                    itemBuilder: (context, index) {
-                      return Padding(padding: const EdgeInsets.only(right: 4), child: RecentConnectCard(connect: DummyData.userConnections[index]));
-                    },
+          child: _isLoadingConnections
+              ? Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                    strokeWidth: 3,
                   ),
+                )
+              : _recentConnections.isEmpty
+                  ? Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.border.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.people_outline, color: AppColors.textSecondary, size: 32),
+                            const SizedBox(height: 8),
+                            Text('No recent connects yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      itemCount: _recentConnections.length,
+                      itemBuilder: (context, index) {
+                        final connection = _recentConnections[index];
+                        // Convert ConnectRequest to Connect for display
+                        final connect = _convertConnectRequestToConnect(connection);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: RecentConnectCard(connect: connect),
+                        );
+                      },
+                    ),
         ),
       ],
     );
+  }
+
+  // Helper method to convert ConnectRequest to Connect model for display
+  Connect _convertConnectRequestToConnect(ConnectRequest request) {
+    // Get the name from populated data or fallback to 'Unknown'
+    final String userName = request.requester?.name ?? request.recipient?.name ?? 'Unknown';
+    
+    // Determine post title from the populated trip or customer request
+    String postTitle = request.message ?? '';
+    if (request.trip != null) {
+      postTitle = request.trip!.title ?? 'Trip to ${request.trip!.destination ?? "Unknown"}';
+    } else if (request.customerRequest != null) {
+      postTitle = request.customerRequest!.details ?? 'Customer Request';
+    }
+    
+    return Connect(
+      id: request.id ?? '',
+      postName: request.customerRequestId != null ? 'Customer Request' : 'Trip Request',
+      replyUserName: userName,
+      postTitle: postTitle,
+      dateTime: request.createdAt ?? DateTime.now(),
+      status: _mapConnectRequestStatus(request.status),
+      isUser: true,
+    );
+  }
+
+  ConnectStatus _mapConnectRequestStatus(ConnectRequestStatus status) {
+    switch (status) {
+      case ConnectRequestStatus.accepted:
+        return ConnectStatus.accepted;
+      case ConnectRequestStatus.rejected:
+        return ConnectStatus.rejected;
+      case ConnectRequestStatus.cancelled:
+        return ConnectStatus.rejected; // Map cancelled to rejected for display
+      case ConnectRequestStatus.pending:
+      default:
+        return ConnectStatus.pending;
+    }
   }
 
   Widget _buildMyPostsSection(CustomerRequestState state) {
