@@ -27,7 +27,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   bool _isLoading = false;
   bool _isLoadingConnections = false;
   String? _errorMessage;
-  
+
   // Location related state
   String _currentLocation = 'Current location';
   bool _isLoadingLocation = false;
@@ -61,11 +61,10 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
       _currentLongitude = longitude;
       _isLoadingLocation = false;
     });
-    
+
     // You can use the coordinates for filtering posts or other purposes
     debugPrint('Selected location: $location ($latitude, $longitude)');
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -87,13 +86,33 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
             setState(() {
               _isLoadingConnections = false;
             });
+            // Show error message
+            if (!state.message.toLowerCase().contains('no connect')) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+            }
+          } else if (state is ConnectRequestResponded) {
+            // Update the specific request in the list
+            setState(() {
+              final index = _connectRequests.indexWhere((req) => req.id == state.request.id);
+              if (index != -1) {
+                _connectRequests[index] = state.request;
+              }
+              _isLoadingConnections = false;
+            });
+
+            // Show success message
+            final actionText = state.action == 'accept' ? 'Accepted' : 'Rejected';
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connect request $actionText successfully'), backgroundColor: AppColors.success));
+
+            // Refresh the list after a short delay to get updated data
+            Future.delayed(const Duration(milliseconds: 500), () {
+              context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+            });
           }
         },
         child: BlocListener<CustomerRequestBloc, CustomerRequestState>(
           listenWhen: (previous, current) {
-            return current is CustomerRequestsLoaded ||
-                current is CustomerRequestLoading ||
-                current is CustomerRequestError;
+            return current is CustomerRequestsLoaded || current is CustomerRequestLoading || current is CustomerRequestError;
           },
           listener: (context, state) {
             if (state is CustomerRequestsLoaded) {
@@ -126,7 +145,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               ),
             ),
           ),
-      ),
+        ),
       ),
     );
   }
@@ -203,56 +222,43 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
         // Display Connect Cards
         _isLoadingConnections
             ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
-                    strokeWidth: 3,
-                  ),
-                ),
-              )
+              child: Padding(padding: const EdgeInsets.all(40.0), child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3)),
+            )
             : _connectRequests.isEmpty
-                ? Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border.withOpacity(0.2)),
+            ? Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 32),
+                    const SizedBox(height: 8),
+                    Text('No connect requests yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                  ],
+                ),
+              ),
+            )
+            : Column(
+              children:
+                  _connectRequests.map((request) {
+                    final connect = _convertConnectRequestToConnect(request);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: ConnectCard(
+                        connect: connect,
+                        onAccept: (connect) {
+                          _handleAcceptConnect(request);
+                        },
+                        onReject: (connect) {
+                          _handleRejectConnect(request);
+                        },
+                        onCall: (phoneNumber) => _makePhoneCall(phoneNumber),
+                        onWhatsApp: (phoneNumber) => _launchWhatsApp(phoneNumber),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 32),
-                          const SizedBox(height: 8),
-                          Text('No connect requests yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  )
-                : Column(
-                    children: _connectRequests
-                        .map(
-                          (request) {
-                            final connect = _convertConnectRequestToConnect(request);
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: ConnectCard(
-                                connect: connect,
-                                onAccept: (connect) {
-                                  _handleAcceptConnect(request);
-                                },
-                                onReject: (connect) {
-                                  _handleRejectConnect(request);
-                                },
-                                onCall: (phoneNumber) => _makePhoneCall(phoneNumber),
-                                onWhatsApp: (phoneNumber) => _launchWhatsApp(phoneNumber),
-                              ),
-                            );
-                          },
-                        )
-                        .toList(),
-                  ),
+                    );
+                  }).toList(),
+            ),
       ],
     );
   }
@@ -260,14 +266,14 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   // Helper method to convert ConnectRequest to Connect model for display
   Connect _convertConnectRequestToConnect(ConnectRequest request) {
     final String userName = request.requester?.name ?? request.recipient?.name ?? 'Unknown';
-    
+
     String postTitle = request.message ?? '';
     if (request.trip != null) {
       postTitle = request.trip!.title ?? 'Trip to ${request.trip!.destination ?? "Unknown"}';
     } else if (request.customerRequest != null) {
       postTitle = request.customerRequest!.details ?? 'Customer Request';
     }
-    
+
     return Connect(
       id: request.id ?? '',
       postName: request.tripId != null ? 'Trip Request' : 'Customer Request',
@@ -308,11 +314,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   Widget _buildLocationButton() {
-    return LocationDropdown(
-      currentLocation: _currentLocation,
-      isLoading: _isLoadingLocation,
-      onLocationSelected: _handleLocationSelection,
-    );
+    return LocationDropdown(currentLocation: _currentLocation, isLoading: _isLoadingLocation, onLocationSelected: _handleLocationSelection);
   }
 
   Widget _buildListOfPostsSection() {

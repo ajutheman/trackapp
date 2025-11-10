@@ -27,5 +27,6 @@ enum ConnectStatus {
   pending,
   accepted,
   rejected,
+  hold, // On hold status (e.g., waiting for token payment)
   completed, // Assuming 'Completed' is a state of 'Accepted'
 }

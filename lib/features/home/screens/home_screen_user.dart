@@ -105,28 +105,28 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
                   }
                 },
                 builder: (context, postsState) {
-              return RefreshIndicator(
-                onRefresh: _refreshAllData,
-                color: AppColors.secondary,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSearchBox(),
-                      const SizedBox(height: 24),
-                      _buildRecentConnectsSection(),
-                      const SizedBox(height: 24),
-                      _buildMyPostsSection(customerRequestState),
-                      const SizedBox(height: 24),
-                      _buildTripsSection(postsState),
-                      const SizedBox(height: 24),
-                      _buildListOfPostsSection(customerRequestState),
-                    ],
-                  ),
-                ),
-              );
+                  return RefreshIndicator(
+                    onRefresh: _refreshAllData,
+                    color: AppColors.secondary,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSearchBox(),
+                          const SizedBox(height: 24),
+                          _buildRecentConnectsSection(),
+                          const SizedBox(height: 24),
+                          _buildMyPostsSection(customerRequestState),
+                          const SizedBox(height: 24),
+                          _buildTripsSection(postsState),
+                          const SizedBox(height: 24),
+                          _buildListOfPostsSection(customerRequestState),
+                        ],
+                      ),
+                    ),
+                  );
                 },
               );
             },
@@ -243,46 +243,35 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         const SizedBox(height: 16),
         SizedBox(
           height: 185,
-          child: _isLoadingConnections
-              ? Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
-                    strokeWidth: 3,
-                  ),
-                )
-              : _recentConnections.isEmpty
+          child:
+              _isLoadingConnections
+                  ? Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3))
+                  : _recentConnections.isEmpty
                   ? Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.border.withOpacity(0.2)),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.people_outline, color: AppColors.textSecondary, size: 32),
-                            const SizedBox(height: 8),
-                            Text('No recent connects yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-                          ],
-                        ),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.people_outline, color: AppColors.textSecondary, size: 32),
+                          const SizedBox(height: 8),
+                          Text('No recent connects yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                        ],
                       ),
-                    )
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      itemCount: _recentConnections.length,
-                      itemBuilder: (context, index) {
-                        final connection = _recentConnections[index];
-                        // Convert ConnectRequest to Connect for display
-                        final connect = _convertConnectRequestToConnect(connection);
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: RecentConnectCard(connect: connect),
-                        );
-                      },
                     ),
+                  )
+                  : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    itemCount: _recentConnections.length,
+                    itemBuilder: (context, index) {
+                      final connection = _recentConnections[index];
+                      // Convert ConnectRequest to Connect for display
+                      final connect = _convertConnectRequestToConnect(connection);
+                      return Padding(padding: const EdgeInsets.only(right: 4), child: RecentConnectCard(connect: connect));
+                    },
+                  ),
         ),
       ],
     );
@@ -292,7 +281,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   Connect _convertConnectRequestToConnect(ConnectRequest request) {
     // Get the name from populated data or fallback to 'Unknown'
     final String userName = request.requester?.name ?? request.recipient?.name ?? 'Unknown';
-    
+
     // Determine post title from the populated trip or customer request
     String postTitle = request.message ?? '';
     if (request.trip != null) {
@@ -300,7 +289,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     } else if (request.customerRequest != null) {
       postTitle = request.customerRequest!.details ?? 'Customer Request';
     }
-    
+
     return Connect(
       id: request.id ?? '',
       postName: request.customerRequestId != null ? 'Customer Request' : 'Trip Request',

@@ -62,6 +62,8 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
         return AppColors.success;
       case ConnectStatus.rejected:
         return AppColors.error;
+      case ConnectStatus.hold:
+        return Colors.amber;
       default:
         return AppColors.textSecondary;
     }
@@ -77,6 +79,8 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
         return 'Completed';
       case ConnectStatus.rejected:
         return 'Rejected';
+      case ConnectStatus.hold:
+        return 'On Hold';
       default:
         return 'Unknown';
     }
@@ -91,6 +95,8 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
         return Icons.check_circle_rounded;
       case ConnectStatus.rejected:
         return Icons.cancel_rounded;
+      case ConnectStatus.hold:
+        return Icons.pause_circle_rounded;
       default:
         return Icons.help_outline_rounded;
     }

@@ -144,6 +144,8 @@ class RecentConnectCard extends StatelessWidget {
         return Colors.orange.shade600;
       case ConnectStatus.rejected:
         return Colors.red.shade600;
+      case ConnectStatus.hold:
+        return Colors.amber.shade700;
       case ConnectStatus.completed:
         return Colors.blue.shade600;
     }
@@ -157,6 +159,8 @@ class RecentConnectCard extends StatelessWidget {
         return 'Pending';
       case ConnectStatus.rejected:
         return 'Rejected';
+      case ConnectStatus.hold:
+        return 'On Hold';
       case ConnectStatus.completed:
         return 'Done';
     }
