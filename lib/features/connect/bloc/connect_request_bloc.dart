@@ -36,13 +36,14 @@ class SendConnectRequest extends ConnectRequestEvent {
 /// Event to fetch all connection requests
 class FetchConnectRequests extends ConnectRequestEvent {
   final String? status;
+  final String? type; // 'sent' or 'received'
   final int? page;
   final int? limit;
 
-  const FetchConnectRequests({this.status, this.page, this.limit});
+  const FetchConnectRequests({this.status, this.type, this.page, this.limit});
 
   @override
-  List<Object?> get props => [status, page, limit];
+  List<Object?> get props => [status, type, page, limit];
 }
 
 /// Event to fetch a specific connection request by ID
@@ -246,6 +247,7 @@ class ConnectRequestBloc extends Bloc<ConnectRequestEvent, ConnectRequestState> 
     try {
       final result = await repository.getConnectRequests(
         status: event.status,
+        type: event.type,
         page: event.page,
         limit: event.limit,
       );

@@ -72,8 +72,8 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   void _loadInitialData() {
     // Fetch customer requests (posts) for drivers with location filters
     _fetchPostsWithFilters();
-    // Fetch connect requests for drivers
-    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+    // Fetch only received connect requests for leads section (requests sent TO the driver)
+    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
   }
 
   void _fetchPostsWithFilters() {
@@ -359,7 +359,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               ),
               child: IconButton(
                 onPressed: () {
-                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
                 },
                 icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
                 tooltip: 'Refresh',
@@ -445,7 +445,6 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
       case ConnectRequestStatus.hold:
         return ConnectStatus.hold;
       case ConnectRequestStatus.pending:
-      default:
         return ConnectStatus.pending;
     }
   }

@@ -72,12 +72,14 @@ class ConnectRequestRepository {
   /// or an error message on failure.
   Future<Result<List<ConnectRequest>>> getConnectRequests({
     String? status,
+    String? type, // 'sent' or 'received'
     int? page,
     int? limit,
   }) async {
     final queryParams = <String, dynamic>{};
 
     if (status != null) queryParams['status'] = status;
+    if (type != null) queryParams['type'] = type;
     if (page != null) queryParams['page'] = page;
     if (limit != null) queryParams['limit'] = limit;
 

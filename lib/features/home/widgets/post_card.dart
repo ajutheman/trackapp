@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../services/local/local_services.dart';
 import '../model/post.dart';
+import '../bloc/posts_bloc.dart';
 import '../../post/screens/trip_detail_screen.dart';
-import '../../connect/screens/select_trip_or_request_dialog.dart';
+import '../../connect/utils/connect_request_helper.dart';
+import '../../connect/bloc/connect_request_bloc.dart';
+import '../../connect/model/connect_request.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -25,6 +29,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late Animation<double> _pulseAnimation;
   bool? _isDriver;
   bool _isLoadingUserType = true;
+  List<ConnectRequest> _sentRequests = [];
+  bool _hasCheckedExistingRequest = false;
 
   @override
   void initState() {
@@ -34,6 +40,12 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
     _loadUserType();
+    // Check for existing requests after user type is loaded
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _checkExistingRequest();
+      }
+    });
   }
 
   Future<void> _loadUserType() async {
@@ -65,6 +77,9 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   /// Determines if connect button should be shown
   bool _shouldShowConnectButton() {
     if (_isLoadingUserType || _isOwnPost()) return false;
+    
+    // Don't show if request already exists
+    if (_hasExistingRequest()) return false;
     
     final isTrip = _isTrip();
     
@@ -100,31 +115,236 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
   }
 
-  void _handleConnect() {
+  void _handleConnect() async {
     final recipientId = _getRecipientId();
     if (recipientId == null || widget.post.id == null) return;
 
+    final recipientName = _getRecipientName() ?? 'user';
+    
     if (_isDriver == true) {
-      // Driver connecting to customer request - need to select trip
-      showDialog(
-        context: context,
-        builder: (context) => SelectTripDialog(
-          customerRequestId: widget.post.id!,
-          recipientId: recipientId,
-          recipientName: _getRecipientName(),
+      // Driver needs to have a trip - fetch trips first
+      _fetchTripsAndShowConfirmation(recipientId, recipientName);
+    } else {
+      // User connecting to trip - show confirmation directly
+      _showConfirmationDialog(recipientId, recipientName, null);
+    }
+  }
+
+  void _fetchTripsAndShowConfirmation(String recipientId, String recipientName) {
+    // Fetch driver's trips
+    context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 10));
+    
+    // Listen to the bloc to get trips
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => BlocListener<PostsBloc, PostsState>(
+        listener: (context, state) {
+          if (state is UserPostsLoaded) {
+            final trips = state.posts.where((post) => post.tripStartLocation != null).toList();
+            Navigator.of(dialogContext).pop(); // Close loading dialog
+            
+            if (trips.isEmpty) {
+              // No trips available
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('You need to create a trip first before connecting.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
+            
+            // Use the first trip
+            final selectedTripId = trips.first.id;
+            _showConfirmationDialog(recipientId, recipientName, selectedTripId);
+          } else if (state is PostsError) {
+            Navigator.of(dialogContext).pop(); // Close loading dialog
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load trips: ${state.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: const Center(
+          child: CircularProgressIndicator(),
         ),
+      ),
+    );
+  }
+
+  void _showConfirmationDialog(String recipientId, String recipientName, String? tripId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.secondary.withOpacity(0.2),
+                    AppColors.secondary.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.connect_without_contact_rounded, color: AppColors.secondary, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Send Connection Request',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to send a connection request to $recipientName?',
+          style: const TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _sendConnectRequest(recipientId, tripId);
+              },
+              child: const Text(
+                'Confirm',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendConnectRequest(String recipientId, String? tripId) {
+    if (widget.post.id == null) return;
+
+    // Listen to the response to handle errors
+    final bloc = context.read<ConnectRequestBloc>();
+    final subscription = bloc.stream.listen((state) {
+      if (state is ConnectRequestError) {
+        // Handle specific error codes
+        if (state.message.contains('already exists') || state.message.contains('409')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('A connection request already exists for this post.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          // Refresh sent requests to update UI
+          _checkExistingRequest();
+        } else if (state.message.contains('403') || state.message.contains('You can only respond')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You can only respond to requests sent to you.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send request: ${state.message}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (state is ConnectRequestSent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connection request sent successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        // Refresh sent requests to update UI
+        _checkExistingRequest();
+      }
+    });
+
+    if (_isDriver == true) {
+      // Driver connecting to customer request - send with customerRequestId and tripId
+      if (tripId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No trip available. Please create a trip first.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        subscription.cancel();
+        return;
+      }
+      ConnectRequestHelper.sendRequest(
+        context: context,
+        recipientId: recipientId,
+        customerRequestId: widget.post.id!,
+        tripId: tripId,
+        message: null,
       );
     } else if (_isDriver == false) {
-      // User connecting to trip - need to select customer request
-      showDialog(
+      // User connecting to trip - send with tripId
+      ConnectRequestHelper.sendRequest(
         context: context,
-        builder: (context) => SelectCustomerRequestDialog(
-          tripId: widget.post.id!,
-          recipientId: recipientId,
-          recipientName: _getRecipientName(),
-        ),
+        recipientId: recipientId,
+        customerRequestId: null,
+        tripId: widget.post.id!,
+        message: null,
       );
     }
+
+    // Cancel subscription after a delay to avoid memory leaks
+    Future.delayed(const Duration(seconds: 5), () {
+      subscription.cancel();
+    });
+  }
+
+  void _checkExistingRequest() {
+    if (!_hasCheckedExistingRequest) {
+      _hasCheckedExistingRequest = true;
+      // Fetch sent requests to check if one exists for this post
+      context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'sent', page: 1, limit: 100));
+    }
+  }
+
+  bool _hasExistingRequest() {
+    if (widget.post.id == null) return false;
+    
+    return _sentRequests.any((request) {
+      if (_isDriver == true) {
+        // Driver: check if request exists for this customerRequest
+        return request.customerRequestId == widget.post.id && request.status != ConnectRequestStatus.rejected && request.status != ConnectRequestStatus.cancelled;
+      } else {
+        // User: check if request exists for this trip
+        return request.tripId == widget.post.id && request.status != ConnectRequestStatus.rejected && request.status != ConnectRequestStatus.cancelled;
+      }
+    });
   }
 
   @override
@@ -136,6 +356,25 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to ConnectRequestBloc to update sent requests
+    return BlocListener<ConnectRequestBloc, ConnectRequestState>(
+      listenWhen: (previous, current) {
+        // Only listen to ConnectRequestsLoaded states
+        return current is ConnectRequestsLoaded;
+      },
+      listener: (context, state) {
+        if (state is ConnectRequestsLoaded) {
+          // Update sent requests list when loaded
+          setState(() {
+            _sentRequests = state.requests;
+          });
+        }
+      },
+      child: _buildPostCard(context),
+    );
+  }
+
+  Widget _buildPostCard(BuildContext context) {
     final String formattedDate = _formatDate(widget.post.tripStartDate ?? widget.post.date);
     final pickupLocation = widget.post.tripStartLocation?.address ?? widget.post.pickupLocation ?? 'Pickup Location';
     final dropLocation = widget.post.tripDestination?.address ?? widget.post.dropLocation ?? 'Drop Location';
