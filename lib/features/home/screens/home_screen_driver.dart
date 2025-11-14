@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../../../core/constants/app_images.dart';
 import '../../../core/theme/app_colors.dart';
@@ -31,16 +32,36 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   String _fromLocation = 'Current location';
   String _toLocation = 'Search trips, locations, or goods...';
   bool _isLoadingLocation = false;
-  bool _isToLocationExpanded = false;
   double? _fromLatitude; // From location (current location)
   double? _fromLongitude;
   double? _toLatitude; // To location (destination)
   double? _toLongitude;
+  
+  // Inline search state for "To" location only
+  final TextEditingController _toSearchController = TextEditingController();
+  final FocusNode _toFocusNode = FocusNode();
+  List<Map<String, dynamic>> _toSearchResults = [];
+  bool _isToSearching = false;
 
   @override
   void initState() {
     super.initState();
     _loadInitialData();
+    _toSearchController.addListener(() => _searchToLocation(_toSearchController.text));
+    _toFocusNode.addListener(() {
+      if (!_toFocusNode.hasFocus && _toSearchController.text.isEmpty) {
+        setState(() {
+          _toSearchResults = [];
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _toSearchController.dispose();
+    _toFocusNode.dispose();
+    super.dispose();
   }
 
   void _loadInitialData() {
@@ -78,7 +99,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     await Future.delayed(const Duration(seconds: 1));
   }
 
-  /// Handle from location selection (current location button)
+  /// Handle from location selection (from dropdown button)
   void _handleFromLocationSelection(String location, double? latitude, double? longitude) {
     setState(() {
       _fromLocation = location;
@@ -98,7 +119,9 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
       _toLocation = location;
       _toLatitude = latitude;
       _toLongitude = longitude;
-      _isToLocationExpanded = false; // Close the selector after selection
+      _toSearchController.text = location;
+      _toSearchResults = []; // Hide results after selection
+      _toFocusNode.unfocus();
     });
 
     // Refresh posts with new to location filter
@@ -106,11 +129,62 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     debugPrint('Selected to location: $location ($latitude, $longitude)');
   }
 
-  /// Toggle to location selector
-  void _toggleToLocationSelector() {
+  /// Search to location
+  Future<void> _searchToLocation(String query) async {
+    if (query.isEmpty || query.length < 2) {
+      setState(() {
+        _toSearchResults = [];
+        _isToSearching = false;
+      });
+      return;
+    }
+
     setState(() {
-      _isToLocationExpanded = !_isToLocationExpanded;
+      _isToSearching = true;
     });
+
+    try {
+      final locations = await locationFromAddress(query);
+      final results = <Map<String, dynamic>>[];
+      
+      for (var location in locations.take(5)) {
+        try {
+          final placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+          if (placemarks.isNotEmpty) {
+            final place = placemarks[0];
+            final addressParts = <String>[];
+            if (place.locality != null && place.locality!.isNotEmpty) {
+              addressParts.add(place.locality!);
+            }
+            if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+              addressParts.add(place.administrativeArea!);
+            }
+            final address = addressParts.isNotEmpty ? addressParts.join(', ') : query;
+            results.add({
+              'address': address,
+              'latitude': location.latitude,
+              'longitude': location.longitude,
+            });
+          }
+        } catch (e) {
+          // Skip this location if address lookup fails
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _toSearchResults = results;
+          _isToSearching = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _toSearchResults = [];
+          _isToSearching = false;
+        });
+      }
+    }
   }
 
   @override
@@ -219,11 +293,19 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
           children: [
             // App Logo with animation
             Hero(tag: 'app_logo', child: SizedBox(height: 35, child: Image.asset(AppImages.appIconWithName))),
-            // Notification Icon with badge
+            // From Location Button (Current Location)
             _buildLocationButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLocationButton() {
+    return LocationDropdown(
+      currentLocation: _fromLocation,
+      isLoading: _isLoadingLocation,
+      onLocationSelected: _handleFromLocationSelection,
     );
   }
 
@@ -366,14 +448,6 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
       context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'reject'));
       _showSnackBar('Rejected connect from ${request.requester?.name ?? "user"}');
     }
-  }
-
-  Widget _buildLocationButton() {
-    return LocationDropdown(
-      currentLocation: _fromLocation,
-      isLoading: _isLoadingLocation,
-      onLocationSelected: _handleFromLocationSelection,
-    );
   }
 
   Widget _buildListOfPostsSection() {
@@ -535,70 +609,214 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     );
   }
 
-  // Search Box Widget (for "to" location)
-  Widget _buildSearchBox() {
+  // Location Selector Section - Only "To" location with inline search
+  Widget _buildLocationSelectorSection() {
     final bool hasToLocation = _toLocation != 'Search trips, locations, or goods...';
+    final Color orangeColor = Colors.orange;
     
-    return GestureDetector(
-      onTap: _showToLocationDialog,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [Colors.white, AppColors.surface.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: AppColors.secondary.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 6), spreadRadius: -2),
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
-          ],
-          border: Border.all(color: AppColors.secondary.withOpacity(0.08), width: 1),
-        ),
-        child: Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // To Location with inline search
+        Row(
           children: [
-            Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.08)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                hasToLocation ? Icons.location_on_rounded : Icons.search_rounded,
-                color: AppColors.secondary,
-                size: 22,
-              ),
-            ),
             Expanded(
-              child: Text(
-                _toLocation,
-                style: TextStyle(
-                  color: hasToLocation ? AppColors.textPrimary : AppColors.textHint,
-                  fontSize: 15,
-                  fontWeight: hasToLocation ? FontWeight.w500 : FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: _buildLocationSearchField(
+                controller: _toSearchController,
+                focusNode: _toFocusNode,
+                hintText: 'Type to search destination...',
+                icon: Icons.location_on_rounded,
+                color: orangeColor,
+                results: _toSearchResults,
+                isSearching: _isToSearching,
+                onLocationSelected: _handleToLocationSelection,
               ),
             ),
-            if (hasToLocation)
+            if (hasToLocation) ...[
+              const SizedBox(width: 8),
               IconButton(
-                icon: Icon(Icons.clear_rounded, color: AppColors.textSecondary, size: 20),
                 onPressed: () {
                   setState(() {
                     _toLocation = 'Search trips, locations, or goods...';
                     _toLatitude = null;
                     _toLongitude = null;
+                    _toSearchController.clear();
                   });
                   _fetchPostsWithFilters();
                 },
+                icon: Icon(Icons.clear_rounded, color: AppColors.textSecondary, size: 20),
                 tooltip: 'Clear destination',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                  ),
+                ),
               ),
+            ],
           ],
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildLocationSearchField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String hintText,
+    required IconData icon,
+    required Color color,
+    required List<Map<String, dynamic>> results,
+    required bool isSearching,
+    required Function(String, double, double) onLocationSelected,
+  }) {
+    final hasLocation = controller.text.isNotEmpty;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: hasLocation
+                  ? [color.withOpacity(0.1), color.withOpacity(0.05)]
+                  : [Colors.white, AppColors.surface.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+                spreadRadius: -2,
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: color.withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(color: AppColors.textHint, fontSize: 15),
+              prefixIcon: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              suffixIcon: isSearching
+                  ? Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                    )
+                  : controller.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear_rounded, color: AppColors.textSecondary, size: 20),
+                          onPressed: () {
+                            controller.clear();
+                            setState(() {
+                              _toLocation = 'Search trips, locations, or goods...';
+                              _toLatitude = null;
+                              _toLongitude = null;
+                            });
+                            _fetchPostsWithFilters();
+                          },
+                        )
+                      : null,
+              filled: true,
+              fillColor: Colors.transparent,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            style: TextStyle(
+              color: hasLocation ? AppColors.textPrimary : AppColors.textHint,
+              fontSize: 15,
+              fontWeight: hasLocation ? FontWeight.w500 : FontWeight.w400,
+            ),
+          ),
+        ),
+        // Search Results List
+        if (results.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            constraints: const BoxConstraints(maxHeight: 200),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border.withOpacity(0.2)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const BouncingScrollPhysics(),
+              itemCount: results.length,
+              separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.border.withOpacity(0.2)),
+              itemBuilder: (context, index) {
+                final result = results[index];
+                return ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.location_on_rounded, color: color, size: 20),
+                  ),
+                  title: Text(
+                    result['address'],
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
+                  onTap: () {
+                    onLocationSelected(
+                      result['address'],
+                      result['latitude'],
+                      result['longitude'],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
