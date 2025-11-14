@@ -42,12 +42,17 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   final FocusNode _toFocusNode = FocusNode();
   List<Map<String, dynamic>> _toSearchResults = [];
   bool _isToSearching = false;
+  bool _isSettingSelectedLocation = false; // Flag to prevent search when setting selected location
 
   @override
   void initState() {
     super.initState();
     _loadInitialData();
-    _toSearchController.addListener(() => _searchToLocation(_toSearchController.text));
+    _toSearchController.addListener(() {
+      if (!_isSettingSelectedLocation) {
+        _searchToLocation(_toSearchController.text);
+      }
+    });
     _toFocusNode.addListener(() {
       if (!_toFocusNode.hasFocus && _toSearchController.text.isEmpty) {
         setState(() {
@@ -115,13 +120,22 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
 
   /// Handle to location selection (search bar)
   void _handleToLocationSelection(String location, double? latitude, double? longitude) {
+    // Set flag to prevent listener from triggering search
+    _isSettingSelectedLocation = true;
+    
     setState(() {
       _toLocation = location;
       _toLatitude = latitude;
       _toLongitude = longitude;
       _toSearchController.text = location;
       _toSearchResults = []; // Hide results after selection
+      _isToSearching = false;
       _toFocusNode.unfocus();
+    });
+
+    // Reset flag after a short delay to allow setState to complete
+    Future.microtask(() {
+      _isSettingSelectedLocation = false;
     });
 
     // Refresh posts with new to location filter
@@ -625,7 +639,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                 controller: _toSearchController,
                 focusNode: _toFocusNode,
                 hintText: 'Type to search destination...',
-                icon: Icons.location_on_rounded,
+                icon: Icons.search_outlined,
                 color: orangeColor,
                 results: _toSearchResults,
                 isSearching: _isToSearching,
@@ -711,8 +725,8 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               hintText: hintText,
               hintStyle: TextStyle(color: AppColors.textHint, fontSize: 15),
               prefixIcon: Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(right: 12,left: 4),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [color.withOpacity(0.2), color.withOpacity(0.1)],

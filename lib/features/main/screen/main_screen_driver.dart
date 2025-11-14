@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:truck_app/core/constants/dummy_data.dart';
 import 'package:truck_app/features/connect/screens/connect_screen.dart';
 import 'package:truck_app/features/post/screens/add_trip_screen.dart';
-import 'package:truck_app/features/vehicle/screens/vehicle_list_screen.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../home/screens/home_screen_driver.dart';
@@ -42,24 +40,29 @@ class _MainScreenDriverState extends State<MainScreenDriver>
 
   @override
   Widget build(BuildContext context) {
+    // Check if keyboard is visible
+    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      floatingActionButton: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: 2)],
-          border: Border.all(color: Colors.white, width: 3),
-        ),
-        child: FloatingActionButton(
-          onPressed: () => _onItemTapped(2),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.add, color: Colors.white, size: 32),
-        ),
-      ),
+      floatingActionButton: keyboardVisible
+          ? null
+          : Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: 2)],
+                border: Border.all(color: Colors.white, width: 3),
+              ),
+              child: FloatingActionButton(
+                onPressed: () => _onItemTapped(2),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                child: const Icon(Icons.add, color: Colors.white, size: 32),
+              ),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),

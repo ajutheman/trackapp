@@ -56,14 +56,60 @@ class _LocationDropdownState extends State<LocationDropdown> {
     if (renderBox == null) return;
     
     final size = renderBox.size;
+    final position = renderBox.localToGlobal(Offset.zero);
+    final screenWidth = MediaQuery.of(context).size.width;
+    const padding = 16.0; // Padding from screen edges
+    
+    // Calculate dropdown width
+    final dropdownWidth = size.width.clamp(280.0, 400.0);
+    
+    // Calculate horizontal offset to align dropdown properly
+    // When button is on right side, align dropdown to right edge of button
+    double horizontalOffset = 0;
+    
+    // Check if button is on the right side of screen (more than 50% from left)
+    final buttonCenterX = position.dx + size.width / 2;
+    final isOnRightSide = buttonCenterX > screenWidth / 2;
+    
+    if (isOnRightSide) {
+      // Align dropdown to right edge of button
+      horizontalOffset = size.width - dropdownWidth;
+    } else {
+      // Align to left edge of button (default)
+      horizontalOffset = 0;
+    }
+    
+    // Calculate final width ensuring it stays within screen bounds
+    final dropdownLeftEdge = position.dx + horizontalOffset;
+    final dropdownRightEdge = dropdownLeftEdge + dropdownWidth;
+    
+    double finalWidth = dropdownWidth;
+    double finalOffset = horizontalOffset;
+    
+    // Adjust if dropdown goes off the right edge
+    if (dropdownRightEdge > screenWidth - padding) {
+      final maxWidth = screenWidth - dropdownLeftEdge - padding;
+      finalWidth = maxWidth.clamp(200.0, dropdownWidth);
+      // If on right side and width was reduced, adjust offset to keep right-aligned
+      if (isOnRightSide && finalWidth < dropdownWidth) {
+        finalOffset = size.width - finalWidth;
+      }
+    }
+    
+    // Adjust if dropdown goes off the left edge
+    if (dropdownLeftEdge < padding) {
+      finalOffset = padding - position.dx;
+      final maxWidth = screenWidth - padding - (position.dx + finalOffset);
+      finalWidth = finalWidth.clamp(200.0, maxWidth);
+    }
     
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
-        width: size.width.clamp(280.0, 400.0), // Min 280, max 400
+        width: finalWidth.clamp(200.0, 400.0), // Min 200 to ensure usability
         child: CompositedTransformFollower(
           link: _layerLink,
           showWhenUnlinked: false,
-          offset: Offset(0, size.height + 4),
+          offset: Offset(finalOffset, size.height + 4),
           child: Material(
             elevation: 8,
             borderRadius: BorderRadius.circular(16),
