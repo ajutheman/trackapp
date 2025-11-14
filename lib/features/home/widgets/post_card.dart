@@ -6,6 +6,7 @@ import '../../../services/local/local_services.dart';
 import '../model/post.dart';
 import '../bloc/posts_bloc.dart';
 import '../../post/screens/trip_detail_screen.dart';
+import '../../post/bloc/customer_request_bloc.dart';
 import '../../connect/utils/connect_request_helper.dart';
 import '../../connect/bloc/connect_request_bloc.dart';
 import '../../connect/model/connect_request.dart';
@@ -125,8 +126,8 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       // Driver needs to have a trip - fetch trips first
       _fetchTripsAndShowConfirmation(recipientId, recipientName);
     } else {
-      // User connecting to trip - show confirmation directly
-      _showConfirmationDialog(recipientId, recipientName, null);
+      // User connecting to trip - needs customerRequestId, fetch customer requests first
+      _fetchCustomerRequestsAndShowConfirmation(recipientId, recipientName);
     }
   }
 
@@ -157,7 +158,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             
             // Use the first trip
             final selectedTripId = trips.first.id;
-            _showConfirmationDialog(recipientId, recipientName, selectedTripId);
+            _showConfirmationDialog(recipientId, recipientName, selectedTripId, null);
           } else if (state is PostsError) {
             Navigator.of(dialogContext).pop(); // Close loading dialog
             ScaffoldMessenger.of(context).showSnackBar(
@@ -175,7 +176,52 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
-  void _showConfirmationDialog(String recipientId, String recipientName, String? tripId) {
+  void _fetchCustomerRequestsAndShowConfirmation(String recipientId, String recipientName) {
+    // Fetch user's customer requests
+    context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 10));
+    
+    // Listen to the bloc to get customer requests
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => BlocListener<CustomerRequestBloc, CustomerRequestState>(
+        listener: (context, state) {
+          if (state is MyCustomerRequestsLoaded) {
+            final customerRequests = state.requests;
+            Navigator.of(dialogContext).pop(); // Close loading dialog
+            
+            if (customerRequests.isEmpty) {
+              // No customer requests available
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('You need to create a post (customer request) first before connecting.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
+            
+            // Use the first customer request
+            final selectedCustomerRequestId = customerRequests.first.id;
+            _showConfirmationDialog(recipientId, recipientName, null, selectedCustomerRequestId);
+          } else if (state is CustomerRequestError) {
+            Navigator.of(dialogContext).pop(); // Close loading dialog
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load your posts: ${state.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+
+  void _showConfirmationDialog(String recipientId, String recipientName, String? tripId, String? customerRequestId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -228,7 +274,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
             child: TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _sendConnectRequest(recipientId, tripId);
+                _sendConnectRequest(recipientId, tripId, customerRequestId);
               },
               child: const Text(
                 'Confirm',
@@ -241,7 +287,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
-  void _sendConnectRequest(String recipientId, String? tripId) {
+  void _sendConnectRequest(String recipientId, String? tripId, String? customerRequestId) {
     if (widget.post.id == null) return;
 
     // Listen to the response to handle errors
@@ -309,11 +355,21 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         message: null,
       );
     } else if (_isDriver == false) {
-      // User connecting to trip - send with tripId
+      // User connecting to trip - send with tripId and customerRequestId (both required by server)
+      if (customerRequestId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No post available. Please create a post first.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        subscription.cancel();
+        return;
+      }
       ConnectRequestHelper.sendRequest(
         context: context,
         recipientId: recipientId,
-        customerRequestId: null,
+        customerRequestId: customerRequestId,
         tripId: widget.post.id!,
         message: null,
       );

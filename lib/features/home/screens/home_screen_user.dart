@@ -60,8 +60,8 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
       currentLocation: _currentLocation,
       pickupDropoffBoth: _pickupDropoffBoth,
     ));
-    // Fetch recent connections
-    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 5));
+    // Fetch only received connect requests for recent connects section (requests sent TO the user)
+    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 5));
   }
 
   Future<void> _refreshAllData() async {
@@ -246,7 +246,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               ),
               child: IconButton(
                 onPressed: () {
-                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 5));
+                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 5));
                 },
                 icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
                 tooltip: 'Refresh',
@@ -323,8 +323,9 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         return ConnectStatus.rejected;
       case ConnectRequestStatus.cancelled:
         return ConnectStatus.rejected; // Map cancelled to rejected for display
+      case ConnectRequestStatus.hold:
+        return ConnectStatus.hold;
       case ConnectRequestStatus.pending:
-      default:
         return ConnectStatus.pending;
     }
   }
