@@ -290,6 +290,46 @@ class ConnectRequestBloc extends Bloc<ConnectRequestEvent, ConnectRequestState> 
     emit(ConnectRequestLoading());
 
     try {
+      // First, fetch the current request to validate its status
+      final currentRequestResult = await repository.getConnectRequestById(event.requestId);
+      
+      if (!currentRequestResult.isSuccess) {
+        emit(ConnectRequestError(message: currentRequestResult.message ?? 'Failed to fetch request status'));
+        return;
+      }
+
+      final currentRequest = currentRequestResult.data!;
+      
+      // Validate that the request is still in a valid state for the action
+      if (event.action == 'accept') {
+        if (currentRequest.status != ConnectRequestStatus.pending) {
+          if (currentRequest.status == ConnectRequestStatus.hold) {
+            emit(ConnectRequestError(
+              message: 'This request is on hold. Waiting for driver to add tokens. You cannot accept it at this time.'
+            ));
+          } else {
+            emit(ConnectRequestError(
+              message: 'This request is no longer pending. Current status: ${currentRequest.status.toString().split('.').last}'
+            ));
+          }
+          return;
+        }
+      } else if (event.action == 'reject') {
+        if (currentRequest.status == ConnectRequestStatus.hold) {
+          emit(ConnectRequestError(
+            message: 'This request is on hold and cannot be rejected. Waiting for driver to add tokens.'
+          ));
+          return;
+        }
+        if (currentRequest.status != ConnectRequestStatus.pending) {
+          emit(ConnectRequestError(
+            message: 'This request cannot be rejected. Current status: ${currentRequest.status.toString().split('.').last}'
+          ));
+          return;
+        }
+      }
+
+      // Proceed with the action
       final result = await repository.respondToRequest(
         requestId: event.requestId,
         action: event.action,

@@ -16,14 +16,32 @@ abstract class PostsEvent extends Equatable {
 class FetchAllPosts extends PostsEvent {
   final String? postType;
   final String? pickupLocation;
-  final String? dropLocation;
+  final String? dropoffLocation;
+  final String? currentLocation;
+  final bool? pickupDropoffBoth;
   final int? page;
   final int? limit;
 
-  const FetchAllPosts({this.postType, this.pickupLocation, this.dropLocation, this.page, this.limit});
+  const FetchAllPosts({
+    this.postType,
+    this.pickupLocation,
+    this.dropoffLocation,
+    this.currentLocation,
+    this.pickupDropoffBoth,
+    this.page,
+    this.limit,
+  });
 
   @override
-  List<Object> get props => [postType ?? '', pickupLocation ?? '', dropLocation ?? '', page ?? 0, limit ?? 0];
+  List<Object> get props => [
+        postType ?? '',
+        pickupLocation ?? '',
+        dropoffLocation ?? '',
+        currentLocation ?? '',
+        pickupDropoffBoth ?? false,
+        page ?? 0,
+        limit ?? 0,
+      ];
 }
 
 /// Event to fetch user's own posts
@@ -129,6 +147,20 @@ class UpdatePost extends PostsEvent {
   final String? vehicleType;
   final String? imageUrl;
   final bool? isActive;
+  // Trip-specific fields
+  final TripLocation? tripStartLocation;
+  final TripLocation? tripDestination;
+  final List<TripLocation>? viaRoutes;
+  final RouteGeoJSON? routeGeoJSON;
+  final String? vehicle;
+  final bool? selfDrive;
+  final String? driver;
+  final Distance? distance;
+  final TripDuration? duration;
+  final String? goodsTypeId;
+  final double? weight;
+  final DateTime? tripStartDate;
+  final DateTime? tripEndDate;
 
   const UpdatePost({
     required this.postId,
@@ -141,6 +173,19 @@ class UpdatePost extends PostsEvent {
     this.vehicleType,
     this.imageUrl,
     this.isActive,
+    this.tripStartLocation,
+    this.tripDestination,
+    this.viaRoutes,
+    this.routeGeoJSON,
+    this.vehicle,
+    this.selfDrive,
+    this.driver,
+    this.distance,
+    this.duration,
+    this.goodsTypeId,
+    this.weight,
+    this.tripStartDate,
+    this.tripEndDate,
   });
 
   @override
@@ -155,6 +200,19 @@ class UpdatePost extends PostsEvent {
     vehicleType ?? '',
     imageUrl ?? '',
     isActive ?? false,
+    tripStartLocation ?? '',
+    tripDestination ?? '',
+    viaRoutes ?? [],
+    routeGeoJSON ?? '',
+    vehicle ?? '',
+    selfDrive ?? false,
+    driver ?? '',
+    distance ?? '',
+    duration ?? '',
+    goodsTypeId ?? '',
+    weight ?? 0.0,
+    tripStartDate ?? DateTime.now(),
+    tripEndDate ?? DateTime.now(),
   ];
 }
 
@@ -179,16 +237,40 @@ class TogglePostStatus extends PostsEvent {
   List<Object> get props => [postId, isActive];
 }
 
+/// Event to fetch a single post by ID
+class FetchPostById extends PostsEvent {
+  final String postId;
+
+  const FetchPostById({required this.postId});
+
+  @override
+  List<Object> get props => [postId];
+}
+
 /// Event to refresh posts
 class RefreshPosts extends PostsEvent {
   final String? postType;
   final String? pickupLocation;
-  final String? dropLocation;
+  final String? dropoffLocation;
+  final String? currentLocation;
+  final bool? pickupDropoffBoth;
 
-  const RefreshPosts({this.postType, this.pickupLocation, this.dropLocation});
+  const RefreshPosts({
+    this.postType,
+    this.pickupLocation,
+    this.dropoffLocation,
+    this.currentLocation,
+    this.pickupDropoffBoth,
+  });
 
   @override
-  List<Object> get props => [postType ?? '', pickupLocation ?? '', dropLocation ?? ''];
+  List<Object> get props => [
+        postType ?? '',
+        pickupLocation ?? '',
+        dropoffLocation ?? '',
+        currentLocation ?? '',
+        pickupDropoffBoth ?? false,
+      ];
 }
 
 /// States for Posts BLoC
@@ -249,6 +331,16 @@ class PostUpdated extends PostsState {
   List<Object> get props => [post];
 }
 
+/// Success state for fetching a single post
+class PostLoaded extends PostsState {
+  final Post post;
+
+  const PostLoaded({required this.post});
+
+  @override
+  List<Object> get props => [post];
+}
+
 /// Success state for post deletion
 class PostDeleted extends PostsState {
   final String postId;
@@ -276,6 +368,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
   PostsBloc({required this.repository}) : super(PostsInitial()) {
     on<FetchAllPosts>(_onFetchAllPosts);
     on<FetchUserPosts>(_onFetchUserPosts);
+    on<FetchPostById>(_onFetchPostById);
     on<CreatePost>(_onCreatePost);
     on<UpdatePost>(_onUpdatePost);
     on<DeletePost>(_onDeletePost);
@@ -290,7 +383,9 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       final result = await repository.getAllPosts(
         postType: event.postType,
         pickupLocation: event.pickupLocation,
-        dropLocation: event.dropLocation,
+        dropoffLocation: event.dropoffLocation,
+        currentLocation: event.currentLocation,
+        pickupDropoffBoth: event.pickupDropoffBoth,
         page: event.page,
         limit: event.limit,
       );
@@ -321,6 +416,22 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
 
       if (result.isSuccess) {
         emit(UserPostsLoaded(posts: result.data!, hasMore: result.data!.length >= (event.limit ?? 10), currentPage: event.page ?? 1));
+      } else {
+        emit(PostsError(message: result.message!));
+      }
+    } catch (e) {
+      emit(PostsError(message: 'An error occurred: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onFetchPostById(FetchPostById event, Emitter<PostsState> emit) async {
+    emit(PostsLoading());
+
+    try {
+      final result = await repository.getPostById(event.postId);
+
+      if (result.isSuccess) {
+        emit(PostLoaded(post: result.data!));
       } else {
         emit(PostsError(message: result.message!));
       }
@@ -383,6 +494,20 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
         vehicleType: event.vehicleType,
         imageUrl: event.imageUrl,
         isActive: event.isActive,
+        // Trip-specific fields
+        tripStartLocation: event.tripStartLocation,
+        tripDestination: event.tripDestination,
+        viaRoutes: event.viaRoutes,
+        routeGeoJSON: event.routeGeoJSON,
+        vehicle: event.vehicle,
+        selfDrive: event.selfDrive,
+        driver: event.driver,
+        distance: event.distance,
+        duration: event.duration,
+        goodsTypeId: event.goodsTypeId,
+        weight: event.weight,
+        tripStartDate: event.tripStartDate,
+        tripEndDate: event.tripEndDate,
       );
 
       if (result.isSuccess) {
@@ -428,6 +553,14 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
   }
 
   Future<void> _onRefreshPosts(RefreshPosts event, Emitter<PostsState> emit) async {
-    add(FetchAllPosts(postType: event.postType, pickupLocation: event.pickupLocation, dropLocation: event.dropLocation, page: 1, limit: 20));
+    add(FetchAllPosts(
+      postType: event.postType,
+      pickupLocation: event.pickupLocation,
+      dropoffLocation: event.dropoffLocation,
+      currentLocation: event.currentLocation,
+      pickupDropoffBoth: event.pickupDropoffBoth,
+      page: 1,
+      limit: 20,
+    ));
   }
 }

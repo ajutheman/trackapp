@@ -36,20 +36,26 @@ class ConnectRequest {
   });
 
   factory ConnectRequest.fromJson(Map<String, dynamic> json) {
+    // Handle both server field names (initiator/recipient) and client field names (requesterId/recipientId)
+    final initiator = json['initiator'] ?? json['requesterId'];
+    final recipient = json['recipient'] ?? json['recipientId'];
+    final customerRequest = json['customerRequest'] ?? json['customerRequestId'];
+    final trip = json['trip'] ?? json['tripId'];
+    
     return ConnectRequest(
       id: json['_id'] ?? json['id'],
-      requesterId: json['requesterId'] is String ? json['requesterId'] : json['requesterId']?['_id'],
-      recipientId: json['recipientId'] is String ? json['recipientId'] : json['recipientId']?['_id'],
-      customerRequestId: json['customerRequestId'] is String ? json['customerRequestId'] : json['customerRequestId']?['_id'],
-      tripId: json['tripId'] is String ? json['tripId'] : json['tripId']?['_id'],
+      requesterId: initiator is String ? initiator : (initiator is Map ? initiator['_id'] : null),
+      recipientId: recipient is String ? recipient : (recipient is Map ? recipient['_id'] : null),
+      customerRequestId: customerRequest is String ? customerRequest : (customerRequest is Map ? customerRequest['_id'] : null),
+      tripId: trip is String ? trip : (trip is Map ? trip['_id'] : null),
       message: json['message'],
       status: _statusFromString(json['status'] ?? 'pending'),
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      requester: json['requesterId'] is Map ? ConnectUser.fromJson(json['requesterId']) : null,
-      recipient: json['recipientId'] is Map ? ConnectUser.fromJson(json['recipientId']) : null,
-      trip: json['tripId'] is Map ? Trip.fromJson(json['tripId']) : null,
-      customerRequest: json['customerRequestId'] is Map ? CustomerRequest.fromJson(json['customerRequestId']) : null,
+      requester: initiator is Map ? ConnectUser.fromJson(Map<String, dynamic>.from(initiator)) : null,
+      recipient: recipient is Map ? ConnectUser.fromJson(Map<String, dynamic>.from(recipient)) : null,
+      trip: trip is Map ? Trip.fromJson(Map<String, dynamic>.from(trip)) : null,
+      customerRequest: customerRequest is Map ? CustomerRequest.fromJson(Map<String, dynamic>.from(customerRequest)) : null,
       contactDetails: json['contactDetails'] != null ? ContactDetails.fromJson(json['contactDetails']) : null,
     );
   }
@@ -76,6 +82,8 @@ class ConnectRequest {
         return ConnectRequestStatus.rejected;
       case 'cancelled':
         return ConnectRequestStatus.cancelled;
+      case 'hold':
+        return ConnectRequestStatus.hold;
       case 'pending':
       default:
         return ConnectRequestStatus.pending;
@@ -122,6 +130,7 @@ enum ConnectRequestStatus {
   accepted,
   rejected,
   cancelled,
+  hold,
 }
 
 class ConnectUser {

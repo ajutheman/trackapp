@@ -500,23 +500,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                     ),
                                   ),
                                 if (widget.onEdit != null && (widget.onDelete != null || widget.onToggleStatus != null)) const SizedBox(width: 10),
-                                if (widget.onToggleStatus != null)
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: (widget.post.isActive ?? true) ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3), width: 1.5),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: IconButton(
-                                      onPressed: widget.onToggleStatus,
-                                      icon: Icon(
-                                        (widget.post.isActive ?? true) ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                        color: (widget.post.isActive ?? true) ? Colors.green : Colors.orange,
-                                        size: 22,
-                                      ),
-                                      style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                                    ),
-                                  ),
-                                if (widget.onToggleStatus != null && widget.onDelete != null) const SizedBox(width: 10),
                                 if (widget.onDelete != null)
                                   Container(
                                     decoration: BoxDecoration(border: Border.all(color: Colors.red.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),

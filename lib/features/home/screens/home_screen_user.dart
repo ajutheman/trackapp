@@ -9,6 +9,7 @@ import '../model/post.dart';
 import '../model/connect.dart';
 import '../widgets/post_card.dart';
 import '../widgets/recent_connect_card.dart';
+import '../widgets/location_filter_dialog.dart';
 import '../bloc/posts_bloc.dart';
 import '../../post/screens/my_post_screen.dart';
 import '../../post/screens/add_post_screen.dart';
@@ -32,6 +33,12 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
   List<Post> _trips = [];
   List<ConnectRequest> _recentConnections = [];
   bool _isLoadingConnections = false;
+  
+  // Location filter state
+  String? _pickupLocation;
+  String? _dropoffLocation;
+  String? _currentLocation;
+  bool? _pickupDropoffBoth;
 
   @override
   void initState() {
@@ -44,8 +51,15 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
     context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
     // Also fetch user's own customer requests (posts)
     context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 10));
-    // Fetch trips for users to see and connect
-    context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+    // Fetch trips for users to see and connect with location filters
+    context.read<PostsBloc>().add(FetchAllPosts(
+      page: 1,
+      limit: 20,
+      pickupLocation: _pickupLocation,
+      dropoffLocation: _dropoffLocation,
+      currentLocation: _currentLocation,
+      pickupDropoffBoth: _pickupDropoffBoth,
+    ));
     // Fetch recent connections
     context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 5));
   }
@@ -446,6 +460,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
 
   Widget _buildTripsSection(PostsState state) {
     final isLoading = state is PostsLoading;
+    final hasActiveFilters = _pickupLocation != null || _dropoffLocation != null || _currentLocation != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,6 +482,63 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             const SizedBox(width: 12),
             Text('Available Trips', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
             const Spacer(),
+            // Filter button
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Stack(
+                children: [
+                  IconButton(
+                    onPressed: () async {
+                      final result = await showDialog<Map<String, dynamic>>(
+                        context: context,
+                        builder: (context) => LocationFilterDialog(
+                          currentPickupLocation: _pickupLocation,
+                          currentDropoffLocation: _dropoffLocation,
+                          currentPickupDropoffBoth: _pickupDropoffBoth,
+                        ),
+                      );
+                      
+                      if (result != null) {
+                        setState(() {
+                          _pickupLocation = result['pickupLocation'];
+                          _dropoffLocation = result['dropoffLocation'];
+                          _currentLocation = result['currentLocation'];
+                          _pickupDropoffBoth = result['pickupDropoffBoth'];
+                        });
+                        // Reload trips with new filters
+                        context.read<PostsBloc>().add(FetchAllPosts(
+                          page: 1,
+                          limit: 20,
+                          pickupLocation: _pickupLocation,
+                          dropoffLocation: _dropoffLocation,
+                          currentLocation: _currentLocation,
+                          pickupDropoffBoth: _pickupDropoffBoth,
+                        ));
+                      }
+                    },
+                    icon: Icon(Icons.filter_list_rounded, color: AppColors.secondary, size: 22),
+                    tooltip: 'Filter by location',
+                  ),
+                  if (hasActiveFilters)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
@@ -474,7 +546,14 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
               ),
               child: IconButton(
                 onPressed: () {
-                  context.read<PostsBloc>().add(const FetchAllPosts(page: 1, limit: 20));
+                  context.read<PostsBloc>().add(FetchAllPosts(
+                    page: 1,
+                    limit: 20,
+                    pickupLocation: _pickupLocation,
+                    dropoffLocation: _dropoffLocation,
+                    currentLocation: _currentLocation,
+                    pickupDropoffBoth: _pickupDropoffBoth,
+                  ));
                 },
                 icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
                 tooltip: 'Refresh',
@@ -482,6 +561,90 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             ),
           ],
         ),
+        // Show active filters
+        if (hasActiveFilters) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (_currentLocation != null)
+                _buildFilterChip(
+                  label: 'Current Location',
+                  onRemove: () {
+                    setState(() {
+                      _currentLocation = null;
+                    });
+                    context.read<PostsBloc>().add(FetchAllPosts(
+                      page: 1,
+                      limit: 20,
+                      pickupLocation: _pickupLocation,
+                      dropoffLocation: _dropoffLocation,
+                      currentLocation: null,
+                      pickupDropoffBoth: _pickupDropoffBoth,
+                    ));
+                  },
+                ),
+              if (_pickupLocation != null)
+                _buildFilterChip(
+                  label: 'Pickup',
+                  onRemove: () {
+                    setState(() {
+                      _pickupLocation = null;
+                      if (_pickupDropoffBoth == true) {
+                        _pickupDropoffBoth = null;
+                      }
+                    });
+                    context.read<PostsBloc>().add(FetchAllPosts(
+                      page: 1,
+                      limit: 20,
+                      pickupLocation: null,
+                      dropoffLocation: _dropoffLocation,
+                      currentLocation: _currentLocation,
+                      pickupDropoffBoth: null,
+                    ));
+                  },
+                ),
+              if (_dropoffLocation != null)
+                _buildFilterChip(
+                  label: 'Dropoff',
+                  onRemove: () {
+                    setState(() {
+                      _dropoffLocation = null;
+                      if (_pickupDropoffBoth == true) {
+                        _pickupDropoffBoth = null;
+                      }
+                    });
+                    context.read<PostsBloc>().add(FetchAllPosts(
+                      page: 1,
+                      limit: 20,
+                      pickupLocation: _pickupLocation,
+                      dropoffLocation: null,
+                      currentLocation: _currentLocation,
+                      pickupDropoffBoth: null,
+                    ));
+                  },
+                ),
+              if (_pickupDropoffBoth == true)
+                _buildFilterChip(
+                  label: 'Both Required',
+                  onRemove: () {
+                    setState(() {
+                      _pickupDropoffBoth = null;
+                    });
+                    context.read<PostsBloc>().add(FetchAllPosts(
+                      page: 1,
+                      limit: 20,
+                      pickupLocation: _pickupLocation,
+                      dropoffLocation: _dropoffLocation,
+                      currentLocation: _currentLocation,
+                      pickupDropoffBoth: null,
+                    ));
+                  },
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         if (isLoading)
           Center(
@@ -684,6 +847,41 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
             },
           ),
       ],
+    );
+  }
+
+  Widget _buildFilterChip({required String label, required VoidCallback onRemove}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.08)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.secondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onRemove,
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: AppColors.secondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

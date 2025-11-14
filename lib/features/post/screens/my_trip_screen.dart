@@ -26,9 +26,18 @@ class _MyTripScreenState extends State<MyTripScreen> {
   }
 
   void _editPost(Post post) async {
-    // Navigate to AddTripScreen, passing the post to be edited
-    // In a real app, you would implement edit functionality
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit feature coming soon for "${post.title}"'), backgroundColor: AppColors.info));
+    // Navigate to AddTripScreen in edit mode, passing the post to be edited
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTripScreen(postToEdit: post),
+      ),
+    );
+    
+    // Refresh the list when returning from edit screen
+    if (mounted && result == true) {
+      context.read<PostsBloc>().add(const FetchUserPosts(page: 1, limit: 20));
+    }
   }
 
   void _deletePost(Post post) {

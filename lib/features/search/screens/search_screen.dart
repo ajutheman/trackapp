@@ -506,7 +506,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _searchTrips() {
     // Fetch posts with location filters
-    context.read<PostsBloc>().add(FetchAllPosts(pickupLocation: _fromLocation, dropLocation: _toLocation, page: 1, limit: 20));
+    context.read<PostsBloc>().add(FetchAllPosts(
+      pickupLocation: _fromLocation,
+      dropoffLocation: _toLocation,
+      page: 1,
+      limit: 20,
+    ));
   }
 
   Widget _buildResultsSection() {

@@ -8,7 +8,6 @@ import 'package:truck_app/features/post/screens/map_point_selector.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/post/bloc/customer_request_bloc.dart';
 import 'package:truck_app/features/post/utils/customer_request_helper.dart';
-import 'package:truck_app/features/post/repo/customer_request_repo.dart';
 import 'package:truck_app/features/auth/repo/image_upload_repo.dart';
 import 'package:truck_app/services/network/api_service.dart';
 
@@ -16,7 +15,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
 
 class AddPostScreen extends StatefulWidget {
-  const AddPostScreen({super.key});
+  final Post? postToEdit; // If provided, screen will be in edit mode
+
+  const AddPostScreen({super.key, this.postToEdit});
 
   @override
   State<AddPostScreen> createState() => _AddPostScreenState();
@@ -50,6 +51,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
   List<File> _selectedDocuments = [];
   List<String> _uploadedImageIds = [];
   List<String> _uploadedDocumentIds = [];
+  List<String> _existingImageIds = []; // Existing image IDs from post being edited
+  List<String> _existingDocumentIds = []; // Existing document IDs from post being edited
 
   // Distance and duration (will be calculated)
   double? _distance;
@@ -62,6 +65,79 @@ class _AddPostScreenState extends State<AddPostScreen> {
   void initState() {
     super.initState();
     _imageUploadRepository = ImageUploadRepository(apiService: locator<ApiService>());
+    
+    // Populate form if editing
+    if (widget.postToEdit != null) {
+      _populateFormFromPost(widget.postToEdit!);
+    }
+  }
+
+  // Populate form fields from existing post
+  void _populateFormFromPost(Post post) {
+    // Populate text fields
+    _titleController.text = post.title;
+    _descriptionController.text = post.description;
+
+    // Populate locations
+    if (post.pickupLocationObj != null) {
+      _pickupLocationAddressController.text = post.pickupLocationObj!.address ?? '';
+      if (post.pickupLocationObj!.coordinates.length >= 2) {
+        // coordinates[0] is lng, coordinates[1] is lat
+        pickupLocation = LatLng(
+          post.pickupLocationObj!.coordinates[1],
+          post.pickupLocationObj!.coordinates[0],
+        );
+        _pickupLocationCoordinates = formatLatLng(pickupLocation!);
+      }
+    }
+
+    if (post.dropoffLocationObj != null) {
+      _dropoffLocationAddressController.text = post.dropoffLocationObj!.address ?? '';
+      if (post.dropoffLocationObj!.coordinates.length >= 2) {
+        // coordinates[0] is lng, coordinates[1] is lat
+        dropoffLocation = LatLng(
+          post.dropoffLocationObj!.coordinates[1],
+          post.dropoffLocationObj!.coordinates[0],
+        );
+        _dropoffLocationCoordinates = formatLatLng(dropoffLocation!);
+      }
+    }
+
+    // Populate package details
+    if (post.packageDetails != null) {
+      if (post.packageDetails!.weight != null) {
+        _weightController.text = post.packageDetails!.weight.toString();
+      }
+      if (post.packageDetails!.dimensions != null) {
+        if (post.packageDetails!.dimensions!.length != null) {
+          _lengthController.text = post.packageDetails!.dimensions!.length.toString();
+        }
+        if (post.packageDetails!.dimensions!.width != null) {
+          _widthController.text = post.packageDetails!.dimensions!.width.toString();
+        }
+        if (post.packageDetails!.dimensions!.height != null) {
+          _heightController.text = post.packageDetails!.dimensions!.height.toString();
+        }
+      }
+      if (post.packageDetails!.description != null) {
+        _packageDescriptionController.text = post.packageDetails!.description!;
+      }
+    }
+
+    // Populate pickup time
+    _selectedPickupTime = post.pickupTime;
+
+    // Store existing image and document IDs
+    _existingImageIds = post.images ?? [];
+    _existingDocumentIds = post.documents ?? [];
+
+    // Populate distance and duration if available
+    if (post.distance != null) {
+      _distance = post.distance!.value;
+    }
+    if (post.duration != null) {
+      _duration = post.duration!.value;
+    }
   }
 
   @override
@@ -209,7 +285,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
     // Upload documents
     for (var docFile in _selectedDocuments) {
       final result = await _imageUploadRepository.uploadDocument(
-        type: 'customer_request',
+        type: 'general',
         imageFile: docFile,
       );
       if (result.isSuccess) {
@@ -244,16 +320,24 @@ class _AddPostScreenState extends State<AddPostScreen> {
         return;
       }
 
-      if (_selectedImages.isEmpty) {
+      // For new posts, require at least one image
+      // For editing, allow keeping existing images
+      if (widget.postToEdit == null && _selectedImages.isEmpty) {
         _showSnackBar('Please select at least one image');
         return;
       }
 
-      // Upload files first
-      final uploadSuccess = await _uploadFiles();
-      if (!uploadSuccess) {
-        return;
+      // Upload new files if any
+      if (_selectedImages.isNotEmpty || _selectedDocuments.isNotEmpty) {
+        final uploadSuccess = await _uploadFiles();
+        if (!uploadSuccess) {
+          return;
+        }
       }
+
+      // Combine existing and newly uploaded IDs
+      final allImageIds = <String>[..._existingImageIds, ..._uploadedImageIds];
+      final allDocumentIds = <String>[..._existingDocumentIds, ..._uploadedDocumentIds];
 
       // Create trip locations
       final pickupLocationObj = TripLocation(
@@ -304,20 +388,39 @@ class _AddPostScreenState extends State<AddPostScreen> {
             : null,
       );
 
-      // Create the customer request
-      CustomerRequestHelper.createRequest(
-        context: context,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        pickupLocation: pickupLocationObj,
-        dropoffLocation: dropoffLocationObj,
-        distance: distance,
-        duration: duration,
-        packageDetails: packageDetails,
-        images: _uploadedImageIds,
-        documents: _uploadedDocumentIds.isNotEmpty ? _uploadedDocumentIds : null,
-        pickupTime: _selectedPickupTime,
-      );
+      // Create or update the customer request
+      if (widget.postToEdit != null && widget.postToEdit!.id != null) {
+        // Update existing request
+        CustomerRequestHelper.updateRequest(
+          context: context,
+          requestId: widget.postToEdit!.id!,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          pickupLocation: pickupLocationObj,
+          dropoffLocation: dropoffLocationObj,
+          distance: distance,
+          duration: duration,
+          packageDetails: packageDetails,
+          images: allImageIds.isNotEmpty ? allImageIds : null,
+          documents: allDocumentIds.isNotEmpty ? allDocumentIds : null,
+          pickupTime: _selectedPickupTime,
+        );
+      } else {
+        // Create new request
+        CustomerRequestHelper.createRequest(
+          context: context,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          pickupLocation: pickupLocationObj,
+          dropoffLocation: dropoffLocationObj,
+          distance: distance,
+          duration: duration,
+          packageDetails: packageDetails,
+          images: allImageIds,
+          documents: allDocumentIds.isNotEmpty ? allDocumentIds : null,
+          pickupTime: _selectedPickupTime,
+        );
+      }
     }
   }
 
@@ -358,9 +461,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Add New Post',
-          style: TextStyle(
+        title: Text(
+          widget.postToEdit != null ? 'Edit Post' : 'Add New Post',
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
@@ -372,15 +475,19 @@ class _AddPostScreenState extends State<AddPostScreen> {
       body: BlocConsumer<CustomerRequestBloc, CustomerRequestState>(
         listenWhen: (previous, current) {
           return (previous is! CustomerRequestCreated && current is CustomerRequestCreated) ||
+              (previous is! CustomerRequestUpdated && current is CustomerRequestUpdated) ||
               (previous is! CustomerRequestError && current is CustomerRequestError);
         },
         listener: (context, state) {
-          if (state is CustomerRequestCreated) {
+          if (state is CustomerRequestCreated || state is CustomerRequestUpdated) {
             final route = ModalRoute.of(context);
             if (!mounted || route == null || !route.isCurrent) {
               return;
             }
-            _showSnackBar('Post created successfully!');
+            final message = widget.postToEdit != null 
+                ? 'Post updated successfully!'
+                : 'Post created successfully!';
+            _showSnackBar(message);
             Future.delayed(const Duration(milliseconds: 800), () {
               if (mounted && context.mounted) {
                 final currentRoute = ModalRoute.of(context);
@@ -397,7 +504,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
           }
         },
         buildWhen: (previous, current) =>
-            !(current is CustomerRequestCreated || current is CustomerRequestError),
+            !(current is CustomerRequestCreated || 
+              current is CustomerRequestUpdated || 
+              current is CustomerRequestError),
         builder: (context, state) {
           final isLoading = state is CustomerRequestLoading;
           return SingleChildScrollView(
@@ -589,7 +698,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
                   // Images Section
                   Text(
-                    'Images *',
+                    widget.postToEdit != null ? 'Images' : 'Images *',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -676,7 +785,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
                             )
                           : const Icon(Icons.send_rounded, color: Colors.white),
                       label: Text(
-                        isLoading ? 'Creating...' : 'Create Post',
+                        isLoading 
+                            ? (widget.postToEdit != null ? 'Updating...' : 'Creating...')
+                            : (widget.postToEdit != null ? 'Update Post' : 'Create Post'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -911,11 +1022,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _selectedImages.isEmpty
-                        ? 'Tap to select images (at least 1 required)'
-                        : '${_selectedImages.length} image(s) selected',
+                    _selectedImages.isEmpty && _existingImageIds.isEmpty
+                        ? widget.postToEdit != null 
+                            ? 'Tap to add images (optional)'
+                            : 'Tap to select images (at least 1 required)'
+                        : '${_selectedImages.length} new + ${_existingImageIds.length} existing image(s)',
                     style: TextStyle(
-                      color: _selectedImages.isEmpty
+                      color: (_selectedImages.isEmpty && _existingImageIds.isEmpty)
                           ? AppColors.textSecondary
                           : AppColors.textPrimary,
                     ),

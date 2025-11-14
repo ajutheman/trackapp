@@ -27,10 +27,10 @@ class ApiEndpoints {
   static const String getAllPosts = 'api/v1/trips';
   static const String createPost = 'api/v1/trips';
   static const String getUserPosts = 'api/v1/trips/my';
-  static const String getPostById = 'api/v1/trips';
-  static const String updatePost = 'api/v1/trips';
-  static const String deletePost = 'api/v1/trips';
-  static const String updateTripStatus = 'api/v1/trips';
+  static const String getPostById = 'api/v1/posts';
+  static const String updatePost = 'api/v1/posts';
+  static const String deletePost = 'api/v1/posts';
+  static const String updateTripStatus = 'api/v1/posts';
 
   // Connections/Trips endpoints
   static const String getConnections = 'api/v1/connections';

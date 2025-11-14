@@ -26,17 +26,45 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   }
 
   Future<void> _loadTripDetails() async {
-    final postsRepo = PostsRepository(apiService: locator<ApiService>());
-    final result = await postsRepo.getPostById(widget.tripId);
+    try {
+      final postsRepo = PostsRepository(apiService: locator<ApiService>());
+      final result = await postsRepo.getPostById(widget.tripId);
 
-    if (result.isSuccess && result.data != null) {
-      setState(() {
-        _trip = result.data;
-      });
-    } else {
+      if (result.isSuccess && result.data != null) {
+        if (mounted) {
+          setState(() {
+            _trip = result.data;
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message ?? 'Failed to load trip details'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          // Wait a bit before navigating back to show the error
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message ?? 'Failed to load trip details')));
-        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading trip: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
     }
   }
@@ -78,43 +106,43 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status Badge
-            if (trip.status != null || trip.isActive != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      (trip.isActive ?? true) ? Colors.green.shade50 : Colors.orange.shade50,
-                      (trip.isActive ?? true) ? Colors.green.shade100.withOpacity(0.3) : Colors.orange.shade100.withOpacity(0.3),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: (trip.isActive ?? true) ? Colors.green.shade200 : Colors.orange.shade200, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      (trip.isActive ?? true) ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
-                      color: (trip.isActive ?? true) ? Colors.green.shade700 : Colors.orange.shade700,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            trip.status?.name ?? ((trip.isActive ?? true) ? 'Active' : 'Inactive'),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: (trip.isActive ?? true) ? Colors.green.shade700 : Colors.orange.shade700),
-                          ),
-                          if (trip.status?.description != null) Text(trip.status!.description, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            // if (trip.status != null || trip.isActive != null)
+            //   Container(
+            //     width: double.infinity,
+            //     padding: const EdgeInsets.all(16),
+            //     margin: const EdgeInsets.all(16),
+            //     decoration: BoxDecoration(
+            //       gradient: LinearGradient(
+            //         colors: [
+            //           (trip.isActive ?? true) ? Colors.green.shade50 : Colors.orange.shade50,
+            //           (trip.isActive ?? true) ? Colors.green.shade100.withOpacity(0.3) : Colors.orange.shade100.withOpacity(0.3),
+            //         ],
+            //       ),
+            //       borderRadius: BorderRadius.circular(16),
+            //       border: Border.all(color: (trip.isActive ?? true) ? Colors.green.shade200 : Colors.orange.shade200, width: 1.5),
+            //     ),
+            //     child: Row(
+            //       children: [
+            //         Icon(
+            //           (trip.isActive ?? true) ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
+            //           color: (trip.isActive ?? true) ? Colors.green.shade700 : Colors.orange.shade700,
+            //         ),
+            //         const SizedBox(width: 12),
+            //         Expanded(
+            //           child: Column(
+            //             crossAxisAlignment: CrossAxisAlignment.start,
+            //             children: [
+            //               Text(
+            //                 trip.status?.name ?? ((trip.isActive ?? true) ? 'Active' : 'Inactive'),
+            //                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: (trip.isActive ?? true) ? Colors.green.shade700 : Colors.orange.shade700),
+            //               ),
+            //               if (trip.status?.description != null) Text(trip.status!.description, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            //             ],
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
 
             // Route Information
             Container(

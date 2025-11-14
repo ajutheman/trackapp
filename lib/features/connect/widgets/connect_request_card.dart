@@ -31,6 +31,8 @@ class ConnectRequestCard extends StatelessWidget {
         return AppColors.error;
       case ConnectRequestStatus.cancelled:
         return AppColors.textSecondary;
+      case ConnectRequestStatus.hold:
+        return Colors.blue;
     }
   }
 
@@ -44,6 +46,8 @@ class ConnectRequestCard extends StatelessWidget {
         return 'Rejected';
       case ConnectRequestStatus.cancelled:
         return 'Cancelled';
+      case ConnectRequestStatus.hold:
+        return 'On Hold';
     }
   }
 
@@ -57,6 +61,8 @@ class ConnectRequestCard extends StatelessWidget {
         return Icons.cancel_rounded;
       case ConnectRequestStatus.cancelled:
         return Icons.block_rounded;
+      case ConnectRequestStatus.hold:
+        return Icons.pause_circle_rounded;
     }
   }
 
@@ -445,6 +451,32 @@ class ConnectRequestCard extends StatelessWidget {
             ),
           ),
         ],
+      );
+    } else if (request.status == ConnectRequestStatus.hold) {
+      // Hold status - show only info message, no action buttons
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, size: 18, color: Colors.blue),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Request is on hold. Waiting for driver to add tokens.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     } else if (request.status == ConnectRequestStatus.accepted) {
       // Accepted status - show view contacts and delete buttons

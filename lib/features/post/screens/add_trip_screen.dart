@@ -16,7 +16,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
 
 class AddTripScreen extends StatefulWidget {
-  const AddTripScreen({super.key});
+  final Post? postToEdit; // If provided, screen will be in edit mode
+
+  const AddTripScreen({super.key, this.postToEdit});
 
   @override
   State<AddTripScreen> createState() => _AddTripScreenState();
@@ -65,7 +67,63 @@ class _AddTripScreenState extends State<AddTripScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDropdownData();
+    // Load dropdown data first, then populate form if editing
+    _loadDropdownData().then((_) {
+      if (widget.postToEdit != null && mounted) {
+        _populateFormFromPost(widget.postToEdit!);
+      }
+    });
+  }
+
+  void _populateFormFromPost(Post post) {
+    // Populate text fields
+    _titleController.text = post.title;
+    _descriptionController.text = post.description;
+    if (post.weight != null) {
+      _weightController.text = post.weight.toString();
+    }
+
+    // Populate locations
+    // Note: TripLocation coordinates are [lng, lat], but LatLng expects (lat, lng)
+    if (post.tripStartLocation != null) {
+      _startLocationAddressController.text = post.tripStartLocation!.address ?? '';
+      if (post.tripStartLocation!.coordinates.length >= 2) {
+        // coordinates[0] is lng, coordinates[1] is lat
+        startLocation = LatLng(post.tripStartLocation!.coordinates[1], post.tripStartLocation!.coordinates[0]);
+        _startLocationCoordinates = formatLatLng(startLocation!);
+      }
+    }
+
+    if (post.tripDestination != null) {
+      _destinationAddressController.text = post.tripDestination!.address ?? '';
+      if (post.tripDestination!.coordinates.length >= 2) {
+        // coordinates[0] is lng, coordinates[1] is lat
+        endLocation = LatLng(post.tripDestination!.coordinates[1], post.tripDestination!.coordinates[0]);
+        _destinationCoordinates = formatLatLng(endLocation!);
+      }
+    }
+
+    // Populate dates
+    _selectedTripStartDateTime = post.tripStartDate;
+    _selectedTripEndDateTime = post.tripEndDate;
+
+    // Populate dropdowns (will be set after data loads)
+    if (post.vehicleDetails != null) {
+      _selectedVehicleId = post.vehicleDetails!.id;
+    }
+    if (post.goodsTypeDetails != null) {
+      _selectedGoodsTypeId = post.goodsTypeDetails!.id;
+    }
+    if (post.driver != null) {
+      _selectedDriverId = post.driver!.id;
+    }
+
+    // Populate other fields
+    _isSelfDrive = post.selfDrive ?? true;
+    _postType = post.postType ?? 'load';
+    _viaRoutes = post.viaRoutes ?? [];
+    _distance = post.distance?.value;
+    _duration = post.duration?.value;
   }
 
   @override
@@ -79,38 +137,55 @@ class _AddTripScreenState extends State<AddTripScreen> {
   }
 
   Future<void> _loadDropdownData() async {
+    if (!mounted) return;
     setState(() => _isLoadingData = true);
     try {
       // Load vehicles
       final vehicleRepo = VehicleRepository(apiService: locator<ApiService>());
       final vehiclesResult = await vehicleRepo.getVehicles();
       if (vehiclesResult.isSuccess) {
-        setState(() => _vehicles = vehiclesResult.data ?? []);
-        if (_vehicles.isNotEmpty && _selectedVehicleId == null) {
-          _selectedVehicleId = _vehicles.first.id;
+        if (mounted) {
+          setState(() => _vehicles = vehiclesResult.data ?? []);
+          // Only auto-select if not editing or if editing but vehicle not set
+          if (_vehicles.isNotEmpty && _selectedVehicleId == null) {
+            _selectedVehicleId = _vehicles.first.id;
+          }
+        }
+      } else {
+        if (mounted) {
+          _showSnackBar('Failed to load vehicles: ${vehiclesResult.message}');
         }
       }
 
       // Load goods types
       final goodsRepo = VehicleMetaRepository(apiService: locator<ApiService>());
       final goodsResult = await goodsRepo.getAllGoodsAccepted();
-      setState(() => _goodsTypes = goodsResult);
-      if (_goodsTypes.isNotEmpty && _selectedGoodsTypeId == null) {
-        _selectedGoodsTypeId = _goodsTypes.first.id;
+      if (mounted) {
+        setState(() => _goodsTypes = goodsResult);
+        // Only auto-select if not editing or if editing but goods type not set
+        if (_goodsTypes.isNotEmpty && _selectedGoodsTypeId == null) {
+          _selectedGoodsTypeId = _goodsTypes.first.id;
+        }
       }
 
       // Load drivers (friends list from driver-connections API)
       await _loadDrivers();
 
       // Auto-select driver if self-drive is enabled
-      if (_isSelfDrive && _drivers.isNotEmpty) {
+      if (mounted && _isSelfDrive && _drivers.isNotEmpty) {
         final selfDriveDriver = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
-        _selectedDriverId = selfDriveDriver['_id'];
+        setState(() {
+          _selectedDriverId = selfDriveDriver['_id'];
+        });
       }
     } catch (e) {
-      _showSnackBar('Error loading data: $e');
+      if (mounted) {
+        _showSnackBar('Error loading data: $e');
+      }
     } finally {
-      setState(() => _isLoadingData = false);
+      if (mounted) {
+        setState(() => _isLoadingData = false);
+      }
     }
   }
 
@@ -121,17 +196,26 @@ class _AddTripScreenState extends State<AddTripScreen> {
       if (result.isSuccess) {
         final data = result.data;
         if (data is Map && data['friends'] != null) {
-          setState(() => _drivers = List<Map<String, dynamic>>.from(data['friends']));
-          if (_drivers.isNotEmpty && _selectedDriverId == null) {
-            // Auto-select self-drive option if available
-            final selfDrive = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
-            _selectedDriverId = selfDrive['_id'];
+          if (mounted) {
+            setState(() => _drivers = List<Map<String, dynamic>>.from(data['friends']));
+            if (_drivers.isNotEmpty && _selectedDriverId == null) {
+              // Auto-select self-drive option if available
+              final selfDrive = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+              _selectedDriverId = selfDrive['_id'];
+            }
           }
+        }
+      } else {
+        // If friends API fails, we'll still allow self-drive
+        // Add current user as self-drive option
+        if (mounted && _drivers.isEmpty) {
+          // This will be handled by the UI - user can still create trip
         }
       }
     } catch (e) {
       // If friends API fails, we'll still allow self-drive
       print('Error loading drivers: $e');
+      // Don't show error to user as this is not critical
     }
   }
 
@@ -258,8 +342,8 @@ class _AddTripScreenState extends State<AddTripScreen> {
       // Use the selected start date and time
       final tripStartDateTime = _selectedTripStartDateTime!;
 
-      // Validate trip start date is in the future
-      if (tripStartDateTime.isBefore(DateTime.now())) {
+      // Validate trip start date is in the future (only for new trips)
+      if (widget.postToEdit == null && tripStartDateTime.isBefore(DateTime.now())) {
         _showSnackBar('Trip start date must be in the future');
         return;
       }
@@ -317,25 +401,50 @@ class _AddTripScreenState extends State<AddTripScreen> {
         text: _formatDuration(_duration ?? _calculateDuration(tripStartDateTime, tripEndDateTime)),
       );
 
-      // Create the trip using the API with proper IDs
-      PostsApiHelper.createPost(
-        context: context,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        tripStartLocation: tripStartLocation,
-        tripDestination: tripDestination,
-        viaRoutes: _viaRoutes.isNotEmpty ? _viaRoutes : null,
-        routeGeoJSON: routeGeoJSON,
-        vehicle: _selectedVehicleId!,
-        selfDrive: _isSelfDrive,
-        driver: _selectedDriverId!,
-        distance: distance,
-        duration: duration,
-        goodsTypeId: _selectedGoodsTypeId!,
-        weight: _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
-        tripStartDate: tripStartDateTime,
-        tripEndDate: tripEndDateTime,
-      );
+      // Check if we're editing or creating
+      if (widget.postToEdit != null && widget.postToEdit!.id != null) {
+        // Update existing trip
+        context.read<PostsBloc>().add(
+          UpdatePost(
+            postId: widget.postToEdit!.id!,
+            title: _titleController.text.trim(),
+            description: _descriptionController.text.trim(),
+            tripStartLocation: tripStartLocation,
+            tripDestination: tripDestination,
+            viaRoutes: _viaRoutes.isNotEmpty ? _viaRoutes : null,
+            routeGeoJSON: routeGeoJSON,
+            vehicle: _selectedVehicleId!,
+            selfDrive: _isSelfDrive,
+            driver: _selectedDriverId!,
+            distance: distance,
+            duration: duration,
+            goodsTypeId: _selectedGoodsTypeId!,
+            weight: _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
+            tripStartDate: tripStartDateTime,
+            tripEndDate: tripEndDateTime,
+          ),
+        );
+      } else {
+        // Create new trip
+        PostsApiHelper.createPost(
+          context: context,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          tripStartLocation: tripStartLocation,
+          tripDestination: tripDestination,
+          viaRoutes: _viaRoutes.isNotEmpty ? _viaRoutes : null,
+          routeGeoJSON: routeGeoJSON,
+          vehicle: _selectedVehicleId!,
+          selfDrive: _isSelfDrive,
+          driver: _selectedDriverId!,
+          distance: distance,
+          duration: duration,
+          goodsTypeId: _selectedGoodsTypeId!,
+          weight: _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
+          tripStartDate: tripStartDateTime,
+          tripEndDate: tripEndDateTime,
+        );
+      }
     }
   }
 
@@ -367,7 +476,7 @@ class _AddTripScreenState extends State<AddTripScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Add New Trip', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+        title: Text(widget.postToEdit != null ? 'Edit Trip' : 'Add New Trip', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
@@ -377,9 +486,11 @@ class _AddTripScreenState extends State<AddTripScreen> {
               ? const Center(child: CircularProgressIndicator())
               : BlocConsumer<PostsBloc, PostsState>(
                 listenWhen: (previous, current) {
-                  // Only listen when transitioning TO PostCreated or PostsError
+                  // Only listen when transitioning TO PostCreated, PostUpdated or PostsError
                   // This prevents multiple listeners from firing
-                  return (previous is! PostCreated && current is PostCreated) || (previous is! PostsError && current is PostsError);
+                  return (previous is! PostCreated && current is PostCreated) ||
+                      (previous is! PostUpdated && current is PostUpdated) ||
+                      (previous is! PostsError && current is PostsError);
                 },
                 listener: (context, state) {
                   if (state is PostCreated) {
@@ -399,6 +510,23 @@ class _AddTripScreenState extends State<AddTripScreen> {
                         }
                       }
                     });
+                  } else if (state is PostUpdated) {
+                    // Only handle navigation if this screen is still mounted and active
+                    final route = ModalRoute.of(context);
+                    if (!mounted || route == null || !route.isCurrent) {
+                      return; // Don't navigate if screen is not active
+                    }
+                    // Show success message and navigate back after a short delay
+                    _showSnackBar('Trip updated successfully!');
+                    // Use a delayed navigation to ensure snackbar is shown and widget is still mounted
+                    Future.delayed(const Duration(milliseconds: 800), () {
+                      if (mounted && context.mounted) {
+                        final currentRoute = ModalRoute.of(context);
+                        if (currentRoute != null && currentRoute.isCurrent) {
+                          Navigator.of(context).pop(true); // Return true to indicate success
+                        }
+                      }
+                    });
                   } else if (state is PostsError) {
                     // Only show error if screen is still active
                     final route = ModalRoute.of(context);
@@ -407,7 +535,7 @@ class _AddTripScreenState extends State<AddTripScreen> {
                     }
                   }
                 },
-                buildWhen: (previous, current) => !(current is PostCreated || current is PostsError),
+                buildWhen: (previous, current) => !(current is PostCreated || current is PostUpdated || current is PostsError),
                 builder: (context, state) {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(24.0),
@@ -584,8 +712,8 @@ class _AddTripScreenState extends State<AddTripScreen> {
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: _submitPost,
-                              icon: const Icon(Icons.send_rounded, color: Colors.white),
-                              label: const Text('Create Trip', style: TextStyle(color: Colors.white, fontSize: 18)),
+                              icon: Icon(widget.postToEdit != null ? Icons.save_rounded : Icons.send_rounded, color: Colors.white),
+                              label: Text(widget.postToEdit != null ? 'Update Trip' : 'Create Trip', style: const TextStyle(color: Colors.white, fontSize: 18)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.secondary,
                                 padding: const EdgeInsets.symmetric(vertical: 14),

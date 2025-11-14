@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_images.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../connect/widgets/connect_card.dart';
-import '../../search/screens/search_screen.dart';
 import '../../post/bloc/customer_request_bloc.dart';
 import '../model/post.dart';
 import '../model/connect.dart';
@@ -29,10 +28,14 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   String? _errorMessage;
 
   // Location related state
-  String _currentLocation = 'Current location';
+  String _fromLocation = 'Current location';
+  String _toLocation = 'Search trips, locations, or goods...';
   bool _isLoadingLocation = false;
-  double? _currentLatitude; // Can be used for filtering posts by location
-  double? _currentLongitude; // Can be used for filtering posts by location
+  bool _isToLocationExpanded = false;
+  double? _fromLatitude; // From location (current location)
+  double? _fromLongitude;
+  double? _toLatitude; // To location (destination)
+  double? _toLongitude;
 
   @override
   void initState() {
@@ -41,10 +44,32 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   void _loadInitialData() {
-    // Fetch customer requests (posts) for drivers
-    context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
+    // Fetch customer requests (posts) for drivers with location filters
+    _fetchPostsWithFilters();
     // Fetch connect requests for drivers
     context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+  }
+
+  void _fetchPostsWithFilters() {
+    // Build location strings for API (format: "lng,lat")
+    String? startLocation;
+    String? destination;
+    
+    if (_fromLatitude != null && _fromLongitude != null) {
+      startLocation = '$_fromLongitude,$_fromLatitude';
+    }
+    if (_toLatitude != null && _toLongitude != null) {
+      destination = '$_toLongitude,$_toLatitude';
+    }
+    
+    context.read<CustomerRequestBloc>().add(
+      FetchAllCustomerRequests(
+        page: 1,
+        limit: 20,
+        startLocation: startLocation,
+        destination: destination,
+      ),
+    );
   }
 
   Future<void> _refreshAllData() async {
@@ -53,17 +78,39 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     await Future.delayed(const Duration(seconds: 1));
   }
 
-  /// Handle location selection from dropdown
-  void _handleLocationSelection(String location, double? latitude, double? longitude) {
+  /// Handle from location selection (current location button)
+  void _handleFromLocationSelection(String location, double? latitude, double? longitude) {
     setState(() {
-      _currentLocation = location;
-      _currentLatitude = latitude;
-      _currentLongitude = longitude;
+      _fromLocation = location;
+      _fromLatitude = latitude;
+      _fromLongitude = longitude;
       _isLoadingLocation = false;
     });
 
-    // You can use the coordinates for filtering posts or other purposes
-    debugPrint('Selected location: $location ($latitude, $longitude)');
+    // Refresh posts with new from location filter
+    _fetchPostsWithFilters();
+    debugPrint('Selected from location: $location ($latitude, $longitude)');
+  }
+
+  /// Handle to location selection (search bar)
+  void _handleToLocationSelection(String location, double? latitude, double? longitude) {
+    setState(() {
+      _toLocation = location;
+      _toLatitude = latitude;
+      _toLongitude = longitude;
+      _isToLocationExpanded = false; // Close the selector after selection
+    });
+
+    // Refresh posts with new to location filter
+    _fetchPostsWithFilters();
+    debugPrint('Selected to location: $location ($latitude, $longitude)');
+  }
+
+  /// Toggle to location selector
+  void _toggleToLocationSelector() {
+    setState(() {
+      _isToLocationExpanded = !_isToLocationExpanded;
+    });
   }
 
   @override
@@ -141,7 +188,13 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [_buildSearchBox(), const SizedBox(height: 24), _buildListOfPostsSection(), const SizedBox(height: 24), _buildConnectRequestsSection()],
+                children: [
+                  _buildLocationSelectorSection(),
+                  const SizedBox(height: 24),
+                  _buildListOfPostsSection(),
+                  const SizedBox(height: 24),
+                  _buildConnectRequestsSection(),
+                ],
               ),
             ),
           ),
@@ -193,7 +246,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               child: Icon(Icons.people_rounded, color: AppColors.secondary, size: 20),
             ),
             const SizedBox(width: 12),
-            Text('Connect Requests', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            Text('Leads', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
             const Spacer(),
             if (_connectRequests.isNotEmpty)
               TextButton(
@@ -293,6 +346,8 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
         return ConnectStatus.rejected;
       case ConnectRequestStatus.cancelled:
         return ConnectStatus.rejected;
+      case ConnectRequestStatus.hold:
+        return ConnectStatus.hold;
       case ConnectRequestStatus.pending:
       default:
         return ConnectStatus.pending;
@@ -314,7 +369,11 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   Widget _buildLocationButton() {
-    return LocationDropdown(currentLocation: _currentLocation, isLoading: _isLoadingLocation, onLocationSelected: _handleLocationSelection);
+    return LocationDropdown(
+      currentLocation: _fromLocation,
+      isLoading: _isLoadingLocation,
+      onLocationSelected: _handleFromLocationSelection,
+    );
   }
 
   Widget _buildListOfPostsSection() {
@@ -476,12 +535,12 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     );
   }
 
-  // Search Box Widget
+  // Search Box Widget (for "to" location)
   Widget _buildSearchBox() {
+    final bool hasToLocation = _toLocation != 'Search trips, locations, or goods...';
+    
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
-      },
+      onTap: _showToLocationDialog,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -506,9 +565,37 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                 ),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.search_rounded, color: AppColors.secondary, size: 22),
+              child: Icon(
+                hasToLocation ? Icons.location_on_rounded : Icons.search_rounded,
+                color: AppColors.secondary,
+                size: 22,
+              ),
             ),
-            Expanded(child: Text('Search trips, locations, or goods...', style: TextStyle(color: AppColors.textHint, fontSize: 15, fontWeight: FontWeight.w400))),
+            Expanded(
+              child: Text(
+                _toLocation,
+                style: TextStyle(
+                  color: hasToLocation ? AppColors.textPrimary : AppColors.textHint,
+                  fontSize: 15,
+                  fontWeight: hasToLocation ? FontWeight.w500 : FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (hasToLocation)
+              IconButton(
+                icon: Icon(Icons.clear_rounded, color: AppColors.textSecondary, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _toLocation = 'Search trips, locations, or goods...';
+                    _toLatitude = null;
+                    _toLongitude = null;
+                  });
+                  _fetchPostsWithFilters();
+                },
+                tooltip: 'Clear destination',
+              ),
           ],
         ),
       ),

@@ -26,9 +26,18 @@ class _MyPostScreenState extends State<MyPostScreen> {
   }
 
   void _editPost(Post post) async {
-    // Navigate to AddPostScreen, passing the post to be edited
-    // In a real app, you would implement edit functionality
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Edit feature coming soon for "${post.title}"'), backgroundColor: AppColors.info));
+    // Navigate to AddPostScreen in edit mode, passing the post to be edited
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddPostScreen(postToEdit: post),
+      ),
+    );
+    
+    // Refresh the list when returning from edit screen
+    if (mounted && result == true) {
+      context.read<CustomerRequestBloc>().add(const FetchMyCustomerRequests(page: 1, limit: 20));
+    }
   }
 
   void _deletePost(Post post) {

@@ -37,7 +37,26 @@ class ConnectRequestRepository {
 
     if (result.isSuccess) {
       try {
-        final connectRequest = ConnectRequest.fromJson(result.data);
+        // Extract connectRequest from response data
+        Map<String, dynamic> data;
+        if (result.data is Map<String, dynamic>) {
+          data = result.data as Map<String, dynamic>;
+        } else if (result.data is Map) {
+          data = Map<String, dynamic>.from(result.data);
+        } else {
+          data = <String, dynamic>{};
+        }
+        
+        final connectRequestData = data['connectRequest'] ?? data;
+        Map<String, dynamic> requestMap;
+        if (connectRequestData is Map<String, dynamic>) {
+          requestMap = connectRequestData;
+        } else if (connectRequestData is Map) {
+          requestMap = Map<String, dynamic>.from(connectRequestData);
+        } else {
+          requestMap = <String, dynamic>{};
+        }
+        final connectRequest = ConnectRequest.fromJson(requestMap);
         return Result.success(connectRequest);
       } catch (e) {
         return Result.error('Failed to parse connection request: ${e.toString()}');
@@ -98,7 +117,26 @@ class ConnectRequestRepository {
 
     if (result.isSuccess) {
       try {
-        final connectRequest = ConnectRequest.fromJson(result.data);
+        // Extract connectRequest from response data
+        Map<String, dynamic> data;
+        if (result.data is Map<String, dynamic>) {
+          data = result.data as Map<String, dynamic>;
+        } else if (result.data is Map) {
+          data = Map<String, dynamic>.from(result.data);
+        } else {
+          data = <String, dynamic>{};
+        }
+        
+        final connectRequestData = data['connectRequest'] ?? data;
+        Map<String, dynamic> requestMap;
+        if (connectRequestData is Map<String, dynamic>) {
+          requestMap = connectRequestData;
+        } else if (connectRequestData is Map) {
+          requestMap = Map<String, dynamic>.from(connectRequestData);
+        } else {
+          requestMap = <String, dynamic>{};
+        }
+        final connectRequest = ConnectRequest.fromJson(requestMap);
         return Result.success(connectRequest);
       } catch (e) {
         return Result.error('Failed to parse connection request: ${e.toString()}');
@@ -128,7 +166,26 @@ class ConnectRequestRepository {
 
     if (result.isSuccess) {
       try {
-        final connectRequest = ConnectRequest.fromJson(result.data);
+        // Extract connectRequest from response data
+        Map<String, dynamic> data;
+        if (result.data is Map<String, dynamic>) {
+          data = result.data as Map<String, dynamic>;
+        } else if (result.data is Map) {
+          data = Map<String, dynamic>.from(result.data);
+        } else {
+          data = <String, dynamic>{};
+        }
+        
+        final connectRequestData = data['connectRequest'] ?? data;
+        Map<String, dynamic> requestMap;
+        if (connectRequestData is Map<String, dynamic>) {
+          requestMap = connectRequestData;
+        } else if (connectRequestData is Map) {
+          requestMap = Map<String, dynamic>.from(connectRequestData);
+        } else {
+          requestMap = <String, dynamic>{};
+        }
+        final connectRequest = ConnectRequest.fromJson(requestMap);
         return Result.success(connectRequest);
       } catch (e) {
         return Result.error('Failed to parse connection request: ${e.toString()}');

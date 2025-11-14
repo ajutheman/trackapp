@@ -282,6 +282,32 @@ class _ConnectCardState extends State<ConnectCard> with TickerProviderStateMixin
                           ),
                         ],
                       ),
+                    ] else if (widget.connect.status == ConnectStatus.hold) ...[
+                      // Hold status - show only info message, no action buttons
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline_rounded, size: 18, color: Colors.blue),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Request is on hold. Waiting for driver to add tokens.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ] else if (widget.connect.status == ConnectStatus.accepted || widget.connect.status == ConnectStatus.completed) ...[
                       // Accepted/Completed status - show call and WhatsApp buttons
                       Row(
