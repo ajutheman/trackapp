@@ -15,6 +15,8 @@ import 'package:truck_app/features/post/bloc/customer_request_bloc.dart';
 import 'package:truck_app/features/token/repo/token_repo.dart';
 import 'package:truck_app/features/token/bloc/token_bloc.dart';
 import 'package:truck_app/features/profile/repo/profile_repo.dart';
+import 'package:truck_app/features/booking/repo/booking_repo.dart';
+import 'package:truck_app/features/booking/bloc/booking_bloc.dart';
 
 import '../features/auth/bloc/image_upload/image_upload_bloc.dart';
 import '../features/auth/repo/auth_repo.dart';
@@ -42,6 +44,7 @@ void setupLocator() {
   locator.registerLazySingleton(() => CustomerRequestRepository(apiService: locator()));
   locator.registerLazySingleton(() => TokenRepository(apiService: locator()));
   locator.registerLazySingleton(() => ProfileRepository(apiService: locator()));
+  locator.registerLazySingleton(() => BookingRepository(apiService: locator()));
 
   // BLoCs
   locator.registerFactory(() => AuthBloc(repository: locator()));
@@ -55,4 +58,5 @@ void setupLocator() {
   locator.registerFactory(() => DriverConnectionBloc(repository: locator()));
   locator.registerFactory(() => CustomerRequestBloc(repository: locator()));
   locator.registerFactory(() => TokenBloc(repository: locator()));
+  locator.registerFactory(() => BookingBloc(repository: locator()));
 }

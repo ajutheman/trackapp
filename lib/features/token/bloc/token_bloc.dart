@@ -27,6 +27,16 @@ class FetchLeadTokenUsage extends TokenEvent {
   List<Object?> get props => [distanceKm];
 }
 
+class FetchTokenTransactions extends TokenEvent {
+  final int? page;
+  final int? limit;
+
+  const FetchTokenTransactions({this.page, this.limit});
+
+  @override
+  List<Object?> get props => [page, limit];
+}
+
 class RefreshTokenBalance extends TokenEvent {
   const RefreshTokenBalance();
 }
@@ -62,6 +72,21 @@ class LeadTokenUsageLoaded extends TokenState {
   List<Object?> get props => [usage];
 }
 
+class TokenTransactionsLoaded extends TokenState {
+  final List<TokenTransaction> transactions;
+  final bool hasMore;
+  final int currentPage;
+
+  const TokenTransactionsLoaded({
+    required this.transactions,
+    this.hasMore = false,
+    this.currentPage = 1,
+  });
+
+  @override
+  List<Object?> get props => [transactions, hasMore, currentPage];
+}
+
 class TokenError extends TokenState {
   final String message;
 
@@ -79,6 +104,7 @@ class TokenBloc extends Bloc<TokenEvent, TokenState> {
   TokenBloc({required this.repository}) : super(TokenInitial()) {
     on<FetchTokenBalance>(_onFetchTokenBalance);
     on<FetchLeadTokenUsage>(_onFetchLeadTokenUsage);
+    on<FetchTokenTransactions>(_onFetchTokenTransactions);
     on<RefreshTokenBalance>(_onRefreshTokenBalance);
   }
 
@@ -112,6 +138,32 @@ class TokenBloc extends Bloc<TokenEvent, TokenState> {
 
       if (result.isSuccess) {
         emit(LeadTokenUsageLoaded(usage: result.data!));
+      } else {
+        emit(TokenError(message: result.message!));
+      }
+    } catch (e) {
+      emit(TokenError(message: 'An error occurred: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onFetchTokenTransactions(
+    FetchTokenTransactions event,
+    Emitter<TokenState> emit,
+  ) async {
+    emit(TokenLoading());
+
+    try {
+      final result = await repository.getTransactions(
+        page: event.page,
+        limit: event.limit,
+      );
+
+      if (result.isSuccess) {
+        emit(TokenTransactionsLoaded(
+          transactions: result.data!,
+          hasMore: result.data!.length >= (event.limit ?? 10),
+          currentPage: event.page ?? 1,
+        ));
       } else {
         emit(TokenError(message: result.message!));
       }

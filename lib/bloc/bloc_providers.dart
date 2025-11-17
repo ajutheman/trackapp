@@ -7,6 +7,7 @@ import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/connect/bloc/connect_request_bloc.dart';
 import 'package:truck_app/features/post/bloc/customer_request_bloc.dart';
 import 'package:truck_app/features/token/bloc/token_bloc.dart';
+import 'package:truck_app/features/booking/bloc/booking_bloc.dart';
 
 import '../di/locator.dart';
 import '../features/connect/bloc/driver_connection_bloc.dart';
@@ -25,4 +26,5 @@ List<BlocProvider> globalBlocProviders = [
   BlocProvider<DriverConnectionBloc>(create: (_) => locator()),
   BlocProvider<CustomerRequestBloc>(create: (_) => locator()),
   BlocProvider<TokenBloc>(create: (_) => locator()),
+  BlocProvider<BookingBloc>(create: (_) => locator()),
 ];

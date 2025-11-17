@@ -222,9 +222,9 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               _isLoadingConnections = false;
             });
             // Show error message
-            if (!state.message.toLowerCase().contains('no connect')) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-            }
+            // if (!state.message.toLowerCase().contains('no connect')) {
+            //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+            // }
           } else if (state is ConnectRequestResponded) {
             // Update the specific request in the list
             setState(() {
@@ -236,8 +236,8 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
             });
 
             // Show success message
-            final actionText = state.action == 'accept' ? 'Accepted' : 'Rejected';
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connect request $actionText successfully'), backgroundColor: AppColors.success));
+            // final actionText = state.action == 'accept' ? 'Accepted' : 'Rejected';
+            // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connect request $actionText successfully'), backgroundColor: AppColors.success));
 
             // Refresh the list after a short delay to get updated data
             Future.delayed(const Duration(milliseconds: 500), () {
@@ -452,14 +452,14 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   void _handleAcceptConnect(ConnectRequest request) {
     if (request.id != null) {
       context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'accept'));
-      _showSnackBar('Accepted connect from ${request.requester?.name ?? "user"}');
+      // _showSnackBar('Accepted connect from ${request.requester?.name ?? "user"}');
     }
   }
 
   void _handleRejectConnect(ConnectRequest request) {
     if (request.id != null) {
       context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'reject'));
-      _showSnackBar('Rejected connect from ${request.requester?.name ?? "user"}');
+      // _showSnackBar('Rejected connect from ${request.requester?.name ?? "user"}');
     }
   }
 

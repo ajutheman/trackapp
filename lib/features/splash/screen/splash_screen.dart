@@ -51,6 +51,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Scaffold(
       body: BlocListener<UserSessionBloc, UserSessionState>(
         listener: (context, state) {
+          print(state);
           if (state is SessionAuthenticated) {
             if (state.isDriver) {
               Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predicate) => false);

@@ -54,5 +54,39 @@ class TokenRepository {
       return Result.error(result.message ?? 'Failed to fetch token usage');
     }
   }
+
+  /// Get token transactions history
+  Future<Result<List<TokenTransaction>>> getTransactions({
+    int? page,
+    int? limit,
+  }) async {
+    // Note: This endpoint needs to be implemented on the server
+    // For now, we'll use a placeholder endpoint
+    final queryParams = <String, dynamic>{};
+    if (page != null) queryParams['page'] = page;
+    if (limit != null) queryParams['limit'] = limit;
+
+    final result = await apiService.get(
+      ApiEndpoints.tokenTransactions,
+      queryParams: queryParams.isNotEmpty ? queryParams : null,
+      isTokenRequired: true,
+    );
+
+    if (result.isSuccess) {
+      try {
+        final List<dynamic> transactionsData = result.data is List
+            ? result.data
+            : (result.data['transactions'] ?? result.data['data'] ?? []);
+        final List<TokenTransaction> transactions = transactionsData
+            .map((txnJson) => TokenTransaction.fromJson(txnJson as Map<String, dynamic>))
+            .toList();
+        return Result.success(transactions);
+      } catch (e) {
+        return Result.error('Failed to parse transactions: ${e.toString()}');
+      }
+    } else {
+      return Result.error(result.message ?? 'Failed to fetch transactions');
+    }
+  }
 }
 
