@@ -120,15 +120,17 @@ class ConnectRequestsLoaded extends ConnectRequestState {
   final List<ConnectRequest> requests;
   final bool hasMore;
   final int currentPage;
+  final String? type; // 'sent' or 'received'
 
   const ConnectRequestsLoaded({
     required this.requests,
     this.hasMore = false,
     this.currentPage = 1,
+    this.type,
   });
 
   @override
-  List<Object?> get props => [requests, hasMore, currentPage];
+  List<Object?> get props => [requests, hasMore, currentPage, type];
 }
 
 /// State when a single connection request is loaded
@@ -257,6 +259,7 @@ class ConnectRequestBloc extends Bloc<ConnectRequestEvent, ConnectRequestState> 
           requests: result.data!,
           hasMore: result.data!.length >= (event.limit ?? 10),
           currentPage: event.page ?? 1,
+          type: event.type, // Pass the type to distinguish sent/received
         ));
       } else {
         emit(ConnectRequestError(message: result.message!));

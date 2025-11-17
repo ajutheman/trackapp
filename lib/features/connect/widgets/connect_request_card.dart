@@ -7,6 +7,8 @@ import 'package:truck_app/features/connect/model/connect_request.dart';
 
 class ConnectRequestCard extends StatelessWidget {
   final ConnectRequest request;
+  final bool isSent; // Whether this request was sent by current user
+  final String? currentUserId; // Current user ID
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
   final VoidCallback? onDelete;
@@ -15,6 +17,8 @@ class ConnectRequestCard extends StatelessWidget {
   const ConnectRequestCard({
     super.key,
     required this.request,
+    this.isSent = false,
+    this.currentUserId,
     this.onAccept,
     this.onReject,
     this.onDelete,
@@ -188,8 +192,8 @@ class ConnectRequestCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      request.requester?.name.isNotEmpty == true
-                          ? request.requester!.name[0].toUpperCase()
+                      _getOtherUser()?.name.isNotEmpty == true
+                          ? _getOtherUser()!.name[0].toUpperCase()
                           : '?',
                       style: const TextStyle(
                         color: Colors.white,
@@ -205,7 +209,7 @@ class ConnectRequestCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Request from',
+                        isSent ? 'Sent to' : 'Request from',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -214,7 +218,7 @@ class ConnectRequestCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        request.requester?.name ?? 'Unknown User',
+                        _getOtherUser()?.name ?? 'Unknown User',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -576,64 +580,95 @@ class ConnectRequestCard extends StatelessWidget {
     );
   }
 
+  // Helper to get the other user (not current user)
+  ConnectUser? _getOtherUser() {
+    if (isSent) {
+      // If sent, show recipient
+      return request.recipient;
+    } else {
+      // If received, show requester/initiator
+      return request.requester;
+    }
+  }
+
   Widget _buildActionButtons() {
     if (request.status == ConnectRequestStatus.pending) {
-      // Pending status - show accept/reject buttons
-      return Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.success, AppColors.success.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.success.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+      if (isSent) {
+        // Sent request - show cancel/delete button only
+        return SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onDelete,
+            icon: Icon(Icons.cancel_outlined, color: AppColors.error, size: 18),
+            label: Text(
+              'Cancel Request',
+              style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: AppColors.error.withOpacity(0.3), width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        );
+      } else {
+        // Received request - show accept/reject buttons
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.success, AppColors.success.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: onAccept,
-                icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
-                label: const Text(
-                  'Accept',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.success.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                style: ElevatedButton.styleFrom(
+                child: ElevatedButton.icon(
+                  onPressed: onAccept,
+                  icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
+                  label: const Text(
+                    'Accept',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.error.withOpacity(0.3), width: 1.5),
+              ),
+              child: IconButton(
+                onPressed: onReject,
+                icon: Icon(Icons.close_rounded, color: AppColors.error, size: 20),
+                style: IconButton.styleFrom(
                   backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.all(14),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.error.withOpacity(0.3), width: 1.5),
-            ),
-            child: IconButton(
-              onPressed: onReject,
-              icon: Icon(Icons.close_rounded, color: AppColors.error, size: 20),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.all(14),
-              ),
-            ),
-          ),
-        ],
-      );
+          ],
+        );
+      }
     } else if (request.status == ConnectRequestStatus.hold) {
       // Hold status - show only info message, no action buttons
       return Container(

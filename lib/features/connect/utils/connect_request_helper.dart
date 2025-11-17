@@ -13,8 +13,8 @@ class ConnectRequestHelper {
   }
 
   /// Fetches all connection requests with optional filters
-  static Future<void> fetchRequests({required BuildContext context, String? status, int? page, int? limit}) async {
-    context.read<ConnectRequestBloc>().add(FetchConnectRequests(status: status, page: page, limit: limit));
+  static Future<void> fetchRequests({required BuildContext context, String? status, String? type, int? page, int? limit}) async {
+    context.read<ConnectRequestBloc>().add(FetchConnectRequests(status: status, type: type, page: page, limit: limit));
   }
 
   /// Fetches a specific connection request by ID
