@@ -9,6 +9,7 @@ import '../model/connect_request.dart';
 import '../bloc/connect_request_bloc.dart';
 import '../utils/connect_request_helper.dart';
 import '../widgets/connect_request_card.dart';
+import '../../booking/widgets/create_booking_dialog.dart';
 
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
@@ -174,6 +175,30 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         );
       },
     );
+  }
+
+  void _handleCreateBooking(ConnectRequest request) {
+    if (request.tripId == null || request.customerRequestId == null || request.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Missing required information to create booking'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return CreateBookingDialog(connectRequest: request);
+      },
+    ).then((created) {
+      if (created == true) {
+        // Refresh requests after booking creation
+        _refreshAllTabs();
+      }
+    });
   }
 
   void _handleViewContacts(ConnectRequest request) {
@@ -434,6 +459,9 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               onReject: isSent ? null : () => _handleRejectRequest(request),
               onDelete: () => _handleDeleteRequest(request),
               onViewContacts: () => _handleViewContacts(request),
+              onCreateBooking: request.status == ConnectRequestStatus.accepted
+                  ? () => _handleCreateBooking(request)
+                  : null,
             ),
           );
         },

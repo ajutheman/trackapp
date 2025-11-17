@@ -10,6 +10,7 @@ import 'package:truck_app/features/connect/widgets/connect_request_card.dart';
 import 'package:truck_app/features/connect/utils/connect_request_helper.dart';
 import 'package:truck_app/features/token/bloc/token_bloc.dart';
 import 'package:truck_app/features/token/widgets/token_balance_widget.dart';
+import 'package:truck_app/features/booking/widgets/create_booking_dialog.dart';
 
 class ConnectRequestsScreen extends StatefulWidget {
   const ConnectRequestsScreen({super.key});
@@ -156,6 +157,25 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
         );
       },
     );
+  }
+
+  void _handleCreateBooking(ConnectRequest request) {
+    if (request.tripId == null || request.customerRequestId == null || request.id == null) {
+      _showSnackBar('Missing required information to create booking', isSuccess: false);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return CreateBookingDialog(connectRequest: request);
+      },
+    ).then((created) {
+      if (created == true) {
+        // Refresh requests after booking creation
+        ConnectRequestHelper.refreshRequests(context: context);
+      }
+    });
   }
 
   void _handleViewContacts(ConnectRequest request) {
@@ -423,6 +443,9 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
               onReject: () => _handleReject(request),
               onDelete: () => _handleDelete(request),
               onViewContacts: () => _handleViewContacts(request),
+              onCreateBooking: request.status == ConnectRequestStatus.accepted
+                  ? () => _handleCreateBooking(request)
+                  : null,
             ),
           );
         },

@@ -14,6 +14,7 @@ class ConnectRequestCard extends StatelessWidget {
   final VoidCallback? onReject;
   final VoidCallback? onDelete;
   final VoidCallback? onViewContacts;
+  final VoidCallback? onCreateBooking;
 
   const ConnectRequestCard({
     super.key,
@@ -25,6 +26,7 @@ class ConnectRequestCard extends StatelessWidget {
     this.onReject,
     this.onDelete,
     this.onViewContacts,
+    this.onCreateBooking,
   });
 
   Color _getStatusColor() {
@@ -765,62 +767,103 @@ class ConnectRequestCard extends StatelessWidget {
         );
       }
     } else if (request.status == ConnectRequestStatus.accepted) {
-      // Accepted status - show view contacts and delete buttons
-      return Row(
+      // Accepted status - show view contacts, create booking, and delete buttons
+      return Column(
         children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.secondary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: onViewContacts,
-                icon: const Icon(Icons.contact_phone_rounded, size: 18, color: Colors.white),
-                label: const Text(
-                  'View Contacts',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  child: ElevatedButton.icon(
+                    onPressed: onViewContacts,
+                    icon: const Icon(Icons.contact_phone_rounded, size: 18, color: Colors.white),
+                    label: const Text(
+                      'View Contacts',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.textSecondary.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: IconButton(
+                  onPressed: onDelete,
+                  icon: Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.all(14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (onCreateBooking != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green, Colors.green.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: onCreateBooking,
+                  icon: const Icon(Icons.book_online_rounded, size: 18, color: Colors.white),
+                  label: const Text(
+                    'Create Booking',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.textSecondary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.textSecondary.withOpacity(0.3),
-                width: 1.5,
-              ),
-            ),
-            child: IconButton(
-              onPressed: onDelete,
-              icon: Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.all(14),
-              ),
-            ),
-          ),
+          ],
         ],
       );
     } else {
