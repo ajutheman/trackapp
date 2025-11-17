@@ -28,7 +28,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadCurrentUserAndFetch();
   }
 
@@ -46,7 +46,12 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
       // Continue even if profile fetch fails
     }
 
-    // Fetch both received and sent requests
+    // Fetch all requests (for "All" tab), received, and sent requests
+    ConnectRequestHelper.fetchRequests(
+      context: context,
+      page: 1,
+      limit: 50,
+    );
     ConnectRequestHelper.fetchRequests(
       context: context,
       type: 'received',
@@ -166,7 +171,12 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 
-  void _refreshBothTabs() {
+  void _refreshAllTabs() {
+    ConnectRequestHelper.fetchRequests(
+      context: context,
+      page: 1,
+      limit: 50,
+    );
     ConnectRequestHelper.fetchRequests(
       context: context,
       type: 'received',
@@ -202,7 +212,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               child: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 20),
             ),
             onPressed: () {
-              _refreshBothTabs();
+              _refreshAllTabs();
             },
           ),
           const SizedBox(width: 8),
@@ -231,6 +241,20 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('All'),
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.textSecondary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                        child: Text('${_receivedRequests.length + _sentRequests.length}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ),
                 Tab(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -274,14 +298,21 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               } else if (state.type == 'received') {
                 _receivedRequests = state.requests;
               } else {
-                // Fallback: determine based on request data if type is not provided
+                // No type means "all" - split into received and sent
                 if (state.requests.isNotEmpty && _currentUserId != null) {
-                  final firstRequest = state.requests.first;
-                  if (firstRequest.requesterId == _currentUserId) {
-                    _sentRequests = state.requests;
-                  } else {
-                    _receivedRequests = state.requests;
+                  final received = <ConnectRequest>[];
+                  final sent = <ConnectRequest>[];
+                  
+                  for (var request in state.requests) {
+                    if (request.requesterId == _currentUserId) {
+                      sent.add(request);
+                    } else {
+                      received.add(request);
+                    }
                   }
+                  
+                  _sentRequests = sent;
+                  _receivedRequests = received;
                 }
               }
               
@@ -294,10 +325,10 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
           } else if (state is ConnectRequestResponded) {
             final action = state.action == 'accept' ? 'accepted' : 'rejected';
             _showSnackBar('Connection request $action!', isSuccess: state.action == 'accept');
-            _refreshBothTabs();
+            _refreshAllTabs();
           } else if (state is ConnectRequestDeleted) {
             _showSnackBar('Connection request deleted successfully!');
-            _refreshBothTabs();
+            _refreshAllTabs();
           } else if (state is ContactDetailsLoaded) {
             _showContactDetailsDialog(state.contactDetails);
           } else if (state is ConnectRequestError) {
@@ -310,16 +341,25 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         child: TabBarView(
           controller: _tabController,
           children: [
-            _buildRequestsList(isReceived: true), // Received requests
-            _buildRequestsList(isReceived: false), // Sent requests
+            _buildRequestsList(tabType: 'all'), // All requests
+            _buildRequestsList(tabType: 'received'), // Received requests
+            _buildRequestsList(tabType: 'sent'), // Sent requests
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRequestsList({required bool isReceived}) {
-    final requests = isReceived ? _receivedRequests : _sentRequests;
+  Widget _buildRequestsList({required String tabType}) {
+    final List<ConnectRequest> requests;
+    
+    if (tabType == 'all') {
+      requests = [..._receivedRequests, ..._sentRequests];
+    } else if (tabType == 'received') {
+      requests = _receivedRequests;
+    } else {
+      requests = _sentRequests;
+    }
     
     if (_isLoading && requests.isEmpty) {
       return Center(
@@ -345,12 +385,14 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     }
 
     if (requests.isEmpty) {
-      return _buildEmptyState(isReceived);
+      return _buildEmptyState(tabType);
     }
 
     return RefreshIndicator(
       onRefresh: () async {
-        if (isReceived) {
+        if (tabType == 'all') {
+          ConnectRequestHelper.fetchRequests(context: context, page: 1, limit: 50);
+        } else if (tabType == 'received') {
           ConnectRequestHelper.fetchRequests(context: context, type: 'received', page: 1, limit: 50);
         } else {
           ConnectRequestHelper.fetchRequests(context: context, type: 'sent', page: 1, limit: 50);
@@ -363,6 +405,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
         itemCount: requests.length,
         itemBuilder: (context, index) {
           final request = requests[index];
+          // Determine if request is sent by comparing requesterId with currentUserId
           final isSent = _currentUserId != null && request.requesterId == _currentUserId;
           return AnimatedContainer(
             duration: Duration(milliseconds: 300 + (index * 50)),
@@ -383,7 +426,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildEmptyState(bool isReceived) {
+  Widget _buildEmptyState(String tabType) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -398,29 +441,48 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(_getEmptyStateIcon(isReceived), size: 60, color: AppColors.textSecondary.withOpacity(0.6)),
+            child: Icon(_getEmptyStateIcon(tabType), size: 60, color: AppColors.textSecondary.withOpacity(0.6)),
           ),
           const SizedBox(height: 20),
-          Text(_getEmptyStateTitle(isReceived), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          Text(_getEmptyStateTitle(tabType), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
           const SizedBox(height: 8),
-          Text(_getEmptyStateMessage(isReceived), style: TextStyle(fontSize: 14, color: AppColors.textSecondary), textAlign: TextAlign.center),
+          Text(_getEmptyStateMessage(tabType), style: TextStyle(fontSize: 14, color: AppColors.textSecondary), textAlign: TextAlign.center),
         ],
       ),
     );
   }
 
-  IconData _getEmptyStateIcon(bool isReceived) {
-    return isReceived ? Icons.inbox_rounded : Icons.send_rounded;
+  IconData _getEmptyStateIcon(String tabType) {
+    switch (tabType) {
+      case 'received':
+        return Icons.inbox_rounded;
+      case 'sent':
+        return Icons.send_rounded;
+      default:
+        return Icons.connect_without_contact_rounded;
+    }
   }
 
-  String _getEmptyStateTitle(bool isReceived) {
-    return isReceived ? 'No Received Requests' : 'No Sent Requests';
+  String _getEmptyStateTitle(String tabType) {
+    switch (tabType) {
+      case 'received':
+        return 'No Received Requests';
+      case 'sent':
+        return 'No Sent Requests';
+      default:
+        return 'No Connections Yet';
+    }
   }
 
-  String _getEmptyStateMessage(bool isReceived) {
-    return isReceived 
-        ? 'Connection requests sent to you will\nappear here.'
-        : 'Requests you send will appear here.\nStart connecting with others!';
+  String _getEmptyStateMessage(String tabType) {
+    switch (tabType) {
+      case 'received':
+        return 'Connection requests sent to you will\nappear here.';
+      case 'sent':
+        return 'Requests you send will appear here.\nStart connecting with others!';
+      default:
+        return 'Your connections will appear here\nonce you start networking.';
+    }
   }
 
   void _showContactDetailsDialog(ContactDetails contactDetails) {
