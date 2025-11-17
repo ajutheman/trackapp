@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
+import 'package:truck_app/services/local/local_services.dart';
 import 'package:truck_app/features/connect/bloc/connect_request_bloc.dart';
 import 'package:truck_app/features/connect/model/connect_request.dart';
 import 'package:truck_app/features/connect/widgets/connect_request_card.dart';
@@ -21,11 +22,15 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
   late TabController _tabController;
   List<ConnectRequest> _allRequests = [];
   bool _isLoading = false;
+  bool _isDriver = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    
+    // Load driver status
+    _loadDriverStatus();
     
     // Fetch connection requests on init
     ConnectRequestHelper.fetchRequests(
@@ -36,6 +41,17 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
     
     // Fetch token balance for drivers
     context.read<TokenBloc>().add(FetchTokenBalance());
+  }
+
+  Future<void> _loadDriverStatus() async {
+    try {
+      final isDriver = await LocalService.getIsDriver();
+      setState(() {
+        _isDriver = isDriver ?? false;
+      });
+    } catch (e) {
+      // Continue even if driver status fetch fails
+    }
   }
 
   @override
@@ -310,6 +326,8 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
             ConnectRequestHelper.refreshRequests(context: context);
           } else if (state is ContactDetailsLoaded) {
             _showContactDetailsDialog(state.contactDetails);
+            // Refresh requests to update status if it changed from hold to accepted
+            ConnectRequestHelper.refreshRequests(context: context);
           } else if (state is ConnectRequestError) {
             setState(() {
               _isLoading = false;
@@ -400,6 +418,7 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
             transform: Matrix4.translationValues(0, 0, 0),
             child: ConnectRequestCard(
               request: request,
+              isDriver: _isDriver,
               onAccept: () => _handleAccept(request),
               onReject: () => _handleReject(request),
               onDelete: () => _handleDelete(request),

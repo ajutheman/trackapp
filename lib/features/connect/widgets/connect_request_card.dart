@@ -9,6 +9,7 @@ class ConnectRequestCard extends StatelessWidget {
   final ConnectRequest request;
   final bool isSent; // Whether this request was sent by current user
   final String? currentUserId; // Current user ID
+  final bool isDriver; // Whether current user is a driver
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
   final VoidCallback? onDelete;
@@ -19,6 +20,7 @@ class ConnectRequestCard extends StatelessWidget {
     required this.request,
     this.isSent = false,
     this.currentUserId,
+    this.isDriver = false,
     this.onAccept,
     this.onReject,
     this.onDelete,
@@ -271,8 +273,8 @@ class ConnectRequestCard extends StatelessWidget {
               ),
             ],
 
-            // Token information
-            if (request.tokenDeduction != null) ...[
+            // Token information - only show for drivers
+            if (isDriver && request.tokenDeduction != null) ...[
               const SizedBox(height: 16),
               _buildTokenInfo(),
             ],
@@ -670,31 +672,98 @@ class ConnectRequestCard extends StatelessWidget {
         );
       }
     } else if (request.status == ConnectRequestStatus.hold) {
-      // Hold status - show only info message, no action buttons
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
-        ),
-        child: Row(
+      // Hold status - show retry button for drivers, info message for others
+      if (isDriver) {
+        return Column(
           children: [
-            Icon(Icons.info_outline_rounded, size: 18, color: Colors.blue),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Request is on hold. Waiting for driver to add tokens.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue.shade700,
-                  fontWeight: FontWeight.w500,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 18, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Request is on hold. Add tokens and retry to accept.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: onViewContacts,
+                  icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
+                  label: const Text(
+                    'Retry',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
               ),
             ),
           ],
-        ),
-      );
+        );
+      } else {
+        // Non-driver users see info message only
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue.withOpacity(0.3), width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 18, color: Colors.blue),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Request is on hold. Waiting for driver to add tokens.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     } else if (request.status == ConnectRequestStatus.accepted) {
       // Accepted status - show view contacts and delete buttons
       return Row(

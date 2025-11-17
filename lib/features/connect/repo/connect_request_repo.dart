@@ -224,11 +224,21 @@ class ConnectRequestRepository {
       '${ApiEndpoints.connectRequests}/$requestId/contacts',
       isTokenRequired: true,
     );
-
+    
     if (result.isSuccess) {
       try {
-        final contactDetails = ContactDetails.fromJson(result.data);
-        return Result.success(contactDetails);
+        // The API returns {show: true, contact: {...}}
+        // Extract the contact object from the response
+        final responseData = result.data as Map<String, dynamic>?;
+        if (responseData != null && responseData.containsKey('contact')) {
+          final contactData = responseData['contact'] as Map<String, dynamic>;
+          final contactDetails = ContactDetails.fromJson(contactData);
+          return Result.success(contactDetails);
+        } else {
+          // Fallback: try to parse the entire response as contact details
+          final contactDetails = ContactDetails.fromJson(result.data);
+          return Result.success(contactDetails);
+        }
       } catch (e) {
         return Result.error('Failed to parse contact details: ${e.toString()}');
       }

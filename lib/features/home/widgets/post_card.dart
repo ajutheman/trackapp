@@ -403,6 +403,57 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     });
   }
 
+  /// Gets the existing request for this post
+  ConnectRequest? _getExistingRequest() {
+    if (widget.post.id == null) return null;
+    
+    try {
+      return _sentRequests.firstWhere((request) {
+        if (_isDriver == true) {
+          // Driver: check if request exists for this customerRequest
+          return request.customerRequestId == widget.post.id && request.status != ConnectRequestStatus.rejected && request.status != ConnectRequestStatus.cancelled;
+        } else {
+          // User: check if request exists for this trip
+          return request.tripId == widget.post.id && request.status != ConnectRequestStatus.rejected && request.status != ConnectRequestStatus.cancelled;
+        }
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Gets the status text for display
+  String _getStatusText(ConnectRequestStatus status) {
+    switch (status) {
+      case ConnectRequestStatus.pending:
+        return 'Pending';
+      case ConnectRequestStatus.accepted:
+        return 'Accepted';
+      case ConnectRequestStatus.hold:
+        return 'On Hold';
+      case ConnectRequestStatus.rejected:
+        return 'Rejected';
+      case ConnectRequestStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  /// Gets the status color for display
+  Color _getStatusColor(ConnectRequestStatus status) {
+    switch (status) {
+      case ConnectRequestStatus.pending:
+        return Colors.orange;
+      case ConnectRequestStatus.accepted:
+        return Colors.green;
+      case ConnectRequestStatus.hold:
+        return Colors.blue;
+      case ConnectRequestStatus.rejected:
+        return Colors.red;
+      case ConnectRequestStatus.cancelled:
+        return Colors.grey;
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -786,71 +837,191 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                               // Show edit/delete/toggle buttons if callbacks are provided (for my posts screen)
                               if (widget.onEdit != null || widget.onDelete != null || widget.onToggleStatus != null) ...[
                                 if (widget.onEdit != null)
-                                  Container(
-                                    decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
-                                    child: IconButton(
-                                      onPressed: widget.onEdit,
-                                      icon: Icon(Icons.edit_outlined, color: AppColors.secondary, size: 22),
-                                      style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        onPressed: widget.onEdit,
+                                        icon: Icon(Icons.edit_outlined, color: AppColors.secondary, size: 20),
+                                        label: Text(
+                                          'Edit',
+                                          style: TextStyle(
+                                            color: AppColors.secondary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                if (widget.onEdit != null && (widget.onDelete != null || widget.onToggleStatus != null)) const SizedBox(width: 10),
+                                if (widget.onEdit != null && widget.onDelete != null) const SizedBox(width: 10),
                                 if (widget.onDelete != null)
-                                  Container(
-                                    decoration: BoxDecoration(border: Border.all(color: Colors.red.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
-                                    child: IconButton(
-                                      onPressed: widget.onDelete,
-                                      icon: Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22),
-                                      style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.red.withOpacity(0.3), width: 1.5),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: ElevatedButton.icon(
+                                        onPressed: widget.onDelete,
+                                        icon: Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                        label: Text(
+                                          'Delete',
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                        ),
+                                      ),
                                     ),
                                   ),
                               ] else ...[
                                 // Default action buttons for regular posts
-                                if (_shouldShowConnectButton())
-                                  Expanded(
-                                    flex: 2,
-                                    child: AnimatedBuilder(
-                                      animation: _pulseAnimation,
-                                      builder: (context, child) {
-                                        return Transform.scale(
-                                          scale: _pulseAnimation.value,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
-                                              borderRadius: BorderRadius.circular(14),
-                                              boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
-                                            ),
-                                            child: ElevatedButton.icon(
-                                              onPressed: () {
-                                                _pulseController.forward().then((_) => _pulseController.reverse());
-                                                _handleConnect();
-                                              },
-                                              icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
-                                              label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.transparent,
-                                                shadowColor: Colors.transparent,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                              ),
+                                // Check if there's an existing request
+                                Builder(
+                                  builder: (context) {
+                                    final existingRequest = _getExistingRequest();
+                                    if (existingRequest != null) {
+                                      // Show status with full width
+                                      final statusColor = _getStatusColor(existingRequest.status);
+                                      final statusText = _getStatusText(existingRequest.status);
+                                      return Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: statusColor.withOpacity(0.3),
+                                              width: 1.5,
                                             ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                if (_shouldShowConnectButton()) const SizedBox(width: 10),
-                                Container(
-                                  decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
-                                  child: IconButton(
-                                    onPressed: () {
-                                      if (widget.post.id != null) {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
-                                      }
-                                    },
-                                    icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
-                                    style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                                  ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.info_outline_rounded,
+                                                size: 20,
+                                                color: statusColor,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Status: $statusText',
+                                                style: TextStyle(
+                                                  color: statusColor,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 15,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    } else if (_shouldShowConnectButton()) {
+                                      // Show connect button and info button
+                                      return Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 2,
+                                            child: AnimatedBuilder(
+                                              animation: _pulseAnimation,
+                                              builder: (context, child) {
+                                                return Transform.scale(
+                                                  scale: _pulseAnimation.value,
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
+                                                      borderRadius: BorderRadius.circular(14),
+                                                      boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                                                    ),
+                                                    child: ElevatedButton.icon(
+                                                      onPressed: () {
+                                                        _pulseController.forward().then((_) => _pulseController.reverse());
+                                                        _handleConnect();
+                                                      },
+                                                      icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
+                                                      label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.transparent,
+                                                        shadowColor: Colors.transparent,
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Container(
+                                            decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
+                                            child: IconButton(
+                                              onPressed: () {
+                                                if (widget.post.id != null) {
+                                                  Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
+                                                }
+                                              },
+                                              icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
+                                              style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      // Show info button with full width and text
+                                      return Expanded(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5),
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              if (widget.post.id != null) {
+                                                Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
+                                              }
+                                            },
+                                            icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 20),
+                                            label: const Text(
+                                              'View Details',
+                                              style: TextStyle(
+                                                color: AppColors.secondary,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
+                                                letterSpacing: 0.3,
+                                              ),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.transparent,
+                                              shadowColor: Colors.transparent,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
                                 ),
                               ],
                             ],

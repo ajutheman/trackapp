@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
+import '../../../services/local/local_services.dart';
 import '../../profile/repo/profile_repo.dart';
 import '../model/connect_request.dart';
 import '../bloc/connect_request_bloc.dart';
@@ -24,6 +25,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
   List<ConnectRequest> _sentRequests = [];
   bool _isLoading = false;
   String? _currentUserId;
+  bool _isDriver = false;
 
   @override
   void initState() {
@@ -44,6 +46,16 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
       }
     } catch (e) {
       // Continue even if profile fetch fails
+    }
+
+    // Load driver status
+    try {
+      final isDriver = await LocalService.getIsDriver();
+      setState(() {
+        _isDriver = isDriver ?? false;
+      });
+    } catch (e) {
+      // Continue even if driver status fetch fails
     }
 
     // Fetch all requests (for "All" tab), received, and sent requests
@@ -331,6 +343,8 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
             _refreshAllTabs();
           } else if (state is ContactDetailsLoaded) {
             _showContactDetailsDialog(state.contactDetails);
+            // Refresh requests to update status if it changed from hold to accepted
+            _refreshAllTabs();
           } else if (state is ConnectRequestError) {
             setState(() {
               _isLoading = false;
@@ -415,6 +429,7 @@ class _ConnectScreenState extends State<ConnectScreen> with TickerProviderStateM
               request: request,
               isSent: isSent,
               currentUserId: _currentUserId,
+              isDriver: _isDriver,
               onAccept: isSent ? null : () => _handleAcceptRequest(request),
               onReject: isSent ? null : () => _handleRejectRequest(request),
               onDelete: () => _handleDeleteRequest(request),
