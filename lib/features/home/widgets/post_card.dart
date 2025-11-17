@@ -938,54 +938,56 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                                       );
                                     } else if (_shouldShowConnectButton()) {
                                       // Show connect button and info button
-                                      return Row(
-                                        children: [
-                                          Expanded(
-                                            flex: 2,
-                                            child: AnimatedBuilder(
-                                              animation: _pulseAnimation,
-                                              builder: (context, child) {
-                                                return Transform.scale(
-                                                  scale: _pulseAnimation.value,
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
-                                                      borderRadius: BorderRadius.circular(14),
-                                                      boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
-                                                    ),
-                                                    child: ElevatedButton.icon(
-                                                      onPressed: () {
-                                                        _pulseController.forward().then((_) => _pulseController.reverse());
-                                                        _handleConnect();
-                                                      },
-                                                      icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
-                                                      label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.transparent,
-                                                        shadowColor: Colors.transparent,
-                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                      return Expanded(
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 2,
+                                              child: AnimatedBuilder(
+                                                animation: _pulseAnimation,
+                                                builder: (context, child) {
+                                                  return Transform.scale(
+                                                    scale: _pulseAnimation.value,
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.85)]),
+                                                        borderRadius: BorderRadius.circular(14),
+                                                        boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                                                      ),
+                                                      child: ElevatedButton.icon(
+                                                        onPressed: () {
+                                                          _pulseController.forward().then((_) => _pulseController.reverse());
+                                                          _handleConnect();
+                                                        },
+                                                        icon: const Icon(Icons.connect_without_contact_rounded, size: 20, color: Colors.white),
+                                                        label: const Text('Connect Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.transparent,
+                                                          shadowColor: Colors.transparent,
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                );
-                                              },
+                                                  );
+                                                },
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Container(
-                                            decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
-                                            child: IconButton(
-                                              onPressed: () {
-                                                if (widget.post.id != null) {
-                                                  Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
-                                                }
-                                              },
-                                              icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
-                                              style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                            const SizedBox(width: 10),
+                                            Container(
+                                              decoration: BoxDecoration(border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 1.5), borderRadius: BorderRadius.circular(14)),
+                                              child: IconButton(
+                                                onPressed: () {
+                                                  if (widget.post.id != null) {
+                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => TripDetailScreen(tripId: widget.post.id!)));
+                                                  }
+                                                },
+                                                icon: Icon(Icons.info_outline_rounded, color: AppColors.secondary, size: 22),
+                                                style: IconButton.styleFrom(padding: const EdgeInsets.all(12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       );
                                     } else {
                                       // Show info button with full width and text
