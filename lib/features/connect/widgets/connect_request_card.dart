@@ -267,6 +267,12 @@ class ConnectRequestCard extends StatelessWidget {
               ),
             ],
 
+            // Token information
+            if (request.tokenDeduction != null) ...[
+              const SizedBox(height: 16),
+              _buildTokenInfo(),
+            ],
+
             // Trip details
             if (request.trip != null) ...[
               const SizedBox(height: 16),
@@ -360,6 +366,182 @@ class ConnectRequestCard extends StatelessWidget {
             _buildActionButtons(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTokenInfo() {
+    final tokenDeduction = request.tokenDeduction!;
+    final isHold = request.status == ConnectRequestStatus.hold;
+    final hasDeducted = tokenDeduction.tokensDeducted > 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isHold
+            ? Colors.blue.withOpacity(0.1)
+            : (hasDeducted
+                ? AppColors.success.withOpacity(0.1)
+                : AppColors.background.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHold
+              ? Colors.blue.withOpacity(0.3)
+              : (hasDeducted
+                  ? AppColors.success.withOpacity(0.3)
+                  : AppColors.border.withOpacity(0.5)),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isHold
+                    ? Icons.pause_circle_outline_rounded
+                    : (hasDeducted
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.account_balance_wallet_outlined),
+                size: 20,
+                color: isHold
+                    ? Colors.blue
+                    : (hasDeducted ? AppColors.success : AppColors.secondary),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Token Information',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Required',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${tokenDeduction.tokensRequired.toStringAsFixed(0)} tokens',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasDeducted) ...[
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: AppColors.border.withOpacity(0.5),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Deducted',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${tokenDeduction.tokensDeducted.toStringAsFixed(0)} tokens',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (isHold) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Insufficient tokens. Add tokens to view contact details.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (!hasDeducted && !tokenDeduction.hasSufficientTokens) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Low token balance. Tokens will be deducted on acceptance.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

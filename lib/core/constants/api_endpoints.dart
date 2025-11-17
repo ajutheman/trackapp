@@ -3,7 +3,7 @@ class ApiEndpoints {
   static const String baseProductionUrl = 'https://truck-api-qyew.onrender.com/';
 
   // Toggle this to switch between development and production
-  static const bool isDevelopment = true;
+  static const bool isDevelopment = false;
   static const String baseUrl = isDevelopment ? baseDevelopmentUrl : baseProductionUrl;
 
   static const String sendOTP = 'api/v1/auth/request-otp';
@@ -39,6 +39,10 @@ class ApiEndpoints {
 
   // Connect Requests endpoints
   static const String connectRequests = 'api/v1/connect-requests';
+
+  // Token endpoints
+  static const String tokenBalance = 'api/v1/tokens/balance';
+  static const String leadTokenUsage = 'api/v1/tokens/lead-usage';
 
   // Customer Request (Post) endpoints
   static const String getAllCustomerRequests = 'api/v1/customer-requests';

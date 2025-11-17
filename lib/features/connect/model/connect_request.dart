@@ -1,5 +1,7 @@
 // lib/features/connect/model/connect_request.dart
 
+import '../../token/model/token.dart';
+
 class ConnectRequest {
   final String? id;
   final String? requesterId;
@@ -17,6 +19,7 @@ class ConnectRequest {
   final Trip? trip;
   final CustomerRequest? customerRequest;
   final ContactDetails? contactDetails;
+  final TokenDeduction? tokenDeduction;
 
   ConnectRequest({
     this.id,
@@ -33,6 +36,7 @@ class ConnectRequest {
     this.trip,
     this.customerRequest,
     this.contactDetails,
+    this.tokenDeduction,
   });
 
   factory ConnectRequest.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,7 @@ class ConnectRequest {
       trip: trip is Map ? Trip.fromJson(Map<String, dynamic>.from(trip)) : null,
       customerRequest: customerRequest is Map ? CustomerRequest.fromJson(Map<String, dynamic>.from(customerRequest)) : null,
       contactDetails: json['contactDetails'] != null ? ContactDetails.fromJson(json['contactDetails']) : null,
+      tokenDeduction: json['tokenDeduction'] != null ? TokenDeduction.fromJson(json['tokenDeduction']) : null,
     );
   }
 
@@ -105,6 +110,7 @@ class ConnectRequest {
     Trip? trip,
     CustomerRequest? customerRequest,
     ContactDetails? contactDetails,
+    TokenDeduction? tokenDeduction,
   }) {
     return ConnectRequest(
       id: id ?? this.id,
@@ -121,6 +127,7 @@ class ConnectRequest {
       trip: trip ?? this.trip,
       customerRequest: customerRequest ?? this.customerRequest,
       contactDetails: contactDetails ?? this.contactDetails,
+      tokenDeduction: tokenDeduction ?? this.tokenDeduction,
     );
   }
 }

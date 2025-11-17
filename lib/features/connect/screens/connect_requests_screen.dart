@@ -7,6 +7,8 @@ import 'package:truck_app/features/connect/bloc/connect_request_bloc.dart';
 import 'package:truck_app/features/connect/model/connect_request.dart';
 import 'package:truck_app/features/connect/widgets/connect_request_card.dart';
 import 'package:truck_app/features/connect/utils/connect_request_helper.dart';
+import 'package:truck_app/features/token/bloc/token_bloc.dart';
+import 'package:truck_app/features/token/widgets/token_balance_widget.dart';
 
 class ConnectRequestsScreen extends StatefulWidget {
   const ConnectRequestsScreen({super.key});
@@ -31,6 +33,9 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
       page: 1,
       limit: 50,
     );
+    
+    // Fetch token balance for drivers
+    context.read<TokenBloc>().add(FetchTokenBalance());
   }
 
   @override
@@ -171,6 +176,18 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.background,
+                AppColors.background.withOpacity(0.95),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(8),
@@ -213,8 +230,15 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
           const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Container(
+          preferredSize: const Size.fromHeight(120),
+          child: Column(
+            children: [
+              // Token balance widget (for drivers)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TokenBalanceWidget(compact: true),
+              ),
+              Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -258,6 +282,8 @@ class _ConnectRequestsScreenState extends State<ConnectRequestsScreen> with Tick
                 _buildTab('Rejected', _getTabCount(ConnectRequestStatus.rejected)),
               ],
             ),
+          ),
+            ],
           ),
         ),
       ),
