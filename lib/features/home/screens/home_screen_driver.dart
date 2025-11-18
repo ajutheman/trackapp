@@ -13,6 +13,8 @@ import '../widgets/post_card.dart';
 import '../widgets/location_dropdown.dart';
 import '../../connect/bloc/connect_request_bloc.dart';
 import '../../connect/model/connect_request.dart';
+import '../../token/bloc/token_bloc.dart';
+import '../../token/screens/token_screen.dart';
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});
@@ -74,6 +76,8 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     _fetchPostsWithFilters();
     // Fetch only received connect requests for leads section (requests sent TO the driver)
     context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
+    // Fetch token balance for driver
+    context.read<TokenBloc>().add(FetchTokenBalance());
   }
 
   void _fetchPostsWithFilters() {

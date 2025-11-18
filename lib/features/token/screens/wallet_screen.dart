@@ -22,8 +22,24 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<TokenBloc>().add(FetchTokenBalance());
-    context.read<TokenBloc>().add(const FetchTokenTransactions(page: 1, limit: 50));
+    // Check current state and only fetch if needed
+    final currentState = context.read<TokenBloc>().state;
+    
+    // Only fetch balance if not already loaded
+    if (currentState is! TokenBalanceLoaded) {
+      context.read<TokenBloc>().add(FetchTokenBalance());
+    }
+    
+    // Only fetch transactions if not already loaded
+    if (currentState is TokenTransactionsLoaded) {
+      // Use existing transactions
+      setState(() {
+        _transactions = currentState.transactions;
+        _isLoading = false;
+      });
+    } else {
+      context.read<TokenBloc>().add(const FetchTokenTransactions(page: 1, limit: 50));
+    }
   }
 
   void _showSnackBar(String message, {bool isSuccess = true}) {
@@ -109,6 +125,12 @@ class _WalletScreenState extends State<WalletScreen> {
         ],
       ),
       body: BlocListener<TokenBloc, TokenState>(
+        listenWhen: (previous, current) {
+          // Only listen to transaction-related states, not balance loading
+          return current is TokenTransactionsLoaded ||
+              (current is TokenLoading && previous is! TokenBalanceLoaded) ||
+              current is TokenError;
+        },
         listener: (context, state) {
           if (state is TokenTransactionsLoaded) {
             setState(() {
@@ -116,9 +138,12 @@ class _WalletScreenState extends State<WalletScreen> {
               _isLoading = false;
             });
           } else if (state is TokenLoading) {
-            setState(() {
-              _isLoading = true;
-            });
+            // Only set loading if we don't have transactions yet
+            if (_transactions.isEmpty) {
+              setState(() {
+                _isLoading = true;
+              });
+            }
           } else if (state is TokenError) {
             setState(() {
               _isLoading = false;

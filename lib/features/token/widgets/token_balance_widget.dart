@@ -4,25 +4,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/features/token/bloc/token_bloc.dart';
+import 'package:truck_app/features/token/screens/token_screen.dart';
 
-class TokenBalanceWidget extends StatelessWidget {
+class TokenBalanceWidget extends StatefulWidget {
   final bool showLabel;
   final bool compact;
+  final VoidCallback? onTap;
 
   const TokenBalanceWidget({
     super.key,
     this.showLabel = true,
     this.compact = false,
+    this.onTap,
   });
+
+  @override
+  State<TokenBalanceWidget> createState() => _TokenBalanceWidgetState();
+}
+
+class _TokenBalanceWidgetState extends State<TokenBalanceWidget> {
+  double? _cachedBalance;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TokenBloc, TokenState>(
+      buildWhen: (previous, current) {
+        // Rebuild when balance is loaded or error occurs
+        // Don't rebuild when transactions are loading (preserve cached balance)
+        return current is TokenBalanceLoaded ||
+            (current is TokenError && previous is! TokenBalanceLoaded) ||
+            (current is TokenLoading && _cachedBalance == null);
+      },
       builder: (context, state) {
         if (state is TokenBalanceLoaded) {
+          _cachedBalance = state.wallet.balance;
           return _buildBalanceDisplay(context, state.wallet.balance);
-        } else if (state is TokenError) {
+        } else if (state is TokenError && _cachedBalance == null) {
           return _buildErrorDisplay(context);
+        } else if (_cachedBalance != null) {
+          // Show cached balance when transactions are loading
+          return _buildBalanceDisplay(context, _cachedBalance!);
         } else {
           return _buildLoadingDisplay(context);
         }
@@ -31,8 +52,8 @@ class TokenBalanceWidget extends StatelessWidget {
   }
 
   Widget _buildBalanceDisplay(BuildContext context, double balance) {
-    if (compact) {
-      return Container(
+    if (widget.compact) {
+      final balanceContainer = Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -69,9 +90,17 @@ class TokenBalanceWidget extends StatelessWidget {
           ],
         ),
       );
+      
+      if (widget.onTap != null) {
+        return GestureDetector(
+          onTap: widget.onTap ?? () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TokenScreen())),
+          child: balanceContainer,
+        );
+      }
+      return balanceContainer;
     }
 
-    return Container(
+    final balanceContainer = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -114,7 +143,7 @@ class TokenBalanceWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showLabel)
+                if (widget.showLabel)
                   Text(
                     'Token Balance',
                     style: TextStyle(
@@ -123,7 +152,7 @@ class TokenBalanceWidget extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                if (showLabel) const SizedBox(height: 4),
+                if (widget.showLabel) const SizedBox(height: 4),
                 Text(
                   balance.toStringAsFixed(0),
                   style: TextStyle(
@@ -155,10 +184,18 @@ class TokenBalanceWidget extends StatelessWidget {
         ],
       ),
     );
+    
+    if (widget.onTap != null) {
+      return GestureDetector(
+        onTap: widget.onTap,
+        child: balanceContainer,
+      );
+    }
+    return balanceContainer;
   }
 
   Widget _buildLoadingDisplay(BuildContext context) {
-    if (compact) {
+    if (widget.compact) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: const SizedBox(
@@ -182,7 +219,7 @@ class TokenBalanceWidget extends StatelessWidget {
   }
 
   Widget _buildErrorDisplay(BuildContext context) {
-    if (compact) {
+    if (widget.compact) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Icon(

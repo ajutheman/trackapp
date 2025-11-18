@@ -20,6 +20,7 @@ import '../../legal/screens/terms_and_conditions_screen.dart';
 import '../../legal/screens/privacy_policy_screen.dart';
 import '../../legal/screens/help_screen.dart';
 import '../../legal/screens/customer_support_screen.dart';
+import '../../token/screens/token_screen.dart';
 
 class ProfileScreenDriver extends StatefulWidget {
   const ProfileScreenDriver({super.key});
@@ -192,6 +193,8 @@ class _ProfileScreenDriverState extends State<ProfileScreenDriver> {
             ),
             const SizedBox(height: 12),
             _buildActionButton(label: 'My Friends', icon: Icons.people_outlined, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyFriendsScreen()))),
+            const SizedBox(height: 12),
+            _buildActionButton(label: 'Tokens', icon: Icons.account_balance_wallet_rounded, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TokenScreen()))),
             const SizedBox(height: 12),
             _buildActionButton(
               label: 'Terms and Conditions',

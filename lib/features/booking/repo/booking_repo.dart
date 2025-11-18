@@ -203,17 +203,29 @@ class BookingRepository {
       '${ApiEndpoints.bookings}/$bookingId/otp/pickup/generate',
       isTokenRequired: true,
     );
-
+print(result.toString());
     if (result.isSuccess) {
       try {
-        final otpData = result.data is Map<String, dynamic>
-            ? result.data as Map<String, dynamic>
-            : <String, dynamic>{};
-        final otp = otpData['otp'] ?? otpData;
-        final otpMap = otp is Map<String, dynamic>
-            ? otp
-            : Map<String, dynamic>.from(otp);
-        return Result.success(BookingOtp.fromJson(otpMap));
+        final code = result.data['code'].toString();
+        final otpId = result.data['otpId'].toString();
+        
+        // Create a minimal BookingOtp object with available data
+        // expiresAt defaults to 10 minutes from now (matching server behavior)
+        final expiresAt = DateTime.now().add(const Duration(minutes: 10));
+        
+        final bookingOtp = BookingOtp(
+          id: otpId.toString(),
+          bookingId: bookingId,
+          kind: OtpKind.pickup,
+          code: code,
+          issuedTo: OtpIssuedTo.customer,
+          expiresAt: expiresAt,
+          attempts: 0,
+          maxAttempts: 5,
+          isActive: true,
+        );
+        
+        return Result.success(bookingOtp);
       } catch (e) {
         return Result.error('Failed to parse OTP: ${e.toString()}');
       }
@@ -228,17 +240,48 @@ class BookingRepository {
       '${ApiEndpoints.bookings}/$bookingId/otp/delivery/generate',
       isTokenRequired: true,
     );
-
     if (result.isSuccess) {
       try {
-        final otpData = result.data is Map<String, dynamic>
+        final responseData = result.data is Map<String, dynamic>
             ? result.data as Map<String, dynamic>
             : <String, dynamic>{};
-        final otp = otpData['otp'] ?? otpData;
-        final otpMap = otp is Map<String, dynamic>
-            ? otp
-            : Map<String, dynamic>.from(otp);
-        return Result.success(BookingOtp.fromJson(otpMap));
+        
+        // Server response structure: { success, statusCode, message, data: { otpId, code }, ... }
+        // Extract the actual OTP data from response.data
+        final otpData = responseData['data'];
+        if (otpData == null || otpData is! Map<String, dynamic>) {
+          return Result.error('Invalid OTP response format');
+        }
+        
+        final otpMap = otpData;
+        
+        // Server only returns otpId and code in the data field
+        final otpId = otpMap['otpId'] ?? otpMap['_id'] ?? otpMap['id'];
+        final codeValue = otpMap['code'];
+        
+        if (codeValue == null || codeValue.toString().isEmpty) {
+          return Result.error('OTP code not found in response');
+        }
+        
+        final code = codeValue.toString();
+        
+        // Create a minimal BookingOtp object with available data
+        // expiresAt defaults to 10 minutes from now (matching server behavior)
+        final expiresAt = DateTime.now().add(const Duration(minutes: 10));
+        
+        final bookingOtp = BookingOtp(
+          id: otpId?.toString(),
+          bookingId: bookingId,
+          kind: OtpKind.delivery,
+          code: code,
+          issuedTo: OtpIssuedTo.customer,
+          expiresAt: expiresAt,
+          attempts: 0,
+          maxAttempts: 5,
+          isActive: true,
+        );
+        
+        return Result.success(bookingOtp);
       } catch (e) {
         return Result.error('Failed to parse OTP: ${e.toString()}');
       }
