@@ -284,8 +284,8 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                   _buildLocationSelectorSection(),
                   const SizedBox(height: 24),
                   _buildListOfPostsSection(),
-                  const SizedBox(height: 24),
-                  _buildConnectRequestsSection(),
+                  // const SizedBox(height: 24),
+                  // _buildConnectRequestsSection(),
                 ],
               ),
             ),
@@ -327,94 +327,94 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     );
   }
 
-  Widget _buildConnectRequestsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.people_rounded, color: AppColors.secondary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Text('Leads', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
-            const Spacer(),
-            if (_connectRequests.isNotEmpty)
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/connect-requests');
-                },
-                child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
-              ),
-            const SizedBox(width: 4),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: IconButton(
-                onPressed: () {
-                  context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
-                },
-                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
-                tooltip: 'Refresh',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Display Connect Cards
-        _isLoadingConnections
-            ? Center(
-              child: Padding(padding: const EdgeInsets.all(40.0), child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3)),
-            )
-            : _connectRequests.isEmpty
-            ? Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 32),
-                    const SizedBox(height: 8),
-                    Text('No connect requests yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-                  ],
-                ),
-              ),
-            )
-            : Column(
-              children:
-                  _connectRequests.map((request) {
-                    final connect = _convertConnectRequestToConnect(request);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: ConnectCard(
-                        connect: connect,
-                        onAccept: (connect) {
-                          _handleAcceptConnect(request);
-                        },
-                        onReject: (connect) {
-                          _handleRejectConnect(request);
-                        },
-                        onCall: (phoneNumber) => _makePhoneCall(phoneNumber),
-                        onWhatsApp: (phoneNumber) => _launchWhatsApp(phoneNumber),
-                      ),
-                    );
-                  }).toList(),
-            ),
-      ],
-    );
-  }
+  // Widget _buildConnectRequestsSection() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Container(
+  //             padding: const EdgeInsets.all(8),
+  //             decoration: BoxDecoration(
+  //               gradient: LinearGradient(
+  //                 colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
+  //                 begin: Alignment.topLeft,
+  //                 end: Alignment.bottomRight,
+  //               ),
+  //               borderRadius: BorderRadius.circular(10),
+  //             ),
+  //             child: Icon(Icons.people_rounded, color: AppColors.secondary, size: 20),
+  //           ),
+  //           const SizedBox(width: 12),
+  //           Text('Leads', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+  //           const Spacer(),
+  //           if (_connectRequests.isNotEmpty)
+  //             TextButton(
+  //               onPressed: () {
+  //                 Navigator.pushNamed(context, '/connect-requests');
+  //               },
+  //               child: Text('See All', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600, fontSize: 14)),
+  //             ),
+  //           const SizedBox(width: 4),
+  //           Container(
+  //             decoration: BoxDecoration(
+  //               gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+  //               borderRadius: BorderRadius.circular(10),
+  //             ),
+  //             child: IconButton(
+  //               onPressed: () {
+  //                 context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
+  //               },
+  //               icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+  //               tooltip: 'Refresh',
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       const SizedBox(height: 16),
+  //       // Display Connect Cards
+  //       _isLoadingConnections
+  //           ? Center(
+  //             child: Padding(padding: const EdgeInsets.all(40.0), child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3)),
+  //           )
+  //           : _connectRequests.isEmpty
+  //           ? Center(
+  //             child: Container(
+  //               padding: const EdgeInsets.all(24),
+  //               decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border.withOpacity(0.2))),
+  //               child: Column(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   Icon(Icons.inbox_outlined, color: AppColors.textSecondary, size: 32),
+  //                   const SizedBox(height: 8),
+  //                   Text('No connect requests yet', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+  //                 ],
+  //               ),
+  //             ),
+  //           )
+  //           : Column(
+  //             children:
+  //                 _connectRequests.map((request) {
+  //                   final connect = _convertConnectRequestToConnect(request);
+  //                   return Padding(
+  //                     padding: const EdgeInsets.only(bottom: 12.0),
+  //                     child: ConnectCard(
+  //                       connect: connect,
+  //                       onAccept: (connect) {
+  //                         _handleAcceptConnect(request);
+  //                       },
+  //                       onReject: (connect) {
+  //                         _handleRejectConnect(request);
+  //                       },
+  //                       onCall: (phoneNumber) => _makePhoneCall(phoneNumber),
+  //                       onWhatsApp: (phoneNumber) => _launchWhatsApp(phoneNumber),
+  //                     ),
+  //                   );
+  //                 }).toList(),
+  //           ),
+  //     ],
+  //   );
+  // }
 
   // Helper method to convert ConnectRequest to Connect model for display
   Connect _convertConnectRequestToConnect(ConnectRequest request) {
@@ -486,7 +486,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               child: Icon(Icons.local_shipping_rounded, color: AppColors.secondary, size: 20),
             ),
             const SizedBox(width: 12),
-            Text('Latest Posts', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            Text('Leads', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
             const Spacer(),
             Container(
               decoration: BoxDecoration(
