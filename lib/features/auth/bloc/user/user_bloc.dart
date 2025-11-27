@@ -22,7 +22,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     if (result.isSuccess) {
       emit(UserRegistrationSuccess());
     } else {
-      emit(UserRegistrationFailure(result.message!));
+      emit(UserRegistrationFailure(result.message!, fieldErrors: result.errors));
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import '../model/post.dart';
 import '../repo/posts_repo.dart';
+import '../../../model/network/result.dart';
 
 /// Events for Posts BLoC
 abstract class PostsEvent extends Equatable {
@@ -278,7 +279,7 @@ abstract class PostsState extends Equatable {
   const PostsState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 /// Initial state
@@ -296,7 +297,7 @@ class PostsLoaded extends PostsState {
   const PostsLoaded({required this.posts, this.hasMore = false, this.currentPage = 1});
 
   @override
-  List<Object> get props => [posts, hasMore, currentPage];
+  List<Object?> get props => [posts, hasMore, currentPage];
 }
 
 /// Success state for user posts
@@ -308,7 +309,7 @@ class UserPostsLoaded extends PostsState {
   const UserPostsLoaded({required this.posts, this.hasMore = false, this.currentPage = 1});
 
   @override
-  List<Object> get props => [posts, hasMore, currentPage];
+  List<Object?> get props => [posts, hasMore, currentPage];
 }
 
 /// Success state for post creation
@@ -318,7 +319,7 @@ class PostCreated extends PostsState {
   const PostCreated({required this.post});
 
   @override
-  List<Object> get props => [post];
+  List<Object?> get props => [post];
 }
 
 /// Success state for post update
@@ -328,7 +329,7 @@ class PostUpdated extends PostsState {
   const PostUpdated({required this.post});
 
   @override
-  List<Object> get props => [post];
+  List<Object?> get props => [post];
 }
 
 /// Success state for fetching a single post
@@ -338,7 +339,7 @@ class PostLoaded extends PostsState {
   const PostLoaded({required this.post});
 
   @override
-  List<Object> get props => [post];
+  List<Object?> get props => [post];
 }
 
 /// Success state for post deletion
@@ -348,17 +349,31 @@ class PostDeleted extends PostsState {
   const PostDeleted({required this.postId});
 
   @override
-  List<Object> get props => [postId];
+  List<Object?> get props => [postId];
 }
 
 /// Error state
 class PostsError extends PostsState {
   final String message;
+  final List<ValidationError>? fieldErrors;
 
-  const PostsError({required this.message});
+  const PostsError({required this.message, this.fieldErrors});
+
+  /// Check if there are field-specific validation errors
+  bool get hasFieldErrors => fieldErrors != null && fieldErrors!.isNotEmpty;
+
+  /// Get error for a specific field
+  String? getFieldError(String fieldName) {
+    if (fieldErrors == null || fieldErrors!.isEmpty) return null;
+    try {
+      return fieldErrors!.firstWhere((error) => error.field == fieldName).message;
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, fieldErrors];
 }
 
 /// BLoC for managing posts/trips state and events
@@ -393,7 +408,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostsLoaded(posts: result.data!, hasMore: result.data!.length >= (event.limit ?? 10), currentPage: event.page ?? 1));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -417,7 +432,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(UserPostsLoaded(posts: result.data!, hasMore: result.data!.length >= (event.limit ?? 10), currentPage: event.page ?? 1));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -433,7 +448,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostLoaded(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -472,7 +487,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostCreated(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -513,7 +528,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostUpdated(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -529,7 +544,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostDeleted(postId: event.postId));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -545,7 +560,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostUpdated(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!));
+        emit(PostsError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));

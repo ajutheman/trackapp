@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
+import 'error_display.dart';
 
-
-void showSnackBar(BuildContext context, String message) {
-  final snackBar = SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, backgroundColor: Colors.black87, duration: Duration(seconds: 3));
-
-  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+/// Legacy function - redirects to new error display utility
+/// @deprecated Use showErrorSnackBar, showSuccessSnackBar, or showInfoSnackBar instead
+void showSnackBar(BuildContext context, String message, {bool isError = false, bool isSuccess = false}) {
+  if (isSuccess) {
+    showSuccessSnackBar(context, message);
+  } else if (isError) {
+    showErrorSnackBar(context, message);
+  } else {
+    showInfoSnackBar(context, message);
+  }
 }
-
-// void showErrorDialog(BuildContext context, String message, {String? title}) {
-//   showDialog(
-//     context: context,
-//     barrierDismissible: true,
-//     builder: (BuildContext context) {
-//       return ErrorDialogWidget(message: message, title: title);
-//     },
-//   );
-// }

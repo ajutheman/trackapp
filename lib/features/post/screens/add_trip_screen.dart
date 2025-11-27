@@ -14,6 +14,8 @@ import 'package:truck_app/services/network/api_service.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
+import '../../../core/utils/error_display.dart';
+import '../../../model/network/result.dart';
 
 class AddTripScreen extends StatefulWidget {
   final Post? postToEdit; // If provided, screen will be in edit mode
@@ -63,6 +65,9 @@ class _AddTripScreenState extends State<AddTripScreen> {
   List<TripLocation> _viaRoutes = [];
   double? _distance;
   int? _duration; // in minutes
+  
+  // Field errors from server validation
+  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -531,7 +536,15 @@ class _AddTripScreenState extends State<AddTripScreen> {
                     // Only show error if screen is still active
                     final route = ModalRoute.of(context);
                     if (mounted && route != null && route.isCurrent) {
-                      _showSnackBar('Error: ${state.message}');
+                      setState(() {
+                        _fieldErrors = state.fieldErrors ?? [];
+                      });
+                      
+                      if (state.hasFieldErrors) {
+                        showValidationErrorsDialog(context, state.fieldErrors!);
+                      } else {
+                        showErrorSnackBar(context, state.message);
+                      }
                     }
                   }
                 },

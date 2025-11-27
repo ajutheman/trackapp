@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../home/model/post.dart';
 import '../repo/customer_request_repo.dart';
+import '../../../model/network/result.dart';
 
 /// Events for Customer Request BLoC
 abstract class CustomerRequestEvent extends Equatable {
@@ -195,7 +196,7 @@ abstract class CustomerRequestState extends Equatable {
   const CustomerRequestState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 /// Initial state
@@ -217,7 +218,7 @@ class CustomerRequestsLoaded extends CustomerRequestState {
   });
 
   @override
-  List<Object> get props => [requests, hasMore, currentPage];
+  List<Object?> get props => [requests, hasMore, currentPage];
 }
 
 /// Success state for user's own customer requests
@@ -233,7 +234,7 @@ class MyCustomerRequestsLoaded extends CustomerRequestState {
   });
 
   @override
-  List<Object> get props => [requests, hasMore, currentPage];
+  List<Object?> get props => [requests, hasMore, currentPage];
 }
 
 /// Success state for customer request creation
@@ -243,7 +244,7 @@ class CustomerRequestCreated extends CustomerRequestState {
   const CustomerRequestCreated({required this.request});
 
   @override
-  List<Object> get props => [request];
+  List<Object?> get props => [request];
 }
 
 /// Success state for customer request update
@@ -253,7 +254,7 @@ class CustomerRequestUpdated extends CustomerRequestState {
   const CustomerRequestUpdated({required this.request});
 
   @override
-  List<Object> get props => [request];
+  List<Object?> get props => [request];
 }
 
 /// Success state for customer request deletion
@@ -263,7 +264,7 @@ class CustomerRequestDeleted extends CustomerRequestState {
   const CustomerRequestDeleted({required this.requestId});
 
   @override
-  List<Object> get props => [requestId];
+  List<Object?> get props => [requestId];
 }
 
 /// Success state for fetching a single customer request
@@ -273,17 +274,31 @@ class CustomerRequestDetailLoaded extends CustomerRequestState {
   const CustomerRequestDetailLoaded({required this.request});
 
   @override
-  List<Object> get props => [request];
+  List<Object?> get props => [request];
 }
 
 /// Error state
 class CustomerRequestError extends CustomerRequestState {
   final String message;
+  final List<ValidationError>? fieldErrors;
 
-  const CustomerRequestError({required this.message});
+  const CustomerRequestError({required this.message, this.fieldErrors});
+
+  /// Check if there are field-specific validation errors
+  bool get hasFieldErrors => fieldErrors != null && fieldErrors!.isNotEmpty;
+
+  /// Get error for a specific field
+  String? getFieldError(String fieldName) {
+    if (fieldErrors == null || fieldErrors!.isEmpty) return null;
+    try {
+      return fieldErrors!.firstWhere((error) => error.field == fieldName).message;
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, fieldErrors];
 }
 
 /// BLoC for managing customer request state and events
@@ -325,7 +340,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
           currentPage: event.page ?? 1,
         ));
       } else {
-        emit(CustomerRequestError(message: result.message!));
+        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -355,7 +370,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
           currentPage: event.page ?? 1,
         ));
       } else {
-        emit(CustomerRequestError(message: result.message!));
+        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -386,7 +401,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestCreated(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message!));
+        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -418,7 +433,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestUpdated(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message!));
+        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -437,7 +452,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestDeleted(requestId: event.requestId));
       } else {
-        emit(CustomerRequestError(message: result.message!));
+        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -456,7 +471,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestDetailLoaded(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message!));
+        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));

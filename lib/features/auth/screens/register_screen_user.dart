@@ -11,6 +11,8 @@ import '../../../core/theme/app_colors.dart';
 import '../bloc/user/user_bloc.dart';
 import '../bloc/user/user_event.dart';
 import '../bloc/user/user_state.dart';
+import '../../../core/utils/error_display.dart';
+import '../../../model/network/result.dart';
 
 class RegisterScreenUser extends StatefulWidget {
   final String phone;
@@ -37,6 +39,9 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
 
   File? _profilePicture;
   bool _isLoading = false;
+  
+  // Field errors from server validation
+  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -65,12 +70,23 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
       body: BlocListener<UserBloc, UserState>(
         listener: (context, state) {
           if (state is UserRegistrationLoading) {
-            setState(() => _isLoading = true);
+            setState(() {
+              _isLoading = true;
+              _fieldErrors = [];
+            });
           } else if (state is UserRegistrationSuccess) {
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const MainScreenUser()), (predict) => false);
           } else if (state is UserRegistrationFailure) {
-            setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+            setState(() {
+              _isLoading = false;
+              _fieldErrors = state.fieldErrors ?? [];
+            });
+            
+            if (state.hasFieldErrors) {
+              showValidationErrorsDialog(context, state.fieldErrors!);
+            } else {
+              showErrorSnackBar(context, state.error);
+            }
           }
         },
         child: SingleChildScrollView(
@@ -79,8 +95,23 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Personal Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              const SizedBox(height: 32),
-              _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline),
+              const SizedBox(height: 24),
+              
+              // Validation Errors Banner
+              if (_fieldErrors.isNotEmpty)
+                ValidationErrorsBanner(
+                  errors: _fieldErrors,
+                  onDismiss: () {
+                    setState(() {
+                      _fieldErrors = [];
+                    });
+                  },
+                ),
+              if (_fieldErrors.isNotEmpty)
+                const SizedBox(height: 16),
+                
+              const SizedBox(height: 16),
+              _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline, fieldName: 'name'),
               const SizedBox(height: 20),
               _buildInputField(
                 enabled: false,
@@ -136,6 +167,16 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     );
   }
 
+  /// Get field error for a specific field name
+  String? _getFieldError(String fieldName) {
+    if (_fieldErrors.isEmpty) return null;
+    try {
+      return _fieldErrors.firstWhere((error) => error.field == fieldName).message;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Widget _buildInputField({
     required TextEditingController controller,
     required FocusNode focusNode,
@@ -145,7 +186,11 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     bool enabled = true,
+    String? fieldName,
   }) {
+    final fieldError = fieldName != null ? _getFieldError(fieldName) : null;
+    final hasError = fieldError != null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,7 +200,12 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
+            border: Border.all(
+              color: hasError 
+                ? AppColors.error 
+                : (focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
+              width: hasError ? 1.5 : 1,
+            ),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: TextField(
@@ -168,13 +218,18 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(icon, color: AppColors.textSecondary),
+              prefixIcon: Icon(
+                icon,
+                color: hasError ? AppColors.error : AppColors.textSecondary,
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             onChanged: (_) => setState(() {}),
           ),
         ),
+        if (fieldError != null)
+          FieldErrorText(errorText: fieldError),
       ],
     );
   }

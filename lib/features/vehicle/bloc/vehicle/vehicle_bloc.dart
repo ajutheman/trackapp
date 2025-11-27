@@ -33,14 +33,20 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
 
       // Check if the single image upload failed.
       if (!certificateUploadResult.isSuccess) {
-        emit(VehicleRegistrationFailure(certificateUploadResult.message ?? 'Failed to upload registration certificate.'));
+        emit(VehicleRegistrationFailure(
+          certificateUploadResult.message ?? 'Failed to upload registration certificate.',
+          fieldErrors: certificateUploadResult.errors,
+        ));
         return; // Stop execution if upload fails.
       }
       final Result<String> drivingLicenseResult = await imageRepository.uploadDocument(type: UploadImageType.license, imageFile: event.drivingLicense);
 
       // Check if the single image upload failed.
-      if (!certificateUploadResult.isSuccess) {
-        emit(VehicleRegistrationFailure(certificateUploadResult.message ?? 'Failed to upload drivingLicense.'));
+      if (!drivingLicenseResult.isSuccess) {
+        emit(VehicleRegistrationFailure(
+          drivingLicenseResult.message ?? 'Failed to upload drivingLicense.',
+          fieldErrors: drivingLicenseResult.errors,
+        ));
         return; // Stop execution if upload fails.
       }
 
@@ -56,7 +62,10 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
       final List<String> truckImageUrls = [];
       for (final result in truckUploadResults) {
         if (!result.isSuccess) {
-          emit(VehicleRegistrationFailure(result.message ?? 'Failed to upload one or more truck images.'));
+          emit(VehicleRegistrationFailure(
+            result.message ?? 'Failed to upload one or more truck images.',
+            fieldErrors: result.errors,
+          ));
           return; // Stop execution if any upload fails.
         }
         truckImageUrls.add(result.data!);
@@ -78,7 +87,7 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
         emit(VehicleRegistrationSuccess());
         add(GetVehicles());
       } else {
-        emit(VehicleRegistrationFailure(result.message!));
+        emit(VehicleRegistrationFailure(result.message!, fieldErrors: result.errors));
       }
     } catch (e) {
       // Catch any unexpected errors during the process.

@@ -81,10 +81,20 @@ class ApiService {
       if (data is Map && (data['status'] == true || data['success'] == true)) {
         return Result.success(data['data'], message: data['message']);
       }
-      return Result.error(data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error');
+      // Handle validation errors even in success status codes
+      final errors = _extractValidationErrors(data);
+      return Result.error(
+        data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+        errors: errors,
+      );
     }
 
-    return Result.error(data is Map ? (data['message'] ?? 'HTTP Error: ${response.statusCode}') : 'HTTP Error: ${response.statusCode}');
+    // Handle error responses with validation errors
+    final errors = _extractValidationErrors(data);
+    return Result.error(
+      data is Map ? (data['message'] ?? 'HTTP Error: ${response.statusCode}') : 'HTTP Error: ${response.statusCode}',
+      errors: errors,
+    );
   }
 
   Result<dynamic> _handleError(DioException e) {
@@ -92,9 +102,31 @@ class ApiService {
     try {
       final data = e.response?.data;
       final message = data is Map ? (data['message'] ?? 'HTTP Error: ${e.response?.statusCode}') : 'HTTP Error: ${e.response?.statusCode}';
-      return Result.error(message);
+      final errors = _extractValidationErrors(data);
+      return Result.error(message, errors: errors);
     } catch (exceptionError) {
       return Result.error('Network Parse Error: $exceptionError');
     }
+  }
+
+  /// Extract validation errors from response data
+  List<ValidationError>? _extractValidationErrors(dynamic data) {
+    if (data is! Map) return null;
+    
+    final errorsData = data['errors'];
+    if (errorsData == null) return null;
+    
+    if (errorsData is List) {
+      try {
+        return errorsData
+            .map((error) => ValidationError.fromJson(error as Map<String, dynamic>))
+            .toList();
+      } catch (e) {
+        print('Error parsing validation errors: $e');
+        return null;
+      }
+    }
+    
+    return null;
   }
 }

@@ -9,6 +9,8 @@ import 'package:truck_app/features/vehicle/bloc/vehicle_metadata/vehicle_meta_bl
 import 'package:truck_app/features/vehicle/model/vehicle_metadata.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/core/utils/messages.dart';
+import 'package:truck_app/core/utils/error_display.dart';
+import 'package:truck_app/model/network/result.dart';
 
 import '../bloc/vehicle/vehicle_bloc.dart';
 import '../bloc/vehicle/vehicle_event.dart';
@@ -53,6 +55,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final List<VehicleType> _vehicleTypes = [];
   final List<VehicleBodyType> _vehicleBodyTypes = [];
   final List<GoodsAccepted> _goodsAcceptedList = [];
+  
+  // Field errors from server validation
+  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -97,13 +102,27 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             BlocListener<VehicleBloc, VehicleState>(
               listener: (context, state) {
                 if (state is VehicleRegistrationLoading) {
-                  setState(() => _isLoading = true);
+                  setState(() {
+                    _isLoading = true;
+                    _fieldErrors = [];
+                  });
                 } else if (state is VehicleRegistrationSuccess) {
-                  setState(() => _isLoading = false);
+                  setState(() {
+                    _isLoading = false;
+                    _fieldErrors = [];
+                  });
                   _showSuccessDialog();
                 } else if (state is VehicleRegistrationFailure) {
-                  setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+                  setState(() {
+                    _isLoading = false;
+                    _fieldErrors = state.fieldErrors ?? [];
+                  });
+                  
+                  if (state.hasFieldErrors) {
+                    showValidationErrorsDialog(context, state.fieldErrors!);
+                  } else {
+                    showErrorSnackBar(context, state.error);
+                  }
                 }
               },
             ),
@@ -120,7 +139,20 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           const Text('Add Vehicle Details', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                           const SizedBox(height: 8),
                           const Text('Provide information about your vehicle and documents', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
+                          
+                          // Validation Errors Banner
+                          if (_fieldErrors.isNotEmpty)
+                            ValidationErrorsBanner(
+                              errors: _fieldErrors,
+                              onDismiss: () {
+                                setState(() {
+                                  _fieldErrors = [];
+                                });
+                              },
+                            ),
+
+                          const SizedBox(height: 16),
 
                           // Vehicle Type Selection Grid
                           const Text('Vehicle Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
@@ -181,6 +213,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                             label: 'Vehicle Number',
                             hint: 'e.g., KA01AB1234',
                             icon: Icons.numbers_outlined,
+                            fieldName: 'vehicleNumber',
                           ),
                           const SizedBox(height: 20),
 
@@ -192,6 +225,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                             hint: 'e.g., 5.0',
                             icon: Icons.scale_outlined,
                             keyboardType: TextInputType.number,
+                            fieldName: 'vehicleCapacity',
                           ),
                           const SizedBox(height: 20),
 
@@ -433,6 +467,16 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     }
   }
 
+  /// Get field error for a specific field name
+  String? _getFieldError(String fieldName) {
+    if (_fieldErrors.isEmpty) return null;
+    try {
+      return _fieldErrors.firstWhere((error) => error.field == fieldName).message;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Widget _buildInputField({
     required TextEditingController controller,
     required FocusNode focusNode,
@@ -442,7 +486,11 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     bool enabled = true,
+    String? fieldName,
   }) {
+    final fieldError = fieldName != null ? _getFieldError(fieldName) : null;
+    final hasError = fieldError != null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -452,7 +500,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
+            border: Border.all(
+              color: hasError 
+                ? AppColors.error 
+                : (focusNode.hasFocus ? AppColors.secondary : Colors.grey.shade300),
+              width: hasError ? 1.5 : 1,
+            ),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: TextField(
@@ -465,13 +518,18 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(icon, color: AppColors.textSecondary),
+              prefixIcon: Icon(
+                icon,
+                color: hasError ? AppColors.error : AppColors.textSecondary,
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             onChanged: (_) => setState(() {}),
           ),
         ),
+        if (fieldError != null)
+          FieldErrorText(errorText: fieldError),
       ],
     );
   }
