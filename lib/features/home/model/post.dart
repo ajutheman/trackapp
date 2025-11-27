@@ -278,13 +278,58 @@ class Dimensions {
   }
 }
 
+/// Connection statistics for Customer Requests (Leads)
+/// Tracks how many drivers have connected to this customer request
+class ConnectStats {
+  final int total;      // Total connection attempts
+  final int pending;    // Pending connections
+  final int accepted;   // Accepted connections
+  final int rejected;   // Rejected connections
+  final int hold;       // Connections on hold
+  final DateTime? updatedAt;
+
+  ConnectStats({
+    this.total = 0,
+    this.pending = 0,
+    this.accepted = 0,
+    this.rejected = 0,
+    this.hold = 0,
+    this.updatedAt,
+  });
+
+  factory ConnectStats.fromJson(Map<String, dynamic> json) {
+    return ConnectStats(
+      total: json['total'] ?? 0,
+      pending: json['pending'] ?? 0,
+      accepted: json['accepted'] ?? 0,
+      rejected: json['rejected'] ?? 0,
+      hold: json['hold'] ?? 0,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'total': total,
+      'pending': pending,
+      'accepted': accepted,
+      'rejected': rejected,
+      'hold': hold,
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    };
+  }
+}
+
+/// Universal Post model that handles both:
+/// 1. TRIPS - Driver postings of available trips (has tripStartLocation, tripAddedBy)
+/// 2. CUSTOMER REQUESTS (Leads for drivers) - Customer service requests (has pickupLocationObj, user)
 class Post {
   final String? id;
   final String title;
   final String description;
   final DateTime date;
   final String? imageUrl;
-  final String? postType;
+  final String? postType;  // 'trip' or 'customer_request'
   final String? pickupLocation;
   final String? dropLocation;
   final String? goodsType;
@@ -295,7 +340,7 @@ class Post {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  // New trip-specific fields
+  // Trip-specific fields (for driver postings)
   final TripLocation? tripStartLocation;
   final TripLocation? tripDestination;
   final List<TripLocation>? viaRoutes;
@@ -314,13 +359,14 @@ class Post {
   final TripStatus? status;
   final bool? isStarted;
 
-  // Customer request-specific fields
+  // Customer request-specific fields (Leads for drivers)
   final TripLocation? pickupLocationObj; // For customer requests (pickupLocation)
   final TripLocation? dropoffLocationObj; // For customer requests (dropoffLocation)
   final PackageDetails? packageDetails;
   final List<String>? images; // Image IDs
   final List<String>? documents; // Document IDs
   final DateTime? pickupTime;
+  final ConnectStats? connectStats; // Connection statistics for customer requests
 
   Post({
     this.id,
@@ -361,6 +407,7 @@ class Post {
     this.images,
     this.documents,
     this.pickupTime,
+    this.connectStats,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -470,6 +517,9 @@ class Post {
         images: extractIdList(json['images']),
         documents: extractIdList(json['documents']),
         pickupTime: json['pickupTime'] != null ? DateTime.parse(json['pickupTime']) : null,
+        connectStats: json['connectStats'] != null && json['connectStats'] is Map
+            ? ConnectStats.fromJson(json['connectStats'] as Map<String, dynamic>)
+            : null,
       );
     } catch (e) {
       print('Error parsing Post from JSON: $e');
@@ -517,6 +567,7 @@ class Post {
       if (images != null) 'images': images,
       if (documents != null) 'documents': documents,
       if (pickupTime != null) 'pickupTime': pickupTime!.toIso8601String(),
+      if (connectStats != null) 'connectStats': connectStats!.toJson(),
     };
   }
 

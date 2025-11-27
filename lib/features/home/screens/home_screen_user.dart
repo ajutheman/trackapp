@@ -27,6 +27,10 @@ class HomeScreenUser extends StatefulWidget {
 }
 
 class _HomeScreenUserState extends State<HomeScreenUser> {
+  // TERMINOLOGY CLARIFICATION FOR CUSTOMERS (USERS):
+  // - "_posts" = Other customers' posts (Customer Requests)
+  // - "_myPosts" = My own customer requests (what I posted)
+  // - "_trips" = Driver trips I can connect to (trips posted by drivers)
   // Data variables - assigned in listeners when success
   List<Post> _posts = [];
   List<Post> _myPosts = [];

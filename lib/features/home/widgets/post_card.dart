@@ -829,6 +829,73 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                               ],
                             ),
 
+                          // Connect Stats for Customer Requests (Leads) viewed by Drivers
+                          if (!_isTrip() && widget.post.connectStats != null && widget.post.connectStats!.total > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [AppColors.secondary.withOpacity(0.08), AppColors.secondary.withOpacity(0.03)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.secondary.withOpacity(0.15)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.people_outline_rounded, size: 16, color: AppColors.secondary),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Connection Activity',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.secondary,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: [
+                                        _buildStatItem(
+                                          widget.post.connectStats!.total.toString(),
+                                          'Total',
+                                          Icons.connect_without_contact_rounded,
+                                          AppColors.textPrimary,
+                                        ),
+                                        _buildStatItem(
+                                          widget.post.connectStats!.pending.toString(),
+                                          'Pending',
+                                          Icons.hourglass_empty_rounded,
+                                          Colors.orange,
+                                        ),
+                                        _buildStatItem(
+                                          widget.post.connectStats!.accepted.toString(),
+                                          'Accepted',
+                                          Icons.check_circle_outline_rounded,
+                                          Colors.green,
+                                        ),
+                                        if (widget.post.connectStats!.rejected > 0)
+                                          _buildStatItem(
+                                            widget.post.connectStats!.rejected.toString(),
+                                            'Rejected',
+                                            Icons.cancel_outlined,
+                                            Colors.red,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                           const SizedBox(height: 16),
 
                           // Action Buttons
@@ -1044,6 +1111,39 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   String _formatDate(DateTime date) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${date.day} ${months[date.month - 1]}, ${date.year}';
+  }
+
+  /// Build a stat item for connectStats display
+  Widget _buildStatItem(String value, String label, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
   }
 
 }

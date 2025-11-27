@@ -72,9 +72,14 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   void _loadInitialData() {
-    // Fetch customer requests (posts) for drivers with location filters
+    // TERMINOLOGY CLARIFICATION:
+    // - "Leads" = Customer Requests (posted by customers, viewed by drivers as business leads)
+    // - "Trips" = Driver's own trip postings (drivers post their available trips)
+    // - Post model handles both types with different fields
+    
+    // Fetch customer requests (Leads for drivers) with location filters
     _fetchPostsWithFilters();
-    // Fetch only received connect requests for leads section (requests sent TO the driver)
+    // Fetch only received connect requests (requests sent TO the driver)
     context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
     // Fetch token balance for driver
     context.read<TokenBloc>().add(FetchTokenBalance());
