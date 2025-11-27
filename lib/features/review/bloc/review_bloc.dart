@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import '../../../model/network/result.dart';
 import '../model/review.dart';
 import '../repo/review_repo.dart';
 
@@ -176,14 +175,11 @@ class ReviewLoaded extends ReviewState {
 
 class ReviewError extends ReviewState {
   final String message;
-  final List<ValidationError>? fieldErrors;
 
-  const ReviewError({required this.message, this.fieldErrors});
-
-  bool get hasFieldErrors => fieldErrors != null && fieldErrors!.isNotEmpty;
+  const ReviewError({required this.message});
 
   @override
-  List<Object?> get props => [message, fieldErrors];
+  List<Object?> get props => [message];
 }
 
 // ==================== BLOC ====================
@@ -224,8 +220,7 @@ class ReviewBloc extends Bloc<ReviewEvent, ReviewState> {
         emit(ReviewCreated(review: result.data!));
       } else {
         emit(ReviewError(
-          message: result.message!,
-          fieldErrors: result.errors,
+          message: result.message ?? 'An error occurred',
         ));
       }
     } catch (e) {
@@ -251,8 +246,7 @@ class ReviewBloc extends Bloc<ReviewEvent, ReviewState> {
         emit(ReviewUpdated(review: result.data!));
       } else {
         emit(ReviewError(
-          message: result.message!,
-          fieldErrors: result.errors,
+          message: result.message ?? 'An error occurred',
         ));
       }
     } catch (e) {

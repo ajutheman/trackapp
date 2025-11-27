@@ -124,7 +124,7 @@ class TokenRepository {
     if (result.isSuccess) {
       return Result.success(result.data);
     } else {
-      return Result.error(result.message ?? 'Failed to purchase token plan', errors: result.errors);
+      return Result.error(result.message ?? 'Failed to purchase token plan');
     }
   }
 }

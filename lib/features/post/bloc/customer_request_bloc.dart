@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 
 import '../../home/model/post.dart';
 import '../repo/customer_request_repo.dart';
-import '../../../model/network/result.dart';
 
 /// Events for Customer Request BLoC
 abstract class CustomerRequestEvent extends Equatable {
@@ -280,25 +279,11 @@ class CustomerRequestDetailLoaded extends CustomerRequestState {
 /// Error state
 class CustomerRequestError extends CustomerRequestState {
   final String message;
-  final List<ValidationError>? fieldErrors;
 
-  const CustomerRequestError({required this.message, this.fieldErrors});
-
-  /// Check if there are field-specific validation errors
-  bool get hasFieldErrors => fieldErrors != null && fieldErrors!.isNotEmpty;
-
-  /// Get error for a specific field
-  String? getFieldError(String fieldName) {
-    if (fieldErrors == null || fieldErrors!.isEmpty) return null;
-    try {
-      return fieldErrors!.firstWhere((error) => error.field == fieldName).message;
-    } catch (e) {
-      return null;
-    }
-  }
+  const CustomerRequestError({required this.message});
 
   @override
-  List<Object?> get props => [message, fieldErrors];
+  List<Object?> get props => [message];
 }
 
 /// BLoC for managing customer request state and events
@@ -340,7 +325,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
           currentPage: event.page ?? 1,
         ));
       } else {
-        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
+        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -370,7 +355,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
           currentPage: event.page ?? 1,
         ));
       } else {
-        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
+        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -401,7 +386,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestCreated(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
+        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -433,7 +418,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestUpdated(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
+        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -452,7 +437,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestDeleted(requestId: event.requestId));
       } else {
-        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
+        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -471,7 +456,7 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestDetailLoaded(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message!, fieldErrors: result.errors));
+        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));

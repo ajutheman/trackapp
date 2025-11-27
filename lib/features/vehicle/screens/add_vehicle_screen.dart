@@ -56,8 +56,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final List<VehicleBodyType> _vehicleBodyTypes = [];
   final List<GoodsAccepted> _goodsAcceptedList = [];
   
-  // Field errors from server validation
-  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -104,25 +102,17 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 if (state is VehicleRegistrationLoading) {
                   setState(() {
                     _isLoading = true;
-                    _fieldErrors = [];
                   });
                 } else if (state is VehicleRegistrationSuccess) {
                   setState(() {
                     _isLoading = false;
-                    _fieldErrors = [];
                   });
                   _showSuccessDialog();
                 } else if (state is VehicleRegistrationFailure) {
                   setState(() {
                     _isLoading = false;
-                    _fieldErrors = state.fieldErrors ?? [];
                   });
-                  
-                  if (state.hasFieldErrors) {
-                    showValidationErrorsDialog(context, state.fieldErrors!);
-                  } else {
-                    showErrorSnackBar(context, state.error);
-                  }
+                  showErrorSnackBar(context, state.error);
                 }
               },
             ),
@@ -140,19 +130,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                           const SizedBox(height: 8),
                           const Text('Provide information about your vehicle and documents', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                           const SizedBox(height: 24),
-                          
-                          // Validation Errors Banner
-                          if (_fieldErrors.isNotEmpty)
-                            ValidationErrorsBanner(
-                              errors: _fieldErrors,
-                              onDismiss: () {
-                                setState(() {
-                                  _fieldErrors = [];
-                                });
-                              },
-                            ),
-
-                          const SizedBox(height: 16),
 
                           // Vehicle Type Selection Grid
                           const Text('Vehicle Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
@@ -467,15 +444,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     }
   }
 
-  /// Get field error for a specific field name
-  String? _getFieldError(String fieldName) {
-    if (_fieldErrors.isEmpty) return null;
-    try {
-      return _fieldErrors.firstWhere((error) => error.field == fieldName).message;
-    } catch (e) {
-      return null;
-    }
-  }
 
   Widget _buildInputField({
     required TextEditingController controller,
@@ -488,8 +456,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
     bool enabled = true,
     String? fieldName,
   }) {
-    final fieldError = fieldName != null ? _getFieldError(fieldName) : null;
-    final hasError = fieldError != null;
+    final hasError = false;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,8 +495,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
             onChanged: (_) => setState(() {}),
           ),
         ),
-        if (fieldError != null)
-          FieldErrorText(errorText: fieldError),
       ],
     );
   }

@@ -101,11 +101,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
             setState(() {
               _isSubmitting = false;
             });
-            if (state.hasFieldErrors) {
-              showValidationErrorsDialog(context, state.fieldErrors!);
-            } else {
-              showErrorSnackBar(context, state.message);
-            }
+            showErrorSnackBar(context, state.message);
           }
         },
         child: SingleChildScrollView(

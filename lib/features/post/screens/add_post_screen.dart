@@ -14,7 +14,6 @@ import 'package:truck_app/services/network/api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
 import '../../../core/utils/error_display.dart';
-import '../../../model/network/result.dart';
 
 class AddPostScreen extends StatefulWidget {
   final Post? postToEdit; // If provided, screen will be in edit mode
@@ -63,8 +62,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
   // Repositories
   late ImageUploadRepository _imageUploadRepository;
   
-  // Field errors from server validation
-  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -489,9 +486,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
             if (!mounted || route == null || !route.isCurrent) {
               return;
             }
-            setState(() {
-              _fieldErrors = [];
-            });
             final message = widget.postToEdit != null 
                 ? 'Post updated successfully!'
                 : 'Post created successfully!';
@@ -507,15 +501,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           } else if (state is CustomerRequestError) {
             final route = ModalRoute.of(context);
             if (mounted && route != null && route.isCurrent) {
-              setState(() {
-                _fieldErrors = state.fieldErrors ?? [];
-              });
-              
-              if (state.hasFieldErrors) {
-                showValidationErrorsDialog(context, state.fieldErrors!);
-              } else {
-                showErrorSnackBar(context, state.message);
-              }
+              showErrorSnackBar(context, state.message);
             }
           }
         },
@@ -532,19 +518,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Validation Errors Banner
-                  if (_fieldErrors.isNotEmpty)
-                    ValidationErrorsBanner(
-                      errors: _fieldErrors,
-                      onDismiss: () {
-                        setState(() {
-                          _fieldErrors = [];
-                        });
-                      },
-                    ),
-                  if (_fieldErrors.isNotEmpty)
-                    const SizedBox(height: 16),
-                    
                   // Pickup Location Section
                   Text(
                     'Pickup Location',
@@ -846,15 +819,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 
-  /// Get field error for a specific field name
-  String? _getFieldError(String fieldName) {
-    if (_fieldErrors.isEmpty) return null;
-    try {
-      return _fieldErrors.firstWhere((error) => error.field == fieldName).message;
-    } catch (e) {
-      return null;
-    }
-  }
 
   // Reusable input field widget
   Widget _buildInputField({
@@ -867,7 +831,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
     String? Function(String?)? validator,
     String? fieldName,
   }) {
-    final fieldError = fieldName != null ? _getFieldError(fieldName) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -885,10 +848,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: fieldError != null 
-                  ? AppColors.error 
-                  : Colors.grey.shade300, 
-              width: fieldError != null ? 1.5 : 1,
+              color: Colors.grey.shade300, 
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
@@ -916,10 +877,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
             validator: validator,
           ),
         ),
-        if (fieldError != null) ...[
-          const SizedBox(height: 4),
-          FieldErrorText(errorText: fieldError),
-        ],
       ],
     );
   }

@@ -156,7 +156,6 @@ class CustomerRequestRepository {
     } else {
       return Result.error(
         result.message ?? 'Failed to create customer request',
-        errors: result.errors,
       );
     }
   }
@@ -208,7 +207,6 @@ class CustomerRequestRepository {
     } else {
       return Result.error(
         result.message ?? 'Failed to update customer request',
-        errors: result.errors,
       );
     }
   }

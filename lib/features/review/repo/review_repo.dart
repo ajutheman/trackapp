@@ -53,7 +53,6 @@ class ReviewRepository {
     } else {
       return Result.error(
         result.message ?? 'Failed to create review',
-        errors: result.errors,
       );
     }
   }
@@ -89,7 +88,6 @@ class ReviewRepository {
     } else {
       return Result.error(
         result.message ?? 'Failed to update review',
-        errors: result.errors,
       );
     }
   }

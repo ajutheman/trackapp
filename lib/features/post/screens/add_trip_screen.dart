@@ -66,8 +66,6 @@ class _AddTripScreenState extends State<AddTripScreen> {
   double? _distance;
   int? _duration; // in minutes
   
-  // Field errors from server validation
-  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -536,15 +534,7 @@ class _AddTripScreenState extends State<AddTripScreen> {
                     // Only show error if screen is still active
                     final route = ModalRoute.of(context);
                     if (mounted && route != null && route.isCurrent) {
-                      setState(() {
-                        _fieldErrors = state.fieldErrors ?? [];
-                      });
-                      
-                      if (state.hasFieldErrors) {
-                        showValidationErrorsDialog(context, state.fieldErrors!);
-                      } else {
-                        showErrorSnackBar(context, state.message);
-                      }
+                      showErrorSnackBar(context, state.message);
                     }
                   }
                 },

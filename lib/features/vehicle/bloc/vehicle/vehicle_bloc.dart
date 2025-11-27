@@ -35,7 +35,6 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
       if (!certificateUploadResult.isSuccess) {
         emit(VehicleRegistrationFailure(
           certificateUploadResult.message ?? 'Failed to upload registration certificate.',
-          fieldErrors: certificateUploadResult.errors,
         ));
         return; // Stop execution if upload fails.
       }
@@ -45,7 +44,6 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
       if (!drivingLicenseResult.isSuccess) {
         emit(VehicleRegistrationFailure(
           drivingLicenseResult.message ?? 'Failed to upload drivingLicense.',
-          fieldErrors: drivingLicenseResult.errors,
         ));
         return; // Stop execution if upload fails.
       }
@@ -64,7 +62,6 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
         if (!result.isSuccess) {
           emit(VehicleRegistrationFailure(
             result.message ?? 'Failed to upload one or more truck images.',
-            fieldErrors: result.errors,
           ));
           return; // Stop execution if any upload fails.
         }
@@ -87,7 +84,7 @@ class VehicleBloc extends Bloc<VehicleEvent, VehicleState> {
         emit(VehicleRegistrationSuccess());
         add(GetVehicles());
       } else {
-        emit(VehicleRegistrationFailure(result.message!, fieldErrors: result.errors));
+        emit(VehicleRegistrationFailure(result.message ?? 'Vehicle registration failed'));
       }
     } catch (e) {
       // Catch any unexpected errors during the process.

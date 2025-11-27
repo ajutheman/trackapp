@@ -40,8 +40,6 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
   File? _profilePicture;
   bool _isLoading = false;
   
-  // Field errors from server validation
-  List<ValidationError> _fieldErrors = [];
 
   @override
   void initState() {
@@ -72,21 +70,14 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
           if (state is UserRegistrationLoading) {
             setState(() {
               _isLoading = true;
-              _fieldErrors = [];
             });
           } else if (state is UserRegistrationSuccess) {
             Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const MainScreenUser()), (predict) => false);
           } else if (state is UserRegistrationFailure) {
             setState(() {
               _isLoading = false;
-              _fieldErrors = state.fieldErrors ?? [];
             });
-            
-            if (state.hasFieldErrors) {
-              showValidationErrorsDialog(context, state.fieldErrors!);
-            } else {
-              showErrorSnackBar(context, state.error);
-            }
+            showErrorSnackBar(context, state.error);
           }
         },
         child: SingleChildScrollView(
@@ -96,21 +87,6 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             children: [
               const Text('Personal Information', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
               const SizedBox(height: 24),
-              
-              // Validation Errors Banner
-              if (_fieldErrors.isNotEmpty)
-                ValidationErrorsBanner(
-                  errors: _fieldErrors,
-                  onDismiss: () {
-                    setState(() {
-                      _fieldErrors = [];
-                    });
-                  },
-                ),
-              if (_fieldErrors.isNotEmpty)
-                const SizedBox(height: 16),
-                
-              const SizedBox(height: 16),
               _buildInputField(controller: _nameController, focusNode: _nameFocus, label: 'Full Name', hint: 'Enter your full name', icon: Icons.person_outline, fieldName: 'name'),
               const SizedBox(height: 20),
               _buildInputField(
@@ -167,15 +143,6 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     );
   }
 
-  /// Get field error for a specific field name
-  String? _getFieldError(String fieldName) {
-    if (_fieldErrors.isEmpty) return null;
-    try {
-      return _fieldErrors.firstWhere((error) => error.field == fieldName).message;
-    } catch (e) {
-      return null;
-    }
-  }
 
   Widget _buildInputField({
     required TextEditingController controller,
@@ -188,8 +155,7 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
     bool enabled = true,
     String? fieldName,
   }) {
-    final fieldError = fieldName != null ? _getFieldError(fieldName) : null;
-    final hasError = fieldError != null;
+    final hasError = false;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,8 +194,6 @@ class _RegisterScreenUserState extends State<RegisterScreenUser> {
             onChanged: (_) => setState(() {}),
           ),
         ),
-        if (fieldError != null)
-          FieldErrorText(errorText: fieldError),
       ],
     );
   }

@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 
 import '../../model/vehicle.dart';
-import '../../../../model/network/result.dart';
 
 /// Abstract base class for all vehicle-related states.
 abstract class VehicleState extends Equatable {
@@ -23,26 +22,12 @@ class VehicleRegistrationSuccess extends VehicleState {}
 /// State indicating that vehicle registration failed.
 class VehicleRegistrationFailure extends VehicleState {
   final String error;
-  final List<ValidationError>? fieldErrors;
 
   /// Constructor for VehicleRegistrationFailure state.
-  const VehicleRegistrationFailure(this.error, {this.fieldErrors});
-
-  /// Check if there are field-specific validation errors
-  bool get hasFieldErrors => fieldErrors != null && fieldErrors!.isNotEmpty;
-
-  /// Get error for a specific field
-  String? getFieldError(String fieldName) {
-    if (fieldErrors == null || fieldErrors!.isEmpty) return null;
-    try {
-      return fieldErrors!.firstWhere((error) => error.field == fieldName).message;
-    } catch (e) {
-      return null;
-    }
-  }
+  const VehicleRegistrationFailure(this.error);
 
   @override
-  List<Object?> get props => [error, fieldErrors];
+  List<Object?> get props => [error];
 }
 
 class VehicleListLoading extends VehicleState {}

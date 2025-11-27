@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 
 import '../model/post.dart';
 import '../repo/posts_repo.dart';
-import '../../../model/network/result.dart';
 
 /// Events for Posts BLoC
 abstract class PostsEvent extends Equatable {
@@ -355,25 +354,11 @@ class PostDeleted extends PostsState {
 /// Error state
 class PostsError extends PostsState {
   final String message;
-  final List<ValidationError>? fieldErrors;
 
-  const PostsError({required this.message, this.fieldErrors});
-
-  /// Check if there are field-specific validation errors
-  bool get hasFieldErrors => fieldErrors != null && fieldErrors!.isNotEmpty;
-
-  /// Get error for a specific field
-  String? getFieldError(String fieldName) {
-    if (fieldErrors == null || fieldErrors!.isEmpty) return null;
-    try {
-      return fieldErrors!.firstWhere((error) => error.field == fieldName).message;
-    } catch (e) {
-      return null;
-    }
-  }
+  const PostsError({required this.message});
 
   @override
-  List<Object?> get props => [message, fieldErrors];
+  List<Object?> get props => [message];
 }
 
 /// BLoC for managing posts/trips state and events
@@ -408,7 +393,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostsLoaded(posts: result.data!, hasMore: result.data!.length >= (event.limit ?? 10), currentPage: event.page ?? 1));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -432,7 +417,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(UserPostsLoaded(posts: result.data!, hasMore: result.data!.length >= (event.limit ?? 10), currentPage: event.page ?? 1));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -448,7 +433,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostLoaded(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -487,7 +472,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostCreated(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -528,7 +513,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostUpdated(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -544,7 +529,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostDeleted(postId: event.postId));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));
@@ -560,7 +545,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
       if (result.isSuccess) {
         emit(PostUpdated(post: result.data!));
       } else {
-        emit(PostsError(message: result.message!, fieldErrors: result.errors));
+        emit(PostsError(message: result.message ?? 'An error occurred'));
       }
     } catch (e) {
       emit(PostsError(message: 'An error occurred: ${e.toString()}'));

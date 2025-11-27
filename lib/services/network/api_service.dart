@@ -82,51 +82,76 @@ class ApiService {
         return Result.success(data['data'], message: data['message']);
       }
       // Handle validation errors even in success status codes
-      final errors = _extractValidationErrors(data);
-      return Result.error(
-        data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
-        errors: errors,
-      );
+      final errorMessage = _extractErrorMessage(data);
+      return Result.error(errorMessage);
     }
 
-    // Handle error responses with validation errors
-    final errors = _extractValidationErrors(data);
-    return Result.error(
-      data is Map ? (data['message'] ?? 'HTTP Error: ${response.statusCode}') : 'HTTP Error: ${response.statusCode}',
-      errors: errors,
-    );
+    // Handle error responses
+    final errorMessage = _extractErrorMessage(data, response.statusCode);
+    return Result.error(errorMessage);
   }
 
   Result<dynamic> _handleError(DioException e) {
     print(e.response?.data);
     try {
       final data = e.response?.data;
-      final message = data is Map ? (data['message'] ?? 'HTTP Error: ${e.response?.statusCode}') : 'HTTP Error: ${e.response?.statusCode}';
-      final errors = _extractValidationErrors(data);
-      return Result.error(message, errors: errors);
+      final errorMessage = _extractErrorMessage(data, e.response?.statusCode);
+      return Result.error(errorMessage);
     } catch (exceptionError) {
       return Result.error('Network Parse Error: $exceptionError');
     }
   }
 
-  /// Extract validation errors from response data
-  List<ValidationError>? _extractValidationErrors(dynamic data) {
-    if (data is! Map) return null;
-    
+  /// Extract error message from response data, combining validation errors if present
+  String _extractErrorMessage(dynamic data, [int? statusCode]) {
+    if (data is! Map) {
+      return statusCode != null ? 'HTTP Error: $statusCode' : 'Unknown error';
+    }
+
+    // Get main message
+    String mainMessage = data['message'] ?? (statusCode != null ? 'HTTP Error: $statusCode' : 'Unknown error');
+
+    // If there are validation errors, combine them with the main message
     final errorsData = data['errors'];
-    if (errorsData == null) return null;
-    
-    if (errorsData is List) {
-      try {
-        return errorsData
-            .map((error) => ValidationError.fromJson(error as Map<String, dynamic>))
-            .toList();
-      } catch (e) {
-        print('Error parsing validation errors: $e');
-        return null;
+    if (errorsData != null) {
+      List<String> errorMessages = [];
+      
+      if (errorsData is List) {
+        // Handle list format: [{field: "email", message: "Invalid email"}]
+        for (var error in errorsData) {
+          if (error is Map) {
+            final errorMsg = error['message'] ?? '';
+            if (errorMsg.isNotEmpty) {
+              errorMessages.add(errorMsg);
+            }
+          }
+        }
+      } else if (errorsData is Map) {
+        // Handle map format: {email: "Invalid email", password: "Too short"}
+        errorsData.forEach((key, value) {
+          if (value is String) {
+            errorMessages.add(value);
+          } else if (value is List) {
+            // Handle array of messages per field
+            for (var msg in value) {
+              if (msg is String && msg.isNotEmpty) {
+                errorMessages.add(msg);
+              }
+            }
+          }
+        });
+      }
+
+      if (errorMessages.isNotEmpty) {
+        // Combine main message with validation errors
+        if (errorMessages.length == 1) {
+          return errorMessages.first;
+        } else {
+          return '$mainMessage\n\n${errorMessages.join('\n')}';
+        }
       }
     }
-    
-    return null;
+
+    return mainMessage;
   }
 }
