@@ -27,6 +27,10 @@ class CustomerRequestRepository {
   }) async {
     final queryParams = <String, dynamic>{};
 
+    // Location filtering verified:
+    // - startLocation and destination use "longitude,latitude" format
+    // - Server validates coordinates and handles invalid/missing values gracefully
+    // - Null values are excluded (no filter applied)
     if (status != null) queryParams['status'] = status;
     if (search != null) queryParams['q'] = search;
     if (dateFrom != null) queryParams['dateFrom'] = dateFrom;

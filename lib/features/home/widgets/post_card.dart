@@ -5,11 +5,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../services/local/local_services.dart';
 import '../model/post.dart';
 import '../bloc/posts_bloc.dart';
+import '../widgets/profile_summary_widget.dart';
 import '../../post/screens/trip_detail_screen.dart';
 import '../../post/bloc/customer_request_bloc.dart';
 import '../../connect/utils/connect_request_helper.dart';
 import '../../connect/bloc/connect_request_bloc.dart';
 import '../../connect/model/connect_request.dart';
+import '../../review/screens/reviews_list_screen.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -95,6 +97,52 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
     
     return false;
+  }
+
+  /// Determines if profile should be shown
+  bool _shouldShowProfile() {
+    if (_isLoadingUserType) return false;
+    
+    final isTrip = _isTrip();
+    
+    // Show driver profile for trips (when viewed by customers)
+    if (isTrip && _isDriver == false && widget.post.tripAddedBy != null) {
+      return true;
+    }
+    
+    // Show customer profile for leads (when viewed by drivers)
+    if (!isTrip && _isDriver == true && widget.post.userId.isNotEmpty) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// Gets the user ID for profile display
+  String _getProfileUserId() {
+    if (_isTrip()) {
+      return widget.post.tripAddedBy?.id ?? '';
+    } else {
+      return widget.post.userId;
+    }
+  }
+
+  /// Gets the user name for profile display
+  String _getProfileUserName() {
+    if (_isTrip()) {
+      return widget.post.tripAddedBy?.name ?? widget.post.userName ?? 'Driver';
+    } else {
+      return widget.post.userName ?? widget.post.user?.name ?? 'Customer';
+    }
+  }
+
+  /// Gets the profile picture URL
+  String? _getProfilePictureUrl() {
+    if (_isTrip()) {
+      return widget.post.tripAddedBy?.profilePictureUrl;
+    } else {
+      return widget.post.user?.profilePictureUrl;
+    }
   }
 
   /// Gets the recipient ID and name from the post
@@ -522,6 +570,33 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Profile Summary Section
+                    if (_shouldShowProfile())
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                        child: ProfileSummaryWidget(
+                          userId: _getProfileUserId(),
+                          userName: _getProfileUserName(),
+                          profilePictureUrl: _getProfilePictureUrl(),
+                          userRole: _isTrip() ? 'driver' : 'customer',
+                          onTap: () {
+                            final userId = _getProfileUserId();
+                            if (userId.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ReviewsListScreen(
+                                    userId: userId,
+                                    showSummary: true,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    if (_shouldShowProfile())
+                      const SizedBox(height: 12),
                     // Header with Route Information
                     Container(
                       padding: const EdgeInsets.all(20),

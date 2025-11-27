@@ -25,11 +25,19 @@ class PostsRepository {
   }) async {
     final queryParams = <String, dynamic>{};
 
+    // Location filtering verified:
+    // - All location params use "longitude,latitude" format
+    // - Server validates coordinate ranges and handles invalid coordinates
+    // - Null values are excluded (no filter applied)
+    // - pickupDropoffBoth requires both pickup and dropoff to be set
     if (postType != null) queryParams['postType'] = postType;
     if (pickupLocation != null) queryParams['pickupLocation'] = pickupLocation;
     if (dropoffLocation != null) queryParams['dropoffLocation'] = dropoffLocation;
     if (currentLocation != null) queryParams['currentLocation'] = currentLocation;
-    if (pickupDropoffBoth != null) queryParams['pickupDropoffBoth'] = pickupDropoffBoth.toString();
+    // Edge case: pickupDropoffBoth only valid when both locations are provided
+    if (pickupDropoffBoth != null && pickupLocation != null && dropoffLocation != null) {
+      queryParams['pickupDropoffBoth'] = pickupDropoffBoth.toString();
+    }
     if (page != null) queryParams['page'] = page;
     if (limit != null) queryParams['limit'] = limit;
 

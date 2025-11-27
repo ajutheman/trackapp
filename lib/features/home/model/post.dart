@@ -109,8 +109,17 @@ class User {
   final String name;
   final String phone;
   final String email;
+  final String? profilePictureUrl;
+  final String? profilePictureId;
 
-  User({required this.id, required this.name, required this.phone, required this.email});
+  User({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.email,
+    this.profilePictureUrl,
+    this.profilePictureId,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) {
     // Helper to extract string value from string or object
@@ -121,16 +130,38 @@ class User {
       return value.toString();
     }
 
+    // Helper to extract optional string value
+    String? extractOptionalString(dynamic value, String? field) {
+      if (value == null) return null;
+      if (value is String) return value.isEmpty ? null : value;
+      if (value is Map && field != null) {
+        final result = value[field]?.toString();
+        return result != null && result.isNotEmpty ? result : null;
+      }
+      return null;
+    }
+
     return User(
       id: extractString(json['_id'], '_id'),
       name: extractString(json['name'], 'name'),
       phone: extractString(json['phone'], 'phone'),
       email: extractString(json['email'], 'email'),
+      profilePictureUrl: extractOptionalString(json['profilePicture'], 'url') ??
+          (json['profilePictureUrl'] is String ? json['profilePictureUrl'] as String? : null),
+      profilePictureId: extractOptionalString(json['profilePicture'], '_id') ??
+          (json['profilePictureId'] is String ? json['profilePictureId'] as String? : null),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'_id': id, 'name': name, 'phone': phone, 'email': email};
+    return {
+      '_id': id,
+      'name': name,
+      'phone': phone,
+      'email': email,
+      if (profilePictureUrl != null) 'profilePictureUrl': profilePictureUrl,
+      if (profilePictureId != null) 'profilePictureId': profilePictureId,
+    };
   }
 }
 
