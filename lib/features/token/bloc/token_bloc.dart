@@ -41,6 +41,19 @@ class RefreshTokenBalance extends TokenEvent {
   const RefreshTokenBalance();
 }
 
+class FetchTokenPlans extends TokenEvent {
+  const FetchTokenPlans();
+}
+
+class PurchaseTokenPlan extends TokenEvent {
+  final String planId;
+
+  const PurchaseTokenPlan({required this.planId});
+
+  @override
+  List<Object?> get props => [planId];
+}
+
 // ==================== STATES ====================
 
 abstract class TokenState extends Equatable {
@@ -96,6 +109,30 @@ class TokenError extends TokenState {
   List<Object?> get props => [message];
 }
 
+class TokenPlansLoaded extends TokenState {
+  final List<TokenPlan> plans;
+
+  const TokenPlansLoaded({required this.plans});
+
+  @override
+  List<Object?> get props => [plans];
+}
+
+class TokenPurchaseSuccess extends TokenState {
+  final double newBalance;
+  final int tokensCredited;
+  final String planName;
+
+  const TokenPurchaseSuccess({
+    required this.newBalance,
+    required this.tokensCredited,
+    required this.planName,
+  });
+
+  @override
+  List<Object?> get props => [newBalance, tokensCredited, planName];
+}
+
 // ==================== BLOC ====================
 
 class TokenBloc extends Bloc<TokenEvent, TokenState> {
@@ -106,6 +143,8 @@ class TokenBloc extends Bloc<TokenEvent, TokenState> {
     on<FetchLeadTokenUsage>(_onFetchLeadTokenUsage);
     on<FetchTokenTransactions>(_onFetchTokenTransactions);
     on<RefreshTokenBalance>(_onRefreshTokenBalance);
+    on<FetchTokenPlans>(_onFetchTokenPlans);
+    on<PurchaseTokenPlan>(_onPurchaseTokenPlan);
   }
 
   Future<void> _onFetchTokenBalance(
@@ -181,6 +220,51 @@ class TokenBloc extends Bloc<TokenEvent, TokenState> {
 
       if (result.isSuccess) {
         emit(TokenBalanceLoaded(wallet: result.data!));
+      } else {
+        emit(TokenError(message: result.message!));
+      }
+    } catch (e) {
+      emit(TokenError(message: 'An error occurred: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onFetchTokenPlans(
+    FetchTokenPlans event,
+    Emitter<TokenState> emit,
+  ) async {
+    emit(TokenLoading());
+
+    try {
+      final result = await repository.getTokenPlans();
+
+      if (result.isSuccess) {
+        emit(TokenPlansLoaded(plans: result.data!));
+      } else {
+        emit(TokenError(message: result.message!));
+      }
+    } catch (e) {
+      emit(TokenError(message: 'An error occurred: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onPurchaseTokenPlan(
+    PurchaseTokenPlan event,
+    Emitter<TokenState> emit,
+  ) async {
+    emit(TokenLoading());
+
+    try {
+      final result = await repository.purchaseTokenPlan(planId: event.planId);
+
+      if (result.isSuccess) {
+        final data = result.data as Map<String, dynamic>;
+        emit(TokenPurchaseSuccess(
+          newBalance: (data['walletBalance'] ?? 0).toDouble(),
+          tokensCredited: data['tokensCredited'] ?? 0,
+          planName: data['plan']?['name'] ?? 'Token Plan',
+        ));
+        // Refresh balance after purchase
+        add(const FetchTokenBalance());
       } else {
         emit(TokenError(message: result.message!));
       }

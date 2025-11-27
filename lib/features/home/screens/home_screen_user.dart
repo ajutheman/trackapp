@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/constants/app_images.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/loading_skeletons.dart';
 import '../../notification/screen/notification_screen.dart';
 import '../../search/screens/search_screen.dart';
 import '../model/post.dart';
@@ -653,18 +654,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         ],
         const SizedBox(height: 16),
         if (isLoading)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: Column(
-                children: [
-                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-                  const SizedBox(height: 16),
-                  Text('Loading trips...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-          )
+          const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
         else if (_trips.isEmpty)
           Center(
             child: Container(
@@ -750,18 +740,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         ),
         const SizedBox(height: 16),
         if (isLoading)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: Column(
-                children: [
-                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-                  const SizedBox(height: 16),
-                  Text('Loading posts...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-          )
+          const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
         else if (state is CustomerRequestError)
           Center(
             child: Container(

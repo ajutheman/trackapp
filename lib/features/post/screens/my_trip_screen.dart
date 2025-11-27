@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
+import 'package:truck_app/core/widgets/loading_skeletons.dart';
 import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/home/widgets/post_card.dart';
@@ -172,7 +173,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
         },
         builder: (context, state) {
           if (state is PostsLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton());
           }
 
           if (state is PostsError) {

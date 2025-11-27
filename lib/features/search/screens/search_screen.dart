@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
+import 'package:truck_app/core/widgets/loading_skeletons.dart';
 import 'package:truck_app/features/home/bloc/posts_bloc.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/home/widgets/post_card.dart';
@@ -516,16 +517,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildResultsSection() {
     if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-            const SizedBox(height: 16),
-            Text('Searching trips...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      );
+      return const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton());
     }
 
     if (_errorMessage != null) {

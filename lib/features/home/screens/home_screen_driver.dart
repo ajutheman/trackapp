@@ -5,6 +5,7 @@ import 'package:geocoding/geocoding.dart';
 
 import '../../../core/constants/app_images.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/loading_skeletons.dart';
 import '../../connect/widgets/connect_card.dart';
 import '../../post/bloc/customer_request_bloc.dart';
 import '../model/post.dart';
@@ -510,18 +511,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
         ),
         const SizedBox(height: 16),
         if (_isLoading)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: Column(
-                children: [
-                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary), strokeWidth: 3),
-                  const SizedBox(height: 16),
-                  Text('Loading posts...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-          )
+          const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
         else if (_errorMessage != null)
           Center(
             child: Container(

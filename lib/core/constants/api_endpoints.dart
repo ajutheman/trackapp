@@ -43,7 +43,9 @@ class ApiEndpoints {
   // Token endpoints
   static const String tokenBalance = 'api/v1/tokens/wallet/balance';
   static const String leadTokenUsage = 'api/v1/tokens/usage/lead';
-  static const String tokenTransactions = 'api/v1/tokens/transactions'; // TODO: Implement on server
+  static const String tokenTransactions = 'api/v1/tokens/transactions';
+  static const String tokenPlans = 'api/v1/tokens/plans';
+  static const String purchaseTokens = 'api/v1/tokens/purchase';
 
   // Booking endpoints
   static const String bookings = 'api/v1/bookings';
@@ -56,4 +58,12 @@ class ApiEndpoints {
   static const String getCustomerRequestById = 'api/v1/customer-requests';
   static const String updateCustomerRequest = 'api/v1/customer-requests';
   static const String deleteCustomerRequest = 'api/v1/customer-requests';
+
+  // Review endpoints
+  static const String createReview = 'api/v1/reviews';
+  static const String updateReview = 'api/v1/reviews';
+  static const String getReviewById = 'api/v1/reviews';
+  static const String getReviewsByBooking = 'api/v1/reviews/booking';
+  static const String getReviewsByUser = 'api/v1/reviews/user';
+  static const String getReviewSummary = 'api/v1/reviews/summary';
 }

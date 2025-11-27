@@ -173,3 +173,70 @@ class TokenBand {
   }
 }
 
+class TokenPlan {
+  final String? id;
+  final String name;
+  final String? description;
+  final int tokensAmount;
+  final int priceMinor; // Price in minor currency units (paise for INR)
+  final String currency;
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  TokenPlan({
+    this.id,
+    required this.name,
+    this.description,
+    required this.tokensAmount,
+    required this.priceMinor,
+    this.currency = 'INR',
+    this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory TokenPlan.fromJson(Map<String, dynamic> json) {
+    return TokenPlan(
+      id: json['_id'] ?? json['id'],
+      name: json['name'] ?? '',
+      description: json['description'],
+      tokensAmount: json['tokensAmount'] ?? 0,
+      priceMinor: json['priceMinor'] ?? 0,
+      currency: json['currency'] ?? 'INR',
+      isActive: json['isActive'] ?? true,
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) '_id': id,
+      'name': name,
+      if (description != null) 'description': description,
+      'tokensAmount': tokensAmount,
+      'priceMinor': priceMinor,
+      'currency': currency,
+      'isActive': isActive,
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    };
+  }
+
+  /// Get formatted price (e.g., "₹100.00" for INR)
+  String getFormattedPrice() {
+    final major = priceMinor / 100;
+    if (currency == 'INR') {
+      return '₹${major.toStringAsFixed(2)}';
+    }
+    return '$currency ${major.toStringAsFixed(2)}';
+  }
+
+  /// Get price per token
+  double getPricePerToken() {
+    if (tokensAmount == 0) return 0;
+    return (priceMinor / 100) / tokensAmount;
+  }
+}
+

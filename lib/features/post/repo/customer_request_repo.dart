@@ -150,7 +150,10 @@ class CustomerRequestRepository {
         return Result.error('Failed to parse created customer request: ${e.toString()}');
       }
     } else {
-      return Result.error(result.message ?? 'Failed to create customer request');
+      return Result.error(
+        result.message ?? 'Failed to create customer request',
+        errors: result.errors,
+      );
     }
   }
 
@@ -199,7 +202,10 @@ class CustomerRequestRepository {
         return Result.error('Failed to parse updated customer request: ${e.toString()}');
       }
     } else {
-      return Result.error(result.message ?? 'Failed to update customer request');
+      return Result.error(
+        result.message ?? 'Failed to update customer request',
+        errors: result.errors,
+      );
     }
   }
 

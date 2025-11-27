@@ -6,6 +6,7 @@ import 'package:truck_app/core/theme/app_colors.dart';
 import 'package:truck_app/features/token/bloc/token_bloc.dart';
 import 'package:truck_app/features/token/widgets/token_balance_widget.dart';
 import 'package:truck_app/features/token/screens/wallet_screen.dart';
+import 'package:truck_app/features/token/screens/purchase_tokens_screen.dart';
 
 class TokenScreen extends StatefulWidget {
   const TokenScreen({super.key});
@@ -98,12 +99,9 @@ class _TokenScreenState extends State<TokenScreen> {
                     subtitle: 'Buy tokens',
                     color: AppColors.success,
                     onTap: () {
-                      // TODO: Navigate to purchase screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Token purchase feature coming soon!'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PurchaseTokensScreen()),
                       );
                     },
                   ),

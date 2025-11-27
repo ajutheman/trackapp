@@ -88,5 +88,44 @@ class TokenRepository {
       return Result.error(result.message ?? 'Failed to fetch transactions');
     }
   }
+
+  /// Get all active token purchase plans
+  Future<Result<List<TokenPlan>>> getTokenPlans() async {
+    final result = await apiService.get(
+      ApiEndpoints.tokenPlans,
+      isTokenRequired: true,
+    );
+
+    if (result.isSuccess) {
+      try {
+        final List<dynamic> plansData = result.data is List
+            ? result.data
+            : (result.data['plans'] ?? result.data['data'] ?? []);
+        final List<TokenPlan> plans = plansData
+            .map((planJson) => TokenPlan.fromJson(planJson as Map<String, dynamic>))
+            .toList();
+        return Result.success(plans);
+      } catch (e) {
+        return Result.error('Failed to parse token plans: ${e.toString()}');
+      }
+    } else {
+      return Result.error(result.message ?? 'Failed to fetch token plans');
+    }
+  }
+
+  /// Purchase a token plan
+  Future<Result<dynamic>> purchaseTokenPlan({required String planId}) async {
+    final result = await apiService.post(
+      ApiEndpoints.purchaseTokens,
+      body: {'planId': planId},
+      isTokenRequired: true,
+    );
+
+    if (result.isSuccess) {
+      return Result.success(result.data);
+    } else {
+      return Result.error(result.message ?? 'Failed to purchase token plan', errors: result.errors);
+    }
+  }
 }
 

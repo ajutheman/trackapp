@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/core/theme/app_colors.dart';
+import 'package:truck_app/core/widgets/loading_skeletons.dart';
 import 'package:truck_app/features/post/bloc/customer_request_bloc.dart';
 import 'package:truck_app/features/home/model/post.dart';
 import 'package:truck_app/features/home/widgets/post_card.dart';
@@ -158,7 +159,7 @@ class _MyPostScreenState extends State<MyPostScreen> {
         },
         builder: (context, state) {
           if (state is CustomerRequestLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton());
           }
 
           if (state is CustomerRequestError) {

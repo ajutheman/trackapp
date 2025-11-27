@@ -560,6 +560,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     label: 'Address',
                     hint: 'e.g., Thiruvananthapuram, Kerala',
                     icon: Icons.location_on_outlined,
+                    fieldName: 'pickupLocation.address',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter pickup location address';
@@ -605,6 +606,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     label: 'Address',
                     hint: 'e.g., Kanyakumari, Tamil Nadu',
                     icon: Icons.flag_outlined,
+                    fieldName: 'dropoffLocation.address',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter dropoff location address';
@@ -766,6 +768,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     label: 'Title',
                     hint: 'e.g., Need Transport for Furniture',
                     icon: Icons.title_outlined,
+                    fieldName: 'title',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a title for your post';
@@ -786,6 +789,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     hint: 'Provide details about your shipment...',
                     icon: Icons.description_outlined,
                     maxLines: 4,
+                    fieldName: 'description',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a description for your post';
@@ -861,7 +865,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     String? Function(String?)? validator,
+    String? fieldName,
   }) {
+    final fieldError = fieldName != null ? _getFieldError(fieldName) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -878,7 +884,12 @@ class _AddPostScreenState extends State<AddPostScreen> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300, width: 1),
+            border: Border.all(
+              color: fieldError != null 
+                  ? AppColors.error 
+                  : Colors.grey.shade300, 
+              width: fieldError != null ? 1.5 : 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -905,6 +916,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
             validator: validator,
           ),
         ),
+        if (fieldError != null) ...[
+          const SizedBox(height: 4),
+          FieldErrorText(error: fieldError),
+        ],
       ],
     );
   }
