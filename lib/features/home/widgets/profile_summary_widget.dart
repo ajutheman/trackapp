@@ -32,23 +32,32 @@ class _ProfileSummaryWidgetState extends State<ProfileSummaryWidget> {
   bool _hasFetched = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Fetch review summary when widget is first built
-    if (widget.userId.isNotEmpty) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Fetch review summary when widget is inserted into tree
+    // didChangeDependencies is called after the widget is inserted and has access to providers
+    if (widget.userId.isNotEmpty && !_hasFetched) {
       _fetchReviewSummary();
     }
   }
 
   void _fetchReviewSummary() {
-    if (_hasFetched) return; // Prevent duplicate fetches
+    // Prevent duplicate fetches and avoid API calls for empty userId
+    if (_hasFetched || widget.userId.isEmpty) return;
     
-    setState(() {
-      _isLoading = true;
-      _hasFetched = true;
-    });
-
-    context.read<ReviewBloc>().add(FetchReviewSummary(userId: widget.userId));
+    // Check if ReviewBloc is available in the context
+    try {
+      final reviewBloc = context.read<ReviewBloc>();
+      setState(() {
+        _isLoading = true;
+        _hasFetched = true;
+      });
+      reviewBloc.add(FetchReviewSummary(userId: widget.userId));
+    } catch (e) {
+      // If bloc is not available, just skip fetching
+      // This can happen if the widget is used outside the provider tree
+      debugPrint('ReviewBloc not available: $e');
+    }
   }
 
   @override
@@ -61,13 +70,13 @@ class _ProfileSummaryWidgetState extends State<ProfileSummaryWidget> {
       },
       listener: (context, state) {
         if (state is ReviewSummaryLoaded) {
-          // Update review summary when loaded
-          // Note: In a production app, you might want to track which user ID
-          // the summary is for to avoid updating with wrong user's data
-          setState(() {
-            _reviewSummary = state.summary;
-            _isLoading = false;
-          });
+          // Only update if this summary is for our user
+          if (state.userId == widget.userId) {
+            setState(() {
+              _reviewSummary = state.summary;
+              _isLoading = false;
+            });
+          }
         } else if (state is ReviewError) {
           setState(() {
             _isLoading = false;
@@ -176,17 +185,32 @@ class _ProfileSummaryWidgetState extends State<ProfileSummaryWidget> {
       imageUrl = '$baseUrl/$imageUrl';
     }
 
+    // CircleAvatar requires onBackgroundImageError to be null if backgroundImage is null
+    if (imageUrl == null) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: AppColors.secondary.withOpacity(0.1),
+        child: Icon(
+          Icons.person_rounded,
+          size: 24,
+          color: AppColors.secondary,
+        ),
+      );
+    }
+
     return CircleAvatar(
       radius: 24,
       backgroundColor: AppColors.secondary.withOpacity(0.1),
-      backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-      child: imageUrl == null
-          ? Icon(
-              Icons.person_rounded,
-              size: 24,
-              color: AppColors.secondary,
-            )
-          : null,
+      backgroundImage: NetworkImage(imageUrl),
+      onBackgroundImageError: (exception, stackTrace) {
+        // Handle image load errors gracefully - fallback icon will be shown
+        // No need to setState as the child widget handles the fallback
+      },
+      child: Icon(
+        Icons.person_rounded,
+        size: 24,
+        color: AppColors.secondary,
+      ),
     );
   }
 }

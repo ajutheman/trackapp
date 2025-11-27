@@ -173,7 +173,7 @@ class _MyTripScreenState extends State<MyTripScreen> {
         },
         builder: (context, state) {
           if (state is PostsLoading) {
-            return const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton());
+            return ListSkeleton(itemCount: 3, itemBuilder: () => const PostCardSkeleton());
           }
 
           if (state is PostsError) {

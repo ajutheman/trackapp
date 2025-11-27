@@ -159,7 +159,7 @@ class _MyPostScreenState extends State<MyPostScreen> {
         },
         builder: (context, state) {
           if (state is CustomerRequestLoading) {
-            return const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton());
+            return ListSkeleton(itemCount: 3, itemBuilder: () => const PostCardSkeleton());
           }
 
           if (state is CustomerRequestError) {

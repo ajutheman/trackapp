@@ -398,6 +398,7 @@ class Post {
   final List<String>? documents; // Document IDs
   final DateTime? pickupTime;
   final ConnectStats? connectStats; // Connection statistics for customer requests
+  final User? user; // For customer requests, the user who created it
 
   Post({
     this.id,
@@ -439,6 +440,7 @@ class Post {
     this.documents,
     this.pickupTime,
     this.connectStats,
+    this.user,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -551,6 +553,9 @@ class Post {
         connectStats: json['connectStats'] != null && json['connectStats'] is Map
             ? ConnectStats.fromJson(json['connectStats'] as Map<String, dynamic>)
             : null,
+        user: json['user'] != null && json['user'] is Map && !isTrip
+            ? User.fromJson(json['user'] as Map<String, dynamic>)
+            : null,
       );
     } catch (e) {
       print('Error parsing Post from JSON: $e');
@@ -599,6 +604,7 @@ class Post {
       if (documents != null) 'documents': documents,
       if (pickupTime != null) 'pickupTime': pickupTime!.toIso8601String(),
       if (connectStats != null) 'connectStats': connectStats!.toJson(),
+      if (user != null) 'user': user!.toJson(),
     };
   }
 
@@ -642,6 +648,8 @@ class Post {
     List<String>? images,
     List<String>? documents,
     DateTime? pickupTime,
+    ConnectStats? connectStats,
+    User? user,
   }) {
     return Post(
       id: id ?? this.id,
@@ -682,6 +690,8 @@ class Post {
       images: images ?? this.images,
       documents: documents ?? this.documents,
       pickupTime: pickupTime ?? this.pickupTime,
+      connectStats: connectStats ?? this.connectStats,
+      user: user ?? this.user,
     );
   }
 }

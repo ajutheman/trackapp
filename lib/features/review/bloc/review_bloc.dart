@@ -154,11 +154,15 @@ class ReviewsLoaded extends ReviewState {
 
 class ReviewSummaryLoaded extends ReviewState {
   final ReviewSummary summary;
+  final String userId;
 
-  const ReviewSummaryLoaded({required this.summary});
+  const ReviewSummaryLoaded({
+    required this.summary,
+    required this.userId,
+  });
 
   @override
-  List<Object?> get props => [summary];
+  List<Object?> get props => [summary, userId];
 }
 
 class ReviewLoaded extends ReviewState {
@@ -308,7 +312,10 @@ class ReviewBloc extends Bloc<ReviewEvent, ReviewState> {
       final result = await repository.getReviewSummary(event.userId);
 
       if (result.isSuccess) {
-        emit(ReviewSummaryLoaded(summary: result.data!));
+        emit(ReviewSummaryLoaded(
+          summary: result.data!,
+          userId: event.userId,
+        ));
       } else {
         emit(ReviewError(message: result.message!));
       }

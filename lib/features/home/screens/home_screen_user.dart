@@ -654,7 +654,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         ],
         const SizedBox(height: 16),
         if (isLoading)
-          const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
+           ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
         else if (_trips.isEmpty)
           Center(
             child: Container(
@@ -740,7 +740,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
         ),
         const SizedBox(height: 16),
         if (isLoading)
-          const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
+           ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton())
         else if (state is CustomerRequestError)
           Center(
             child: Container(

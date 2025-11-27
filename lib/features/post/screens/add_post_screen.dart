@@ -918,7 +918,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         ),
         if (fieldError != null) ...[
           const SizedBox(height: 4),
-          FieldErrorText(error: fieldError),
+          FieldErrorText(errorText: fieldError),
         ],
       ],
     );

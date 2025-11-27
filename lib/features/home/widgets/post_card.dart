@@ -111,7 +111,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     }
     
     // Show customer profile for leads (when viewed by drivers)
-    if (!isTrip && _isDriver == true && widget.post.userId.isNotEmpty) {
+    if (!isTrip && _isDriver == true && (widget.post.userId?.isNotEmpty ?? false)) {
       return true;
     }
     
@@ -123,7 +123,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     if (_isTrip()) {
       return widget.post.tripAddedBy?.id ?? '';
     } else {
-      return widget.post.userId;
+      return widget.post.userId ?? '';
     }
   }
 

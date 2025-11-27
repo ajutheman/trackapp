@@ -247,7 +247,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     IconButton(
                       icon: Icon(Icons.filter_list_rounded, color: AppColors.secondary),
                       onPressed: _showFilterDialog,
-                    ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),

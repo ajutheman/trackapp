@@ -517,7 +517,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildResultsSection() {
     if (_isLoading) {
-      return const ListSkeleton(itemCount: 3, itemBuilder: () => PostCardSkeleton());
+      return ListSkeleton(itemCount: 3, itemBuilder: () => const PostCardSkeleton());
     }
 
     if (_errorMessage != null) {

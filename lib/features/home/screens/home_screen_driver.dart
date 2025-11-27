@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:geocoding/geocoding.dart';
 
 import '../../../core/constants/app_images.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/loading_skeletons.dart';
-import '../../connect/widgets/connect_card.dart';
 import '../../post/bloc/customer_request_bloc.dart';
 import '../model/post.dart';
-import '../model/connect.dart';
 import '../widgets/post_card.dart';
 import '../widgets/location_dropdown.dart';
 import '../../connect/bloc/connect_request_bloc.dart';
 import '../../connect/model/connect_request.dart';
 import '../../token/bloc/token_bloc.dart';
-import '../../token/screens/token_screen.dart';
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});
@@ -28,7 +24,6 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   List<Post> _latestPosts = [];
   List<ConnectRequest> _connectRequests = [];
   bool _isLoading = false;
-  bool _isLoadingConnections = false;
   String? _errorMessage;
 
   // Location related state
@@ -231,15 +226,10 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
           if (state is ConnectRequestsLoaded) {
             setState(() {
               _connectRequests = state.requests;
-              _isLoadingConnections = false;
-            });
-          } else if (state is ConnectRequestLoading) {
-            setState(() {
-              _isLoadingConnections = true;
             });
           } else if (state is ConnectRequestError) {
             setState(() {
-              _isLoadingConnections = false;
+              // Error state handled
             });
             // Show error message
             // if (!state.message.toLowerCase().contains('no connect')) {
@@ -252,7 +242,6 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               if (index != -1) {
                 _connectRequests[index] = state.request;
               }
-              _isLoadingConnections = false;
             });
 
             // Show success message
@@ -431,57 +420,6 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   //     ],
   //   );
   // }
-
-  // Helper method to convert ConnectRequest to Connect model for display
-  Connect _convertConnectRequestToConnect(ConnectRequest request) {
-    final String userName = request.requester?.name ?? request.recipient?.name ?? 'Unknown';
-
-    String postTitle = request.message ?? '';
-    if (request.trip != null) {
-      postTitle = request.trip!.title ?? 'Trip to ${request.trip!.destination ?? "Unknown"}';
-    } else if (request.customerRequest != null) {
-      postTitle = request.customerRequest!.details ?? 'Customer Request';
-    }
-
-    return Connect(
-      id: request.id ?? '',
-      postName: request.tripId != null ? 'Trip Request' : 'Customer Request',
-      replyUserName: userName,
-      postTitle: postTitle,
-      dateTime: request.createdAt ?? DateTime.now(),
-      status: _mapConnectRequestStatus(request.status),
-      isUser: false, // Driver view
-    );
-  }
-
-  ConnectStatus _mapConnectRequestStatus(ConnectRequestStatus status) {
-    switch (status) {
-      case ConnectRequestStatus.accepted:
-        return ConnectStatus.accepted;
-      case ConnectRequestStatus.rejected:
-        return ConnectStatus.rejected;
-      case ConnectRequestStatus.cancelled:
-        return ConnectStatus.rejected;
-      case ConnectRequestStatus.hold:
-        return ConnectStatus.hold;
-      case ConnectRequestStatus.pending:
-        return ConnectStatus.pending;
-    }
-  }
-
-  void _handleAcceptConnect(ConnectRequest request) {
-    if (request.id != null) {
-      context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'accept'));
-      // _showSnackBar('Accepted connect from ${request.requester?.name ?? "user"}');
-    }
-  }
-
-  void _handleRejectConnect(ConnectRequest request) {
-    if (request.id != null) {
-      context.read<ConnectRequestBloc>().add(RespondToConnectRequest(requestId: request.id!, action: 'reject'));
-      // _showSnackBar('Rejected connect from ${request.requester?.name ?? "user"}');
-    }
-  }
 
   Widget _buildListOfPostsSection() {
     return Column(
@@ -840,30 +778,5 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
           ),
       ],
     );
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 1)));
-  }
-
-  // Function to launch phone call
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      _showSnackBar('Could not launch $phoneNumber');
-    }
-  }
-
-  // Function to launch WhatsApp chat
-  Future<void> _launchWhatsApp(String phoneNumber) async {
-    // WhatsApp URL scheme for Android and iOS
-    final Uri whatsappUri = Uri.parse('whatsapp://send?phone=$phoneNumber');
-    if (await canLaunchUrl(whatsappUri)) {
-      await launchUrl(whatsappUri);
-    } else {
-      _showSnackBar('WhatsApp is not installed or could not launch $phoneNumber');
-    }
   }
 }
