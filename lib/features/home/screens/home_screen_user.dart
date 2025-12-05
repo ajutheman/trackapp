@@ -451,7 +451,7 @@ class _HomeScreenUserState extends State<HomeScreenUser> {
           )
         else
           SizedBox(
-            height: 330,
+            height: 470,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 4),
