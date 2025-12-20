@@ -1,6 +1,7 @@
 class ApiEndpoints {
   static const String baseDevelopmentUrl = 'http://10.0.2.2:3000/';
-  static const String baseProductionUrl = 'https://truck-api-qyew.onrender.com/';
+  static const String baseProdRenderUrl = 'https://truck-api-qyew.onrender.com/';
+  static const String baseProductionUrl = 'https://api.returncargo.in/';
 
   // Toggle this to switch between development and production
   static const bool isDevelopment = false;
