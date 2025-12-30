@@ -6,6 +6,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../home/screens/home_screen_driver.dart';
 import '../../post/screens/my_trip_screen.dart';
 import '../../profile/screen/profile_screen_driver.dart';
+import '../../../core/services/notification_service.dart';
+import '../../notification/repo/notification_repository.dart';
+import '../../../di/locator.dart';
 
 class MainScreenDriver extends StatefulWidget {
   const MainScreenDriver({super.key});
@@ -27,10 +30,26 @@ class _MainScreenDriverState extends State<MainScreenDriver>
     const ProfileScreenDriver(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _syncFcmToken();
+  }
+
+  Future<void> _syncFcmToken() async {
+    final token = await NotificationService().getToken();
+    if (token != null) {
+      locator<NotificationRepository>().updateFcmToken(token);
+    }
+  }
+
   void _onItemTapped(int index) {
     if (index == 2) {
       // Handle center button (Sell)
-      Navigator.push(context, MaterialPageRoute(builder: (_) => AddTripScreen()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AddTripScreen()),
+      );
       return;
     }
     setState(() {
@@ -42,27 +61,42 @@ class _MainScreenDriverState extends State<MainScreenDriver>
   Widget build(BuildContext context) {
     // Check if keyboard is visible
     final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-    
+
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      floatingActionButton: keyboardVisible
-          ? null
-          : Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: 2)],
-                border: Border.all(color: Colors.white, width: 3),
+      floatingActionButton:
+          keyboardVisible
+              ? null
+              : Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.secondary,
+                      AppColors.secondary.withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 2,
+                    ),
+                  ],
+                  border: Border.all(color: Colors.white, width: 3),
+                ),
+                child: FloatingActionButton(
+                  onPressed: () => _onItemTapped(2),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: const Icon(Icons.add, color: Colors.white, size: 32),
+                ),
               ),
-              child: FloatingActionButton(
-                onPressed: () => _onItemTapped(2),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: const Icon(Icons.add, color: Colors.white, size: 32),
-              ),
-            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
@@ -70,15 +104,30 @@ class _MainScreenDriverState extends State<MainScreenDriver>
         color: Colors.white,
         elevation: 0,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildNavItem(Icons.home_rounded, Icons.home_outlined, 'Home', 0),
-              _buildNavItem(Icons.chat_bubble_rounded, Icons.chat_bubble_outline, 'Connections', 1),
+              _buildNavItem(
+                Icons.chat_bubble_rounded,
+                Icons.chat_bubble_outline,
+                'Connections',
+                1,
+              ),
               const SizedBox(width: 48), // Space for FAB
-              _buildNavItem(Icons.description_rounded, Icons.description_outlined, 'My Trips', 3),
-              _buildNavItem(Icons.person_rounded, Icons.person_outline, 'Account', 4),
+              _buildNavItem(
+                Icons.description_rounded,
+                Icons.description_outlined,
+                'My Trips',
+                3,
+              ),
+              _buildNavItem(
+                Icons.person_rounded,
+                Icons.person_outline,
+                'Account',
+                4,
+              ),
             ],
           ),
         ),
@@ -86,7 +135,12 @@ class _MainScreenDriverState extends State<MainScreenDriver>
     );
   }
 
-  Widget _buildNavItem(IconData activeIcon, IconData inactiveIcon, String label, int index) {
+  Widget _buildNavItem(
+    IconData activeIcon,
+    IconData inactiveIcon,
+    String label,
+    int index,
+  ) {
     final isSelected = _selectedIndex == index;
     return Expanded(
       child: InkWell(
@@ -95,11 +149,20 @@ class _MainScreenDriverState extends State<MainScreenDriver>
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isSelected ? activeIcon : inactiveIcon, color: isSelected ? AppColors.secondary : AppColors.textSecondary, size: 26),
+            Icon(
+              isSelected ? activeIcon : inactiveIcon,
+              color: isSelected ? AppColors.secondary : AppColors.textSecondary,
+              size: 26,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, color: isSelected ? AppColors.secondary : AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color:
+                    isSelected ? AppColors.secondary : AppColors.textSecondary,
+              ),
             ),
           ],
         ),

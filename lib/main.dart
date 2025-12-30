@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/features/splash/screen/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:truck_app/core/services/notification_service.dart';
+import 'package:truck_app/firebase_options.dart';
 
 import 'bloc/bloc_providers.dart';
 import 'core/theme/app_theme.dart';
 import 'di/locator.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   setupLocator();
+
+  // Initialize Notification Service
+  await NotificationService().initialize();
 
   runApp(const GoodsApp());
 }

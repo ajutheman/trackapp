@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "772921327469",
+    "project_id": "truck-app-472fc",
+    "storage_bucket": "truck-app-472fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772921327469:android:e4780e8498ff53c05de464",
+        "android_client_info": {
+          "package_name": "com.spydo.truck_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "772921327469-fa8725q887dgl1nboks8dagoh8jpubjf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOhd35GwWxQZP_AYYqLwd0K84hr-QsBNo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "772921327469-fa8725q887dgl1nboks8dagoh8jpubjf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

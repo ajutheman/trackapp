@@ -12,6 +12,7 @@ import '../widgets/location_dropdown.dart';
 import '../../connect/bloc/connect_request_bloc.dart';
 import '../../connect/model/connect_request.dart';
 import '../../token/bloc/token_bloc.dart';
+import '../../notification/presentation/screens/notifications_screen.dart';
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});
@@ -34,13 +35,14 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   double? _fromLongitude;
   double? _toLatitude; // To location (destination)
   double? _toLongitude;
-  
+
   // Inline search state for "To" location only
   final TextEditingController _toSearchController = TextEditingController();
   final FocusNode _toFocusNode = FocusNode();
   List<Map<String, dynamic>> _toSearchResults = [];
   bool _isToSearching = false;
-  bool _isSettingSelectedLocation = false; // Flag to prevent search when setting selected location
+  bool _isSettingSelectedLocation =
+      false; // Flag to prevent search when setting selected location
 
   @override
   void initState() {
@@ -72,11 +74,13 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     // - "Leads" = Customer Requests (posted by customers, viewed by drivers as business leads)
     // - "Trips" = Driver's own trip postings (drivers post their available trips)
     // - Post model handles both types with different fields
-    
+
     // Fetch customer requests (Leads for drivers) with location filters
     _fetchPostsWithFilters();
     // Fetch only received connect requests (requests sent TO the driver)
-    context.read<ConnectRequestBloc>().add(const FetchConnectRequests(type: 'received', page: 1, limit: 10));
+    context.read<ConnectRequestBloc>().add(
+      const FetchConnectRequests(type: 'received', page: 1, limit: 10),
+    );
     // Fetch token balance for driver
     context.read<TokenBloc>().add(FetchTokenBalance());
   }
@@ -87,7 +91,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     // Edge cases handled: null coordinates are not included in API call
     String? startLocation;
     String? destination;
-    
+
     // Validate coordinates before formatting (edge case: invalid coordinates)
     if (_fromLatitude != null && _fromLongitude != null) {
       // Format: "longitude,latitude" (lng,lat)
@@ -97,7 +101,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
       // Format: "longitude,latitude" (lng,lat)
       destination = '$_toLongitude,$_toLatitude';
     }
-    
+
     // Location filtering verified:
     // - startLocation: filters customer requests by pickup location proximity (5km radius)
     // - destination: filters customer requests by dropoff location proximity (5km radius)
@@ -120,7 +124,11 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   /// Handle from location selection (from dropdown button)
-  void _handleFromLocationSelection(String location, double? latitude, double? longitude) {
+  void _handleFromLocationSelection(
+    String location,
+    double? latitude,
+    double? longitude,
+  ) {
     setState(() {
       _fromLocation = location;
       _fromLatitude = latitude;
@@ -134,10 +142,14 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
   }
 
   /// Handle to location selection (search bar)
-  void _handleToLocationSelection(String location, double? latitude, double? longitude) {
+  void _handleToLocationSelection(
+    String location,
+    double? latitude,
+    double? longitude,
+  ) {
     // Set flag to prevent listener from triggering search
     _isSettingSelectedLocation = true;
-    
+
     setState(() {
       _toLocation = location;
       _toLatitude = latitude;
@@ -175,20 +187,25 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     try {
       final locations = await locationFromAddress(query);
       final results = <Map<String, dynamic>>[];
-      
+
       for (var location in locations.take(5)) {
         try {
-          final placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+          final placemarks = await placemarkFromCoordinates(
+            location.latitude,
+            location.longitude,
+          );
           if (placemarks.isNotEmpty) {
             final place = placemarks[0];
             final addressParts = <String>[];
             if (place.locality != null && place.locality!.isNotEmpty) {
               addressParts.add(place.locality!);
             }
-            if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+            if (place.administrativeArea != null &&
+                place.administrativeArea!.isNotEmpty) {
               addressParts.add(place.administrativeArea!);
             }
-            final address = addressParts.isNotEmpty ? addressParts.join(', ') : query;
+            final address =
+                addressParts.isNotEmpty ? addressParts.join(', ') : query;
             results.add({
               'address': address,
               'latitude': location.latitude,
@@ -238,7 +255,9 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
           } else if (state is ConnectRequestResponded) {
             // Update the specific request in the list
             setState(() {
-              final index = _connectRequests.indexWhere((req) => req.id == state.request.id);
+              final index = _connectRequests.indexWhere(
+                (req) => req.id == state.request.id,
+              );
               if (index != -1) {
                 _connectRequests[index] = state.request;
               }
@@ -250,13 +269,17 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
 
             // Refresh the list after a short delay to get updated data
             Future.delayed(const Duration(milliseconds: 500), () {
-              context.read<ConnectRequestBloc>().add(const FetchConnectRequests(page: 1, limit: 10));
+              context.read<ConnectRequestBloc>().add(
+                const FetchConnectRequests(page: 1, limit: 10),
+              );
             });
           }
         },
         child: BlocListener<CustomerRequestBloc, CustomerRequestState>(
           listenWhen: (previous, current) {
-            return current is CustomerRequestsLoaded || current is CustomerRequestLoading || current is CustomerRequestError;
+            return current is CustomerRequestsLoaded ||
+                current is CustomerRequestLoading ||
+                current is CustomerRequestError;
           },
           listener: (context, state) {
             if (state is CustomerRequestsLoaded) {
@@ -307,7 +330,13 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
       titleSpacing: 0,
       scrolledUnderElevation: 0,
       flexibleSpace: Container(
-        decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white, Colors.white.withOpacity(0.95)], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.white.withOpacity(0.95)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
       ),
       title: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -315,9 +344,55 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // App Logo with animation
-            Hero(tag: 'app_logo', child: SizedBox(height: 35, child: Image.asset(AppImages.appIconWithName))),
+            Hero(
+              tag: 'app_logo',
+              child: SizedBox(
+                height: 35,
+                child: Image.asset(AppImages.appIconWithName),
+              ),
+            ),
             // From Location Button (Current Location)
-            _buildLocationButton(),
+            // From Location Button (Current Location)
+            Row(
+              children: [
+                _buildLocationButton(),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.secondary.withOpacity(0.1),
+                        AppColors.secondary.withOpacity(0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.notifications_none_rounded,
+                      color: AppColors.secondary,
+                      size: 26,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -431,27 +506,53 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.secondary.withOpacity(0.2), AppColors.secondary.withOpacity(0.1)],
+                  colors: [
+                    AppColors.secondary.withOpacity(0.2),
+                    AppColors.secondary.withOpacity(0.1),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.local_shipping_rounded, color: AppColors.secondary, size: 20),
+              child: Icon(
+                Icons.local_shipping_rounded,
+                color: AppColors.secondary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
-            Text('Leads', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+            Text(
+              'Leads',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
+            ),
             const Spacer(),
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)]),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.secondary.withOpacity(0.1),
+                    AppColors.secondary.withOpacity(0.05),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: IconButton(
                 onPressed: () {
-                  context.read<CustomerRequestBloc>().add(const FetchAllCustomerRequests(page: 1, limit: 20));
+                  context.read<CustomerRequestBloc>().add(
+                    const FetchAllCustomerRequests(page: 1, limit: 20),
+                  );
                 },
-                icon: Icon(Icons.refresh_rounded, color: AppColors.secondary, size: 22),
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.secondary,
+                  size: 22,
+                ),
                 tooltip: 'Refresh',
               ),
             ),
@@ -459,25 +560,53 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
         ),
         const SizedBox(height: 16),
         if (_isLoading)
-          ListSkeleton(itemCount: 3, itemBuilder: () => const PostCardSkeleton())
+          ListSkeleton(
+            itemCount: 3,
+            itemBuilder: () => const PostCardSkeleton(),
+          )
         else if (_errorMessage != null)
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 20),
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.red.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.red.withOpacity(0.2))),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.red.withOpacity(0.2)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(Icons.error_outline_rounded, color: Colors.red, size: 48),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.red,
+                      size: 48,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  Text('Oops! Something went wrong', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+                  Text(
+                    'Oops! Something went wrong',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text(_errorMessage!, style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
@@ -491,12 +620,26 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                         });
                       });
                     },
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                    label: const Text('Try Again', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Try Again',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ],
@@ -509,9 +652,22 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               margin: const EdgeInsets.symmetric(vertical: 20),
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.surface, AppColors.surface.withOpacity(0.5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.surface,
+                    AppColors.surface.withOpacity(0.5),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -519,15 +675,38 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.secondary.withOpacity(0.15), AppColors.secondary.withOpacity(0.05)]),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.secondary.withOpacity(0.15),
+                          AppColors.secondary.withOpacity(0.05),
+                        ],
+                      ),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.inbox_outlined, color: AppColors.secondary, size: 56),
+                    child: Icon(
+                      Icons.inbox_outlined,
+                      color: AppColors.secondary,
+                      size: 56,
+                    ),
                   ),
                   const SizedBox(height: 20),
-                  Text('No Posts Available', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+                  Text(
+                    'No Posts Available',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text('Check back later for new posts', style: TextStyle(color: AppColors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
+                  Text(
+                    'Check back later for new posts',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () {
@@ -540,12 +719,27 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                         });
                       });
                     },
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 20),
-                    label: const Text('Refresh', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      'Refresh',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 2,
                     ),
                   ),
@@ -561,7 +755,11 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
-                child: AnimatedOpacity(opacity: 1.0, duration: Duration(milliseconds: 300 + (index * 50)), child: PostCard(post: _latestPosts[index])),
+                child: AnimatedOpacity(
+                  opacity: 1.0,
+                  duration: Duration(milliseconds: 300 + (index * 50)),
+                  child: PostCard(post: _latestPosts[index]),
+                ),
               );
             },
           ),
@@ -571,9 +769,10 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
 
   // Location Selector Section - Only "To" location with inline search
   Widget _buildLocationSelectorSection() {
-    final bool hasToLocation = _toLocation != 'Search trips, locations, or goods...';
+    final bool hasToLocation =
+        _toLocation != 'Search trips, locations, or goods...';
     final Color orangeColor = Colors.orange;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -604,7 +803,11 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                   });
                   _fetchPostsWithFilters();
                 },
-                icon: Icon(Icons.clear_rounded, color: AppColors.textSecondary, size: 20),
+                icon: Icon(
+                  Icons.clear_rounded,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
                 tooltip: 'Clear destination',
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -632,16 +835,17 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
     required Function(String, double, double) onLocationSelected,
   }) {
     final hasLocation = controller.text.isNotEmpty;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: hasLocation
-                  ? [color.withOpacity(0.1), color.withOpacity(0.05)]
-                  : [Colors.white, AppColors.surface.withOpacity(0.8)],
+              colors:
+                  hasLocation
+                      ? [color.withOpacity(0.1), color.withOpacity(0.05)]
+                      : [Colors.white, AppColors.surface.withOpacity(0.8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -659,10 +863,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                 offset: const Offset(0, 2),
               ),
             ],
-            border: Border.all(
-              color: color.withOpacity(0.2),
-              width: 1.5,
-            ),
+            border: Border.all(color: color.withOpacity(0.2), width: 1.5),
           ),
           child: TextField(
             controller: controller,
@@ -671,7 +872,7 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               hintText: hintText,
               hintStyle: TextStyle(color: AppColors.textHint, fontSize: 15),
               prefixIcon: Container(
-                margin: const EdgeInsets.only(right: 12,left: 4),
+                margin: const EdgeInsets.only(right: 12, left: 4),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -683,36 +884,45 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                 ),
                 child: Icon(icon, color: color, size: 22),
               ),
-              suffixIcon: isSearching
-                  ? Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
+              suffixIcon:
+                  isSearching
+                      ? Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
                         ),
-                      ),
-                    )
-                  : controller.text.isNotEmpty
+                      )
+                      : controller.text.isNotEmpty
                       ? IconButton(
-                          icon: Icon(Icons.clear_rounded, color: AppColors.textSecondary, size: 20),
-                          onPressed: () {
-                            controller.clear();
-                            setState(() {
-                              _toLocation = 'Search trips, locations, or goods...';
-                              _toLatitude = null;
-                              _toLongitude = null;
-                            });
-                            _fetchPostsWithFilters();
-                          },
-                        )
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          controller.clear();
+                          setState(() {
+                            _toLocation =
+                                'Search trips, locations, or goods...';
+                            _toLatitude = null;
+                            _toLongitude = null;
+                          });
+                          _fetchPostsWithFilters();
+                        },
+                      )
                       : null,
               filled: true,
               fillColor: Colors.transparent,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
             style: TextStyle(
               color: hasLocation ? AppColors.textPrimary : AppColors.textHint,
@@ -742,19 +952,30 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
               shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
               itemCount: results.length,
-              separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.border.withOpacity(0.2)),
+              separatorBuilder:
+                  (context, index) => Divider(
+                    height: 1,
+                    color: AppColors.border.withOpacity(0.2),
+                  ),
               itemBuilder: (context, index) {
                 final result = results[index];
                 return ListTile(
                   dense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.location_on_rounded, color: color, size: 20),
+                    child: Icon(
+                      Icons.location_on_rounded,
+                      color: color,
+                      size: 20,
+                    ),
                   ),
                   title: Text(
                     result['address'],
@@ -764,7 +985,11 @@ class _HomeScreenDriverState extends State<HomeScreenDriver> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                   onTap: () {
                     onLocationSelected(
                       result['address'],

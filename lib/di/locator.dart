@@ -24,6 +24,7 @@ import '../features/auth/bloc/image_upload/image_upload_bloc.dart';
 import '../features/auth/repo/auth_repo.dart';
 import '../features/connect/bloc/driver_connection_bloc.dart';
 import '../features/connect/repo/driver_connection_repo.dart';
+import '../features/notification/repo/notification_repository.dart';
 import '../features/vehicle/bloc/vehicle/vehicle_bloc.dart';
 import '../features/vehicle/bloc/vehicle_metadata/vehicle_meta_bloc.dart';
 import '../services/network/api_service.dart';
@@ -38,22 +39,37 @@ void setupLocator() {
   locator.registerLazySingleton(() => AuthRepository(apiService: locator()));
   locator.registerLazySingleton(() => UserRepository(apiService: locator()));
   locator.registerLazySingleton(() => VehicleRepository(apiService: locator()));
-  locator.registerLazySingleton(() => VehicleMetaRepository(apiService: locator()));
-  locator.registerLazySingleton(() => ImageUploadRepository(apiService: locator()));
+  locator.registerLazySingleton(
+    () => VehicleMetaRepository(apiService: locator()),
+  );
+  locator.registerLazySingleton(
+    () => ImageUploadRepository(apiService: locator()),
+  );
   locator.registerLazySingleton(() => PostsRepository(apiService: locator()));
-  locator.registerLazySingleton(() => ConnectRequestRepository(apiService: locator()));
-  locator.registerLazySingleton(() => DriverConnectionRepository(apiService: locator()));
-  locator.registerLazySingleton(() => CustomerRequestRepository(apiService: locator()));
+  locator.registerLazySingleton(
+    () => ConnectRequestRepository(apiService: locator()),
+  );
+  locator.registerLazySingleton(
+    () => DriverConnectionRepository(apiService: locator()),
+  );
+  locator.registerLazySingleton(
+    () => CustomerRequestRepository(apiService: locator()),
+  );
   locator.registerLazySingleton(() => TokenRepository(apiService: locator()));
   locator.registerLazySingleton(() => ProfileRepository(apiService: locator()));
   locator.registerLazySingleton(() => BookingRepository(apiService: locator()));
   locator.registerLazySingleton(() => ReviewRepository(apiService: locator()));
+  locator.registerLazySingleton(
+    () => NotificationRepository(apiService: locator()),
+  );
 
   // BLoCs
   locator.registerFactory(() => AuthBloc(repository: locator()));
   locator.registerFactory(() => UserSessionBloc(profileRepository: locator()));
   locator.registerFactory(() => UserBloc(repository: locator()));
-  locator.registerFactory(() => VehicleBloc(repository: locator(), imageRepository: locator()));
+  locator.registerFactory(
+    () => VehicleBloc(repository: locator(), imageRepository: locator()),
+  );
   locator.registerFactory(() => VehicleMetaBloc(repository: locator()));
   locator.registerFactory(() => ImageUploadBloc(repository: locator()));
   locator.registerFactory(() => PostsBloc(repository: locator()));

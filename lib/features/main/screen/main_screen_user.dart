@@ -10,6 +10,9 @@ import '../../post/screens/add_trip_screen.dart';
 import '../../post/screens/my_trip_screen.dart';
 import '../../post/screens/add_post_screen.dart';
 import '../../post/screens/my_post_screen.dart';
+import '../../../core/services/notification_service.dart';
+import '../../notification/repo/notification_repository.dart';
+import '../../../di/locator.dart';
 
 class MainScreenUser extends StatefulWidget {
   const MainScreenUser({super.key});
@@ -30,10 +33,26 @@ class _MainScreenUserState extends State<MainScreenUser> {
     const ProfileScreenUser(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _syncFcmToken();
+  }
+
+  Future<void> _syncFcmToken() async {
+    final token = await NotificationService().getToken();
+    if (token != null) {
+      locator<NotificationRepository>().updateFcmToken(token);
+    }
+  }
+
   void _onItemTapped(int index) {
     if (index == 2) {
       // Handle center button (Create Post) - Navigate to AddPostScreen for customer requests
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPostScreen()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddPostScreen()),
+      );
       return;
     }
     setState(() {
@@ -50,8 +69,19 @@ class _MainScreenUserState extends State<MainScreenUser> {
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: 2)],
+          gradient: LinearGradient(
+            colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.secondary.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+              spreadRadius: 2,
+            ),
+          ],
           border: Border.all(color: Colors.white, width: 3),
         ),
         child: FloatingActionButton(
@@ -74,10 +104,25 @@ class _MainScreenUserState extends State<MainScreenUser> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildNavItem(Icons.home_rounded, Icons.home_outlined, 'Home', 0),
-              _buildNavItem(Icons.chat_bubble_rounded, Icons.chat_bubble_outline, 'Connections', 1),
+              _buildNavItem(
+                Icons.chat_bubble_rounded,
+                Icons.chat_bubble_outline,
+                'Connections',
+                1,
+              ),
               const SizedBox(width: 48), // Space for FAB
-              _buildNavItem(Icons.description_rounded, Icons.description_outlined, 'My Posts', 3),
-              _buildNavItem(Icons.person_rounded, Icons.person_outline, 'Account', 4),
+              _buildNavItem(
+                Icons.description_rounded,
+                Icons.description_outlined,
+                'My Posts',
+                3,
+              ),
+              _buildNavItem(
+                Icons.person_rounded,
+                Icons.person_outline,
+                'Account',
+                4,
+              ),
             ],
           ),
         ),
@@ -85,7 +130,12 @@ class _MainScreenUserState extends State<MainScreenUser> {
     );
   }
 
-  Widget _buildNavItem(IconData activeIcon, IconData inactiveIcon, String label, int index) {
+  Widget _buildNavItem(
+    IconData activeIcon,
+    IconData inactiveIcon,
+    String label,
+    int index,
+  ) {
     final isSelected = _selectedIndex == index;
     return Expanded(
       child: InkWell(
@@ -94,11 +144,20 @@ class _MainScreenUserState extends State<MainScreenUser> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isSelected ? activeIcon : inactiveIcon, color: isSelected ? AppColors.secondary : AppColors.textSecondary, size: 26),
+            Icon(
+              isSelected ? activeIcon : inactiveIcon,
+              color: isSelected ? AppColors.secondary : AppColors.textSecondary,
+              size: 26,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, color: isSelected ? AppColors.secondary : AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color:
+                    isSelected ? AppColors.secondary : AppColors.textSecondary,
+              ),
             ),
           ],
         ),
