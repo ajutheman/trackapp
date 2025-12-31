@@ -37,7 +37,8 @@ class CustomerRequestRepository {
     if (dateTo != null) queryParams['dateTo'] = dateTo;
     if (startLocation != null) queryParams['startLocation'] = startLocation;
     if (destination != null) queryParams['destination'] = destination;
-    if (currentLocation != null) queryParams['currentLocation'] = currentLocation;
+    if (currentLocation != null)
+      queryParams['currentLocation'] = currentLocation;
     if (page != null) queryParams['page'] = page;
     if (limit != null) queryParams['limit'] = limit;
 
@@ -49,20 +50,29 @@ class CustomerRequestRepository {
 
     if (result.isSuccess) {
       try {
-        final List<dynamic> requestsData = result.data is List
-            ? result.data
-            : (result.data['requests'] ?? result.data['data'] ?? []);
+        final List<dynamic> requestsData =
+            result.data is List
+                ? result.data
+                : (result.data['requests'] ?? result.data['data'] ?? []);
 
-        final List<Post> requests = requestsData
-            .map((requestJson) => Post.fromJson(requestJson as Map<String, dynamic>))
-            .toList();
+        final List<Post> requests =
+            requestsData
+                .map(
+                  (requestJson) =>
+                      Post.fromJson(requestJson as Map<String, dynamic>),
+                )
+                .toList();
 
         return Result.success(requests);
       } catch (e) {
-        return Result.error('Failed to parse customer requests data: ${e.toString()}');
+        return Result.error(
+          'Failed to parse customer requests data: ${e.toString()}',
+        );
       }
     } else {
-      return Result.error(result.message ?? 'Failed to fetch customer requests');
+      return Result.error(
+        result.message ?? 'Failed to fetch customer requests',
+      );
     }
   }
 
@@ -92,20 +102,29 @@ class CustomerRequestRepository {
     if (result.isSuccess) {
       try {
         // Backend returns requests directly as a list, or wrapped in data
-        final List<dynamic> requestsData = result.data is List
-            ? result.data
-            : (result.data['requests'] ?? result.data['data'] ?? []);
+        final List<dynamic> requestsData =
+            result.data is List
+                ? result.data
+                : (result.data['requests'] ?? result.data['data'] ?? []);
 
-        final List<Post> requests = requestsData
-            .map((requestJson) => Post.fromJson(requestJson as Map<String, dynamic>))
-            .toList();
+        final List<Post> requests =
+            requestsData
+                .map(
+                  (requestJson) =>
+                      Post.fromJson(requestJson as Map<String, dynamic>),
+                )
+                .toList();
 
         return Result.success(requests);
       } catch (e) {
-        return Result.error('Failed to parse my customer requests data: ${e.toString()}');
+        return Result.error(
+          'Failed to parse my customer requests data: ${e.toString()}',
+        );
       }
     } else {
-      return Result.error(result.message ?? 'Failed to fetch my customer requests');
+      return Result.error(
+        result.message ?? 'Failed to fetch my customer requests',
+      );
     }
   }
 
@@ -122,6 +141,7 @@ class CustomerRequestRepository {
     List<String>? documents,
     DateTime? pickupTime,
     String? status,
+    RouteGeoJSON? routeGeoJSON,
   }) async {
     final body = <String, dynamic>{
       'title': title,
@@ -135,6 +155,7 @@ class CustomerRequestRepository {
       if (documents != null && documents.isNotEmpty) 'documents': documents,
       if (pickupTime != null) 'pickupTime': pickupTime.toIso8601String(),
       if (status != null) 'status': status,
+      if (routeGeoJSON != null) 'routeGeoJSON': routeGeoJSON.toJson(),
     };
 
     final result = await apiService.post(
@@ -145,13 +166,16 @@ class CustomerRequestRepository {
 
     if (result.isSuccess) {
       try {
-        final requestData = result.data is Map
-            ? result.data
-            : (result.data['request'] ?? result.data);
+        final requestData =
+            result.data is Map
+                ? result.data
+                : (result.data['request'] ?? result.data);
         final Post request = Post.fromJson(requestData as Map<String, dynamic>);
         return Result.success(request);
       } catch (e) {
-        return Result.error('Failed to parse created customer request: ${e.toString()}');
+        return Result.error(
+          'Failed to parse created customer request: ${e.toString()}',
+        );
       }
     } else {
       return Result.error(
@@ -174,19 +198,24 @@ class CustomerRequestRepository {
     List<String>? documents,
     DateTime? pickupTime,
     String? status,
+    RouteGeoJSON? routeGeoJSON,
   }) async {
     final body = <String, dynamic>{};
     if (title != null) body['title'] = title;
     if (description != null) body['description'] = description;
-    if (pickupLocation != null) body['pickupLocation'] = pickupLocation.toJson();
-    if (dropoffLocation != null) body['dropoffLocation'] = dropoffLocation.toJson();
+    if (pickupLocation != null)
+      body['pickupLocation'] = pickupLocation.toJson();
+    if (dropoffLocation != null)
+      body['dropoffLocation'] = dropoffLocation.toJson();
     if (distance != null) body['distance'] = distance.toJson();
     if (duration != null) body['duration'] = duration.toJson();
-    if (packageDetails != null) body['packageDetails'] = packageDetails.toJson();
+    if (packageDetails != null)
+      body['packageDetails'] = packageDetails.toJson();
     if (images != null) body['images'] = images;
     if (documents != null) body['documents'] = documents;
     if (pickupTime != null) body['pickupTime'] = pickupTime.toIso8601String();
     if (status != null) body['status'] = status;
+    if (routeGeoJSON != null) body['routeGeoJSON'] = routeGeoJSON.toJson();
 
     final result = await apiService.put(
       '${ApiEndpoints.updateCustomerRequest}/$requestId',
@@ -196,13 +225,16 @@ class CustomerRequestRepository {
 
     if (result.isSuccess) {
       try {
-        final requestData = result.data is Map
-            ? result.data
-            : (result.data['request'] ?? result.data);
+        final requestData =
+            result.data is Map
+                ? result.data
+                : (result.data['request'] ?? result.data);
         final Post request = Post.fromJson(requestData as Map<String, dynamic>);
         return Result.success(request);
       } catch (e) {
-        return Result.error('Failed to parse updated customer request: ${e.toString()}');
+        return Result.error(
+          'Failed to parse updated customer request: ${e.toString()}',
+        );
       }
     } else {
       return Result.error(
@@ -221,7 +253,9 @@ class CustomerRequestRepository {
     if (result.isSuccess) {
       return Result.success(true);
     } else {
-      return Result.error(result.message ?? 'Failed to delete customer request');
+      return Result.error(
+        result.message ?? 'Failed to delete customer request',
+      );
     }
   }
 
@@ -235,17 +269,19 @@ class CustomerRequestRepository {
     if (result.isSuccess) {
       try {
         // Backend may return request wrapped in 'request' key
-        final Map<String, dynamic> requestData = result.data is Map
-            ? result.data
-            : (result.data['request'] ?? result.data);
+        final Map<String, dynamic> requestData =
+            result.data is Map
+                ? result.data
+                : (result.data['request'] ?? result.data);
         final Post request = Post.fromJson(requestData);
         return Result.success(request);
       } catch (e) {
-        return Result.error('Failed to parse customer request data: ${e.toString()}');
+        return Result.error(
+          'Failed to parse customer request data: ${e.toString()}',
+        );
       }
     } else {
       return Result.error(result.message ?? 'Failed to fetch customer request');
     }
   }
 }
-

@@ -1,13 +1,11 @@
 class ApiEndpoints {
   static const String baseDevelopmentUrl = 'http://10.0.2.2:3000/';
-  static const String baseProdRenderUrl =
-      'https://truck-api-qyew.onrender.com/';
+  static const String baseProdRenderUrl = 'https://truck-api-qyew.onrender.com/';
   static const String baseProductionUrl = 'https://api.returncargo.in/';
 
   // Toggle this to switch between development and production
-  static const bool isDevelopment = true;
-  static const String baseUrl =
-      isDevelopment ? baseDevelopmentUrl : baseProductionUrl;
+  static const bool isDevelopment = false;
+  static const String baseUrl = isDevelopment ? baseDevelopmentUrl : baseProductionUrl;
 
   static const String sendOTP = 'api/v1/auth/request-otp';
   static const String verifyOTP = 'api/v1/auth/verify-otp';

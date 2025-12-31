@@ -38,16 +38,16 @@ class FetchAllCustomerRequests extends CustomerRequestEvent {
 
   @override
   List<Object> get props => [
-        status ?? '',
-        search ?? '',
-        dateFrom ?? '',
-        dateTo ?? '',
-        startLocation ?? '',
-        destination ?? '',
-        currentLocation ?? '',
-        page ?? 0,
-        limit ?? 0,
-      ];
+    status ?? '',
+    search ?? '',
+    dateFrom ?? '',
+    dateTo ?? '',
+    startLocation ?? '',
+    destination ?? '',
+    currentLocation ?? '',
+    page ?? 0,
+    limit ?? 0,
+  ];
 }
 
 /// Event to fetch user's own customer requests
@@ -70,13 +70,13 @@ class FetchMyCustomerRequests extends CustomerRequestEvent {
 
   @override
   List<Object> get props => [
-        page ?? 0,
-        limit ?? 0,
-        status ?? '',
-        search ?? '',
-        dateFrom ?? '',
-        dateTo ?? '',
-      ];
+    page ?? 0,
+    limit ?? 0,
+    status ?? '',
+    search ?? '',
+    dateFrom ?? '',
+    dateTo ?? '',
+  ];
 }
 
 /// Event to create a new customer request
@@ -92,6 +92,7 @@ class CreateCustomerRequest extends CustomerRequestEvent {
   final List<String>? documents;
   final DateTime? pickupTime;
   final String? status;
+  final RouteGeoJSON? routeGeoJSON;
 
   const CreateCustomerRequest({
     required this.title,
@@ -105,22 +106,24 @@ class CreateCustomerRequest extends CustomerRequestEvent {
     this.documents,
     this.pickupTime,
     this.status,
+    this.routeGeoJSON,
   });
 
   @override
   List<Object> get props => [
-        title,
-        description,
-        pickupLocation,
-        dropoffLocation,
-        distance,
-        duration,
-        packageDetails,
-        images,
-        documents ?? [],
-        pickupTime ?? DateTime.now(),
-        status ?? '',
-      ];
+    title,
+    description,
+    pickupLocation,
+    dropoffLocation,
+    distance,
+    duration,
+    packageDetails,
+    images,
+    documents ?? [],
+    pickupTime ?? DateTime.now(),
+    status ?? '',
+    routeGeoJSON ?? '',
+  ];
 }
 
 /// Event to update an existing customer request
@@ -137,6 +140,7 @@ class UpdateCustomerRequest extends CustomerRequestEvent {
   final List<String>? documents;
   final DateTime? pickupTime;
   final String? status;
+  final RouteGeoJSON? routeGeoJSON;
 
   const UpdateCustomerRequest({
     required this.requestId,
@@ -151,23 +155,25 @@ class UpdateCustomerRequest extends CustomerRequestEvent {
     this.documents,
     this.pickupTime,
     this.status,
+    this.routeGeoJSON,
   });
 
   @override
   List<Object> get props => [
-        requestId,
-        title ?? '',
-        description ?? '',
-        pickupLocation ?? '',
-        dropoffLocation ?? '',
-        distance ?? '',
-        duration ?? '',
-        packageDetails ?? '',
-        images ?? [],
-        documents ?? [],
-        pickupTime ?? DateTime.now(),
-        status ?? '',
-      ];
+    requestId,
+    title ?? '',
+    description ?? '',
+    pickupLocation ?? '',
+    dropoffLocation ?? '',
+    distance ?? '',
+    duration ?? '',
+    packageDetails ?? '',
+    images ?? [],
+    documents ?? [],
+    pickupTime ?? DateTime.now(),
+    status ?? '',
+    routeGeoJSON ?? '',
+  ];
 }
 
 /// Event to delete a customer request
@@ -287,10 +293,12 @@ class CustomerRequestError extends CustomerRequestState {
 }
 
 /// BLoC for managing customer request state and events
-class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestState> {
+class CustomerRequestBloc
+    extends Bloc<CustomerRequestEvent, CustomerRequestState> {
   final CustomerRequestRepository repository;
 
-  CustomerRequestBloc({required this.repository}) : super(CustomerRequestInitial()) {
+  CustomerRequestBloc({required this.repository})
+    : super(CustomerRequestInitial()) {
     on<FetchAllCustomerRequests>(_onFetchAllCustomerRequests);
     on<FetchMyCustomerRequests>(_onFetchMyCustomerRequests);
     on<CreateCustomerRequest>(_onCreateCustomerRequest);
@@ -319,13 +327,17 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       );
 
       if (result.isSuccess) {
-        emit(CustomerRequestsLoaded(
-          requests: result.data!,
-          hasMore: result.data!.length >= (event.limit ?? 10),
-          currentPage: event.page ?? 1,
-        ));
+        emit(
+          CustomerRequestsLoaded(
+            requests: result.data!,
+            hasMore: result.data!.length >= (event.limit ?? 10),
+            currentPage: event.page ?? 1,
+          ),
+        );
       } else {
-        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
+        emit(
+          CustomerRequestError(message: result.message ?? 'An error occurred'),
+        );
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -349,13 +361,17 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       );
 
       if (result.isSuccess) {
-        emit(MyCustomerRequestsLoaded(
-          requests: result.data!,
-          hasMore: result.data!.length >= (event.limit ?? 10),
-          currentPage: event.page ?? 1,
-        ));
+        emit(
+          MyCustomerRequestsLoaded(
+            requests: result.data!,
+            hasMore: result.data!.length >= (event.limit ?? 10),
+            currentPage: event.page ?? 1,
+          ),
+        );
       } else {
-        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
+        emit(
+          CustomerRequestError(message: result.message ?? 'An error occurred'),
+        );
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -381,12 +397,15 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
         documents: event.documents,
         pickupTime: event.pickupTime,
         status: event.status,
+        routeGeoJSON: event.routeGeoJSON,
       );
 
       if (result.isSuccess) {
         emit(CustomerRequestCreated(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
+        emit(
+          CustomerRequestError(message: result.message ?? 'An error occurred'),
+        );
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -413,12 +432,15 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
         documents: event.documents,
         pickupTime: event.pickupTime,
         status: event.status,
+        routeGeoJSON: event.routeGeoJSON,
       );
 
       if (result.isSuccess) {
         emit(CustomerRequestUpdated(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
+        emit(
+          CustomerRequestError(message: result.message ?? 'An error occurred'),
+        );
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -437,7 +459,9 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestDeleted(requestId: event.requestId));
       } else {
-        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
+        emit(
+          CustomerRequestError(message: result.message ?? 'An error occurred'),
+        );
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
@@ -456,11 +480,12 @@ class CustomerRequestBloc extends Bloc<CustomerRequestEvent, CustomerRequestStat
       if (result.isSuccess) {
         emit(CustomerRequestDetailLoaded(request: result.data!));
       } else {
-        emit(CustomerRequestError(message: result.message ?? 'An error occurred'));
+        emit(
+          CustomerRequestError(message: result.message ?? 'An error occurred'),
+        );
       }
     } catch (e) {
       emit(CustomerRequestError(message: 'An error occurred: ${e.toString()}'));
     }
   }
 }
-

@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart' as latlong;
+import 'package:truck_app/features/maps/presentation/screens/route_selection_screen.dart';
+import 'package:truck_app/features/maps/data/models/route_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,15 +31,18 @@ class _AddPostScreenState extends State<AddPostScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers for text fields
-  final TextEditingController _pickupLocationAddressController = TextEditingController();
-  final TextEditingController _dropoffLocationAddressController = TextEditingController();
+  final TextEditingController _pickupLocationAddressController =
+      TextEditingController();
+  final TextEditingController _dropoffLocationAddressController =
+      TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _lengthController = TextEditingController();
   final TextEditingController _widthController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
-  final TextEditingController _packageDescriptionController = TextEditingController();
+  final TextEditingController _packageDescriptionController =
+      TextEditingController();
 
   // Location coordinates
   String? _pickupLocationCoordinates;
@@ -52,22 +58,26 @@ class _AddPostScreenState extends State<AddPostScreen> {
   List<File> _selectedDocuments = [];
   List<String> _uploadedImageIds = [];
   List<String> _uploadedDocumentIds = [];
-  List<String> _existingImageIds = []; // Existing image IDs from post being edited
-  List<String> _existingDocumentIds = []; // Existing document IDs from post being edited
+  List<String> _existingImageIds =
+      []; // Existing image IDs from post being edited
+  List<String> _existingDocumentIds =
+      []; // Existing document IDs from post being edited
 
   // Distance and duration (will be calculated)
   double? _distance;
   int? _duration; // in minutes
+  RouteModel? _selectedRoute;
 
   // Repositories
   late ImageUploadRepository _imageUploadRepository;
-  
 
   @override
   void initState() {
     super.initState();
-    _imageUploadRepository = ImageUploadRepository(apiService: locator<ApiService>());
-    
+    _imageUploadRepository = ImageUploadRepository(
+      apiService: locator<ApiService>(),
+    );
+
     // Populate form if editing
     if (widget.postToEdit != null) {
       _populateFormFromPost(widget.postToEdit!);
@@ -82,7 +92,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
     // Populate locations
     if (post.pickupLocationObj != null) {
-      _pickupLocationAddressController.text = post.pickupLocationObj!.address ?? '';
+      _pickupLocationAddressController.text =
+          post.pickupLocationObj!.address ?? '';
       if (post.pickupLocationObj!.coordinates.length >= 2) {
         // coordinates[0] is lng, coordinates[1] is lat
         pickupLocation = LatLng(
@@ -94,7 +105,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
 
     if (post.dropoffLocationObj != null) {
-      _dropoffLocationAddressController.text = post.dropoffLocationObj!.address ?? '';
+      _dropoffLocationAddressController.text =
+          post.dropoffLocationObj!.address ?? '';
       if (post.dropoffLocationObj!.coordinates.length >= 2) {
         // coordinates[0] is lng, coordinates[1] is lat
         dropoffLocation = LatLng(
@@ -112,13 +124,16 @@ class _AddPostScreenState extends State<AddPostScreen> {
       }
       if (post.packageDetails!.dimensions != null) {
         if (post.packageDetails!.dimensions!.length != null) {
-          _lengthController.text = post.packageDetails!.dimensions!.length.toString();
+          _lengthController.text =
+              post.packageDetails!.dimensions!.length.toString();
         }
         if (post.packageDetails!.dimensions!.width != null) {
-          _widthController.text = post.packageDetails!.dimensions!.width.toString();
+          _widthController.text =
+              post.packageDetails!.dimensions!.width.toString();
         }
         if (post.packageDetails!.dimensions!.height != null) {
-          _heightController.text = post.packageDetails!.dimensions!.height.toString();
+          _heightController.text =
+              post.packageDetails!.dimensions!.height.toString();
         }
       }
       if (post.packageDetails!.description != null) {
@@ -158,17 +173,15 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
   // Function to pick pickup date and time
   Future<void> _selectPickupTime(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime initialDate = _selectedPickupTime ?? now.add(const Duration(hours: 1));
+    final DateTime initialDate =
+        _selectedPickupTime ?? now.add(const Duration(hours: 1));
 
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -195,9 +208,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
     if (picked != null) {
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
-        initialTime: _selectedPickupTime != null
-            ? TimeOfDay.fromDateTime(_selectedPickupTime!)
-            : TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+        initialTime:
+            _selectedPickupTime != null
+                ? TimeOfDay.fromDateTime(_selectedPickupTime!)
+                : TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
@@ -207,7 +221,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 onSurface: AppColors.textPrimary,
               ),
               textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.secondary,
+                ),
               ),
             ),
             child: child!,
@@ -308,7 +324,9 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
       // Validate required fields
       if (pickupLocation == null || dropoffLocation == null) {
-        _showSnackBar('Please select both pickup and dropoff locations on the map');
+        _showSnackBar(
+          'Please select both pickup and dropoff locations on the map',
+        );
         return;
       }
 
@@ -339,7 +357,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
       // Combine existing and newly uploaded IDs
       final allImageIds = <String>[..._existingImageIds, ..._uploadedImageIds];
-      final allDocumentIds = <String>[..._existingDocumentIds, ..._uploadedDocumentIds];
+      final allDocumentIds = <String>[
+        ..._existingDocumentIds,
+        ..._uploadedDocumentIds,
+      ];
 
       // Create trip locations
       final pickupLocationObj = TripLocation(
@@ -352,14 +373,37 @@ class _AddPostScreenState extends State<AddPostScreen> {
         coordinates: [dropoffLocation!.longitude, dropoffLocation!.latitude],
       );
 
+      // Create route GeoJSON
+      RouteGeoJSON? routeGeoJSON;
+      if (_selectedRoute != null) {
+        // Downsample points to ~5km gap
+        final downsampledPoints = _selectedRoute!.getPointsWithGap(5000);
+        routeGeoJSON = RouteGeoJSON(
+          type: "LineString",
+          coordinates:
+              downsampledPoints.map((e) => [e.longitude, e.latitude]).toList(),
+        );
+      } else {
+        // Fallback to straight line
+        routeGeoJSON = RouteGeoJSON(
+          type: "LineString",
+          coordinates: [
+            [pickupLocation!.longitude, pickupLocation!.latitude],
+            [dropoffLocation!.longitude, dropoffLocation!.latitude],
+          ],
+        );
+      }
+
       // Calculate distance and duration
-      final distanceValue = _distance ?? _calculateDistance(pickupLocation!, dropoffLocation!);
+      final distanceValue =
+          _distance ?? _calculateDistance(pickupLocation!, dropoffLocation!);
       final distance = Distance(
         value: distanceValue,
         text: "${distanceValue.toStringAsFixed(1)} km",
       );
 
-      final durationValue = _duration ?? _calculateDuration(pickupLocation!, dropoffLocation!);
+      final durationValue =
+          _duration ?? _calculateDuration(pickupLocation!, dropoffLocation!);
       final duration = TripDuration(
         value: durationValue,
         text: _formatDuration(durationValue),
@@ -367,27 +411,33 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
       // Create package details
       final packageDetails = PackageDetails(
-        weight: _weightController.text.isNotEmpty
-            ? double.tryParse(_weightController.text)
-            : null,
-        dimensions: (_lengthController.text.isNotEmpty ||
-                _widthController.text.isNotEmpty ||
-                _heightController.text.isNotEmpty)
-            ? Dimensions(
-                length: _lengthController.text.isNotEmpty
-                    ? double.tryParse(_lengthController.text)
-                    : null,
-                width: _widthController.text.isNotEmpty
-                    ? double.tryParse(_widthController.text)
-                    : null,
-                height: _heightController.text.isNotEmpty
-                    ? double.tryParse(_heightController.text)
-                    : null,
-              )
-            : null,
-        description: _packageDescriptionController.text.trim().isNotEmpty
-            ? _packageDescriptionController.text.trim()
-            : null,
+        weight:
+            _weightController.text.isNotEmpty
+                ? double.tryParse(_weightController.text)
+                : null,
+        dimensions:
+            (_lengthController.text.isNotEmpty ||
+                    _widthController.text.isNotEmpty ||
+                    _heightController.text.isNotEmpty)
+                ? Dimensions(
+                  length:
+                      _lengthController.text.isNotEmpty
+                          ? double.tryParse(_lengthController.text)
+                          : null,
+                  width:
+                      _widthController.text.isNotEmpty
+                          ? double.tryParse(_widthController.text)
+                          : null,
+                  height:
+                      _heightController.text.isNotEmpty
+                          ? double.tryParse(_heightController.text)
+                          : null,
+                )
+                : null,
+        description:
+            _packageDescriptionController.text.trim().isNotEmpty
+                ? _packageDescriptionController.text.trim()
+                : null,
       );
 
       // Create or update the customer request
@@ -402,6 +452,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           dropoffLocation: dropoffLocationObj,
           distance: distance,
           duration: duration,
+          routeGeoJSON: routeGeoJSON,
           packageDetails: packageDetails,
           images: allImageIds.isNotEmpty ? allImageIds : null,
           documents: allDocumentIds.isNotEmpty ? allDocumentIds : null,
@@ -417,6 +468,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           dropoffLocation: dropoffLocationObj,
           distance: distance,
           duration: duration,
+          routeGeoJSON: routeGeoJSON,
           packageDetails: packageDetails,
           images: allImageIds,
           documents: allDocumentIds.isNotEmpty ? allDocumentIds : null,
@@ -476,19 +528,24 @@ class _AddPostScreenState extends State<AddPostScreen> {
       ),
       body: BlocConsumer<CustomerRequestBloc, CustomerRequestState>(
         listenWhen: (previous, current) {
-          return (previous is! CustomerRequestCreated && current is CustomerRequestCreated) ||
-              (previous is! CustomerRequestUpdated && current is CustomerRequestUpdated) ||
-              (previous is! CustomerRequestError && current is CustomerRequestError);
+          return (previous is! CustomerRequestCreated &&
+                  current is CustomerRequestCreated) ||
+              (previous is! CustomerRequestUpdated &&
+                  current is CustomerRequestUpdated) ||
+              (previous is! CustomerRequestError &&
+                  current is CustomerRequestError);
         },
         listener: (context, state) {
-          if (state is CustomerRequestCreated || state is CustomerRequestUpdated) {
+          if (state is CustomerRequestCreated ||
+              state is CustomerRequestUpdated) {
             final route = ModalRoute.of(context);
             if (!mounted || route == null || !route.isCurrent) {
               return;
             }
-            final message = widget.postToEdit != null 
-                ? 'Post updated successfully!'
-                : 'Post created successfully!';
+            final message =
+                widget.postToEdit != null
+                    ? 'Post updated successfully!'
+                    : 'Post created successfully!';
             showSuccessSnackBar(context, message);
             Future.delayed(const Duration(milliseconds: 800), () {
               if (mounted && context.mounted) {
@@ -505,10 +562,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
             }
           }
         },
-        buildWhen: (previous, current) =>
-            !(current is CustomerRequestCreated || 
-              current is CustomerRequestUpdated || 
-              current is CustomerRequestError),
+        buildWhen:
+            (previous, current) =>
+                !(current is CustomerRequestCreated ||
+                    current is CustomerRequestUpdated ||
+                    current is CustomerRequestError),
         builder: (context, state) {
           final isLoading = state is CustomerRequestLoading;
           return SingleChildScrollView(
@@ -609,6 +667,94 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     },
                   ),
                   const SizedBox(height: 30),
+
+                  // Route Selection Section
+                  if (pickupLocation != null && dropoffLocation != null) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => RouteSelectionScreen(
+                                    startPoint: latlong.LatLng(
+                                      pickupLocation!.latitude,
+                                      pickupLocation!.longitude,
+                                    ),
+                                    endPoint: latlong.LatLng(
+                                      dropoffLocation!.latitude,
+                                      dropoffLocation!.longitude,
+                                    ),
+                                  ),
+                            ),
+                          );
+
+                          if (result != null && result is RouteModel) {
+                            setState(() {
+                              _selectedRoute = result;
+                              // Auto-update distance and duration if available
+                              _distance =
+                                  result.distance / 1000; // convert to km
+                              _duration =
+                                  (result.duration / 60)
+                                      .round(); // convert to min
+                            });
+                            _showSnackBar(
+                              'Route selected: ${result.description ?? "Custom Route"}',
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.alt_route_rounded),
+                        label: Text(
+                          _selectedRoute != null
+                              ? 'Change Route'
+                              : 'Select Route',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: AppColors.primary),
+                        ),
+                      ),
+                    ),
+                    if (_selectedRoute != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.blue,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Route selected: ${_selectedRoute!.description ?? "Custom Polyline"} \n(${(_selectedRoute!.distance / 1000).toStringAsFixed(1)} km)',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 30),
+                  ],
 
                   // Pickup Time Section
                   Text(
@@ -780,20 +926,30 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: isLoading ? null : _submitPost,
-                      icon: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      icon:
+                          isLoading
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : const Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
                               ),
-                            )
-                          : const Icon(Icons.send_rounded, color: Colors.white),
                       label: Text(
-                        isLoading 
-                            ? (widget.postToEdit != null ? 'Updating...' : 'Creating...')
-                            : (widget.postToEdit != null ? 'Update Post' : 'Create Post'),
+                        isLoading
+                            ? (widget.postToEdit != null
+                                ? 'Updating...'
+                                : 'Creating...')
+                            : (widget.postToEdit != null
+                                ? 'Update Post'
+                                : 'Create Post'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -818,7 +974,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
       ),
     );
   }
-
 
   // Reusable input field widget
   Widget _buildInputField({
@@ -847,10 +1002,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade300, 
-              width: 1,
-            ),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -924,9 +1076,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
                   child: Text(
                     coordinates ?? 'Tap to select on map',
                     style: TextStyle(
-                      color: coordinates != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
+                      color:
+                          coordinates != null
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -981,17 +1134,23 @@ class _AddPostScreenState extends State<AddPostScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today_outlined, color: AppColors.textSecondary),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     selectedDateTime != null
-                        ? DateFormat('dd MMM yyyy, hh:mm a').format(selectedDateTime)
+                        ? DateFormat(
+                          'dd MMM yyyy, hh:mm a',
+                        ).format(selectedDateTime)
                         : 'Select Date & Time',
                     style: TextStyle(
-                      color: selectedDateTime != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
+                      color:
+                          selectedDateTime != null
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1034,14 +1193,15 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 Expanded(
                   child: Text(
                     _selectedImages.isEmpty && _existingImageIds.isEmpty
-                        ? widget.postToEdit != null 
+                        ? widget.postToEdit != null
                             ? 'Tap to add images (optional)'
                             : 'Tap to select images (at least 1 required)'
                         : '${_selectedImages.length} new + ${_existingImageIds.length} existing image(s)',
                     style: TextStyle(
-                      color: (_selectedImages.isEmpty && _existingImageIds.isEmpty)
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
+                      color:
+                          (_selectedImages.isEmpty && _existingImageIds.isEmpty)
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -1125,7 +1285,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.description_outlined, color: AppColors.textSecondary),
+                Icon(
+                  Icons.description_outlined,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -1133,9 +1296,10 @@ class _AddPostScreenState extends State<AddPostScreen> {
                         ? 'Tap to select documents (optional)'
                         : '${_selectedDocuments.length} document(s) selected',
                     style: TextStyle(
-                      color: _selectedDocuments.isEmpty
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
+                      color:
+                          _selectedDocuments.isEmpty
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
                     ),
                   ),
                 ),

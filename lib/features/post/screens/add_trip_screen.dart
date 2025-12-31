@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart' as latlong;
+import 'package:truck_app/features/maps/presentation/screens/route_selection_screen.dart';
+import 'package:truck_app/features/maps/data/models/route_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
@@ -15,7 +18,6 @@ import 'package:truck_app/services/network/api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../di/locator.dart';
 import '../../../core/utils/error_display.dart';
-import '../../../model/network/result.dart';
 
 class AddTripScreen extends StatefulWidget {
   final Post? postToEdit; // If provided, screen will be in edit mode
@@ -30,8 +32,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers for text fields
-  final TextEditingController _startLocationAddressController = TextEditingController();
-  final TextEditingController _destinationAddressController = TextEditingController();
+  final TextEditingController _startLocationAddressController =
+      TextEditingController();
+  final TextEditingController _destinationAddressController =
+      TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
@@ -44,7 +48,8 @@ class _AddTripScreenState extends State<AddTripScreen> {
   // Dropdown data
   List<VehicleModel.Vehicle> _vehicles = [];
   List<GoodsAccepted> _goodsTypes = [];
-  List<Map<String, dynamic>> _drivers = []; // Contains {_id, name, phone, isSelfDrive}
+  List<Map<String, dynamic>> _drivers =
+      []; // Contains {_id, name, phone, isSelfDrive}
 
   bool _isLoadingData = false;
 
@@ -65,7 +70,7 @@ class _AddTripScreenState extends State<AddTripScreen> {
   List<TripLocation> _viaRoutes = [];
   double? _distance;
   int? _duration; // in minutes
-  
+  RouteModel? _selectedRoute;
 
   @override
   void initState() {
@@ -89,10 +94,14 @@ class _AddTripScreenState extends State<AddTripScreen> {
     // Populate locations
     // Note: TripLocation coordinates are [lng, lat], but LatLng expects (lat, lng)
     if (post.tripStartLocation != null) {
-      _startLocationAddressController.text = post.tripStartLocation!.address ?? '';
+      _startLocationAddressController.text =
+          post.tripStartLocation!.address ?? '';
       if (post.tripStartLocation!.coordinates.length >= 2) {
         // coordinates[0] is lng, coordinates[1] is lat
-        startLocation = LatLng(post.tripStartLocation!.coordinates[1], post.tripStartLocation!.coordinates[0]);
+        startLocation = LatLng(
+          post.tripStartLocation!.coordinates[1],
+          post.tripStartLocation!.coordinates[0],
+        );
         _startLocationCoordinates = formatLatLng(startLocation!);
       }
     }
@@ -101,7 +110,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
       _destinationAddressController.text = post.tripDestination!.address ?? '';
       if (post.tripDestination!.coordinates.length >= 2) {
         // coordinates[0] is lng, coordinates[1] is lat
-        endLocation = LatLng(post.tripDestination!.coordinates[1], post.tripDestination!.coordinates[0]);
+        endLocation = LatLng(
+          post.tripDestination!.coordinates[1],
+          post.tripDestination!.coordinates[0],
+        );
         _destinationCoordinates = formatLatLng(endLocation!);
       }
     }
@@ -161,7 +173,9 @@ class _AddTripScreenState extends State<AddTripScreen> {
       }
 
       // Load goods types
-      final goodsRepo = VehicleMetaRepository(apiService: locator<ApiService>());
+      final goodsRepo = VehicleMetaRepository(
+        apiService: locator<ApiService>(),
+      );
       final goodsResult = await goodsRepo.getAllGoodsAccepted();
       if (mounted) {
         setState(() => _goodsTypes = goodsResult);
@@ -176,7 +190,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
 
       // Auto-select driver if self-drive is enabled
       if (mounted && _isSelfDrive && _drivers.isNotEmpty) {
-        final selfDriveDriver = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+        final selfDriveDriver = _drivers.firstWhere(
+          (d) => d['isSelfDrive'] == true,
+          orElse: () => _drivers.first,
+        );
         setState(() {
           _selectedDriverId = selfDriveDriver['_id'];
         });
@@ -195,15 +212,23 @@ class _AddTripScreenState extends State<AddTripScreen> {
   Future<void> _loadDrivers() async {
     try {
       final apiService = locator<ApiService>();
-      final result = await apiService.get('api/v1/driver-connections/friends', isTokenRequired: true);
+      final result = await apiService.get(
+        'api/v1/driver-connections/friends',
+        isTokenRequired: true,
+      );
       if (result.isSuccess) {
         final data = result.data;
         if (data is Map && data['friends'] != null) {
           if (mounted) {
-            setState(() => _drivers = List<Map<String, dynamic>>.from(data['friends']));
+            setState(
+              () => _drivers = List<Map<String, dynamic>>.from(data['friends']),
+            );
             if (_drivers.isNotEmpty && _selectedDriverId == null) {
               // Auto-select self-drive option if available
-              final selfDrive = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+              final selfDrive = _drivers.firstWhere(
+                (d) => d['isSelfDrive'] == true,
+                orElse: () => _drivers.first,
+              );
               _selectedDriverId = selfDrive['_id'];
             }
           }
@@ -223,13 +248,16 @@ class _AddTripScreenState extends State<AddTripScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 2)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
   }
 
   // Function to pick trip start date and time
   Future<void> _selectTripStartDateTime(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime initialDate = _selectedTripStartDateTime ?? now.add(const Duration(hours: 1));
+    final DateTime initialDate =
+        _selectedTripStartDateTime ?? now.add(const Duration(hours: 1));
 
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -239,8 +267,14 @@ class _AddTripScreenState extends State<AddTripScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.secondary, onPrimary: Colors.white, onSurface: AppColors.textPrimary),
-            textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.secondary)),
+            colorScheme: ColorScheme.light(
+              primary: AppColors.secondary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
+            ),
           ),
           child: child!,
         );
@@ -251,12 +285,23 @@ class _AddTripScreenState extends State<AddTripScreen> {
       // After date is selected, pick time
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
-        initialTime: _selectedTripStartDateTime != null ? TimeOfDay.fromDateTime(_selectedTripStartDateTime!) : TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+        initialTime:
+            _selectedTripStartDateTime != null
+                ? TimeOfDay.fromDateTime(_selectedTripStartDateTime!)
+                : TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(primary: AppColors.secondary, onPrimary: Colors.white, onSurface: AppColors.textPrimary),
-              textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.secondary)),
+              colorScheme: ColorScheme.light(
+                primary: AppColors.secondary,
+                onPrimary: Colors.white,
+                onSurface: AppColors.textPrimary,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.secondary,
+                ),
+              ),
             ),
             child: child!,
           );
@@ -265,7 +310,13 @@ class _AddTripScreenState extends State<AddTripScreen> {
 
       if (pickedTime != null) {
         setState(() {
-          _selectedTripStartDateTime = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+          _selectedTripStartDateTime = DateTime(
+            picked.year,
+            picked.month,
+            picked.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
         });
       }
     }
@@ -274,7 +325,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
   // Function to pick trip end date and time
   Future<void> _selectTripEndDateTime(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime initialDate = _selectedTripEndDateTime ?? (_selectedTripStartDateTime?.add(const Duration(hours: 4)) ?? now.add(const Duration(hours: 5)));
+    final DateTime initialDate =
+        _selectedTripEndDateTime ??
+        (_selectedTripStartDateTime?.add(const Duration(hours: 4)) ??
+            now.add(const Duration(hours: 5)));
 
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -284,8 +338,14 @@ class _AddTripScreenState extends State<AddTripScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.secondary, onPrimary: Colors.white, onSurface: AppColors.textPrimary),
-            textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.secondary)),
+            colorScheme: ColorScheme.light(
+              primary: AppColors.secondary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
+            ),
           ),
           child: child!,
         );
@@ -296,12 +356,23 @@ class _AddTripScreenState extends State<AddTripScreen> {
       // After date is selected, pick time
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
-        initialTime: _selectedTripEndDateTime != null ? TimeOfDay.fromDateTime(_selectedTripEndDateTime!) : TimeOfDay.fromDateTime(initialDate),
+        initialTime:
+            _selectedTripEndDateTime != null
+                ? TimeOfDay.fromDateTime(_selectedTripEndDateTime!)
+                : TimeOfDay.fromDateTime(initialDate),
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(primary: AppColors.secondary, onPrimary: Colors.white, onSurface: AppColors.textPrimary),
-              textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.secondary)),
+              colorScheme: ColorScheme.light(
+                primary: AppColors.secondary,
+                onPrimary: Colors.white,
+                onSurface: AppColors.textPrimary,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.secondary,
+                ),
+              ),
             ),
             child: child!,
           );
@@ -310,7 +381,13 @@ class _AddTripScreenState extends State<AddTripScreen> {
 
       if (pickedTime != null) {
         setState(() {
-          _selectedTripEndDateTime = DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+          _selectedTripEndDateTime = DateTime(
+            picked.year,
+            picked.month,
+            picked.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
         });
       }
     }
@@ -323,7 +400,9 @@ class _AddTripScreenState extends State<AddTripScreen> {
 
       // Validate required fields based on backend requirements
       if (startLocation == null || endLocation == null) {
-        _showSnackBar('Please select both start and destination locations on the map');
+        _showSnackBar(
+          'Please select both start and destination locations on the map',
+        );
         return;
       }
 
@@ -346,7 +425,8 @@ class _AddTripScreenState extends State<AddTripScreen> {
       final tripStartDateTime = _selectedTripStartDateTime!;
 
       // Validate trip start date is in the future (only for new trips)
-      if (widget.postToEdit == null && tripStartDateTime.isBefore(DateTime.now())) {
+      if (widget.postToEdit == null &&
+          tripStartDateTime.isBefore(DateTime.now())) {
         _showSnackBar('Trip start date must be in the future');
         return;
       }
@@ -367,41 +447,79 @@ class _AddTripScreenState extends State<AddTripScreen> {
       }
 
       // Create trip locations with trimmed addresses
-      final tripStartLocation = TripLocation(address: _startLocationAddressController.text.trim(), coordinates: [startLocation!.longitude, startLocation!.latitude]);
+      final tripStartLocation = TripLocation(
+        address: _startLocationAddressController.text.trim(),
+        coordinates: [startLocation!.longitude, startLocation!.latitude],
+      );
 
-      final tripDestination = TripLocation(address: _destinationAddressController.text.trim(), coordinates: [endLocation!.longitude, endLocation!.latitude]);
+      final tripDestination = TripLocation(
+        address: _destinationAddressController.text.trim(),
+        coordinates: [endLocation!.longitude, endLocation!.latitude],
+      );
 
       // Create route GeoJSON
-      final routeGeoJSON = RouteGeoJSON(
-        type: "LineString",
-        coordinates: [
-          [startLocation!.longitude, startLocation!.latitude],
-          [endLocation!.longitude, endLocation!.latitude],
-        ],
-      );
+      RouteGeoJSON routeGeoJSON;
+      if (_selectedRoute != null) {
+        // Use selected route points with proper downsampling (approx 5km gap)
+        final downsampledPoints = _selectedRoute!.getPointsWithGap(5000);
+        routeGeoJSON = RouteGeoJSON(
+          type: "LineString",
+          coordinates:
+              downsampledPoints.map((p) => [p.longitude, p.latitude]).toList(),
+        );
+      } else {
+        // Fallback to straight line
+        routeGeoJSON = RouteGeoJSON(
+          type: "LineString",
+          coordinates: [
+            [startLocation!.longitude, startLocation!.latitude],
+            [endLocation!.longitude, endLocation!.latitude],
+          ],
+        );
+      }
 
       DateTime tripEndDateTime;
       if (_selectedTripEndDateTime != null) {
         tripEndDateTime = _selectedTripEndDateTime!;
         // Validate end date is after start date
-        if (tripEndDateTime.isBefore(tripStartDateTime) || tripEndDateTime.isAtSameMomentAs(tripStartDateTime)) {
+        if (tripEndDateTime.isBefore(tripStartDateTime) ||
+            tripEndDateTime.isAtSameMomentAs(tripStartDateTime)) {
           _showSnackBar('Trip end date must be after start date');
           return;
         }
       } else {
-        // Default to 4 hours after start time if end time not specified
-        tripEndDateTime = tripStartDateTime.add(const Duration(hours: 4));
+        // Default to calculated duration + buffer if end time not specified, or 4 hours
+        final estimatedDurationMins =
+            _duration ??
+            _calculateDuration(
+              tripStartDateTime,
+              tripStartDateTime.add(const Duration(hours: 4)),
+            );
+        tripEndDateTime = tripStartDateTime.add(
+          Duration(minutes: estimatedDurationMins + 60),
+        ); // +1 hour buffer
       }
 
-      // Create distance and duration (you can calculate these based on coordinates)
+      // Create distance and duration
+      final distanceVal =
+          _selectedRoute != null
+              ? _selectedRoute!.distance / 1000
+              : (_distance ?? _calculateDistance(startLocation!, endLocation!));
+
       final distance = Distance(
-        value: _distance ?? _calculateDistance(startLocation!, endLocation!),
-        text: "${(_distance ?? _calculateDistance(startLocation!, endLocation!)).toStringAsFixed(1)} km",
+        value: distanceVal,
+        text: "${distanceVal.toStringAsFixed(1)} km",
       );
 
+      final durationVal =
+          _selectedRoute != null
+              ? (_selectedRoute!.duration / 60).round()
+              : (_duration ??
+                  _calculateDuration(tripStartDateTime, tripEndDateTime));
+
       final duration = TripDuration(
-        value: _duration ?? _calculateDuration(tripStartDateTime, tripEndDateTime),
-        text: _formatDuration(_duration ?? _calculateDuration(tripStartDateTime, tripEndDateTime)),
+        value: durationVal,
+        text: _formatDuration(durationVal),
       );
 
       // Check if we're editing or creating
@@ -422,7 +540,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
             distance: distance,
             duration: duration,
             goodsTypeId: _selectedGoodsTypeId!,
-            weight: _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
+            weight:
+                _weightController.text.isNotEmpty
+                    ? double.tryParse(_weightController.text)
+                    : null,
             tripStartDate: tripStartDateTime,
             tripEndDate: tripEndDateTime,
           ),
@@ -443,7 +564,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
           distance: distance,
           duration: duration,
           goodsTypeId: _selectedGoodsTypeId!,
-          weight: _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
+          weight:
+              _weightController.text.isNotEmpty
+                  ? double.tryParse(_weightController.text)
+                  : null,
           tripStartDate: tripStartDateTime,
           tripEndDate: tripEndDateTime,
         );
@@ -479,7 +603,13 @@ class _AddTripScreenState extends State<AddTripScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.postToEdit != null ? 'Edit Trip' : 'Add New Trip', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+        title: Text(
+          widget.postToEdit != null ? 'Edit Trip' : 'Add New Trip',
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
@@ -509,7 +639,9 @@ class _AddTripScreenState extends State<AddTripScreen> {
                       if (mounted && context.mounted) {
                         final currentRoute = ModalRoute.of(context);
                         if (currentRoute != null && currentRoute.isCurrent) {
-                          Navigator.of(context).pop(true); // Return true to indicate success
+                          Navigator.of(
+                            context,
+                          ).pop(true); // Return true to indicate success
                         }
                       }
                     });
@@ -526,7 +658,9 @@ class _AddTripScreenState extends State<AddTripScreen> {
                       if (mounted && context.mounted) {
                         final currentRoute = ModalRoute.of(context);
                         if (currentRoute != null && currentRoute.isCurrent) {
-                          Navigator.of(context).pop(true); // Return true to indicate success
+                          Navigator.of(
+                            context,
+                          ).pop(true); // Return true to indicate success
                         }
                       }
                     });
@@ -538,7 +672,11 @@ class _AddTripScreenState extends State<AddTripScreen> {
                     }
                   }
                 },
-                buildWhen: (previous, current) => !(current is PostCreated || current is PostUpdated || current is PostsError),
+                buildWhen:
+                    (previous, current) =>
+                        !(current is PostCreated ||
+                            current is PostUpdated ||
+                            current is PostsError),
                 builder: (context, state) {
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(24.0),
@@ -548,13 +686,27 @@ class _AddTripScreenState extends State<AddTripScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Post Type Selection
-                          Text('Trip Type', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Trip Type',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildPostTypeSelector(),
                           const SizedBox(height: 30),
 
                           // Start Location Section
-                          Text('Start Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Start Location',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildInputField(
                             controller: _startLocationAddressController,
@@ -579,17 +731,31 @@ class _AddTripScreenState extends State<AddTripScreen> {
                             label: 'Map Coordinates',
                             coordinates: _startLocationCoordinates,
                             onTap: () async {
-                              LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
+                              LatLng location = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MapPointSelector(),
+                                ),
+                              );
                               setState(() {
                                 startLocation = location;
-                                _startLocationCoordinates = formatLatLng(location);
+                                _startLocationCoordinates = formatLatLng(
+                                  location,
+                                );
                               });
                             },
                           ),
                           const SizedBox(height: 30),
 
                           // Destination Section
-                          Text('Destination', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Destination',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildInputField(
                             controller: _destinationAddressController,
@@ -614,25 +780,145 @@ class _AddTripScreenState extends State<AddTripScreen> {
                             label: 'Map Coordinates',
                             coordinates: _destinationCoordinates,
                             onTap: () async {
-                              LatLng location = await Navigator.push(context, MaterialPageRoute(builder: (_) => MapPointSelector()));
+                              LatLng location = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MapPointSelector(),
+                                ),
+                              );
                               setState(() {
                                 endLocation = location;
-                                _destinationCoordinates = formatLatLng(location);
+                                _destinationCoordinates = formatLatLng(
+                                  location,
+                                );
                               });
                             },
                           ),
                           const SizedBox(height: 30),
 
+                          // Route Selection Section
+                          if (startLocation != null && endLocation != null) ...[
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => RouteSelectionScreen(
+                                            startPoint: latlong.LatLng(
+                                              startLocation!.latitude,
+                                              startLocation!.longitude,
+                                            ),
+                                            endPoint: latlong.LatLng(
+                                              endLocation!.latitude,
+                                              endLocation!.longitude,
+                                            ),
+                                          ),
+                                    ),
+                                  );
+
+                                  if (result != null && result is RouteModel) {
+                                    setState(() {
+                                      _selectedRoute = result;
+                                      // Auto-update distance and duration if available
+                                      _distance =
+                                          result.distance /
+                                          1000; // convert to km
+                                      _duration =
+                                          (result.duration / 60)
+                                              .round(); // convert to min
+                                    });
+                                    _showSnackBar(
+                                      'Route selected: ${result.description ?? "Custom Route"}',
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.alt_route_rounded),
+                                label: Text(
+                                  _selectedRoute != null
+                                      ? 'Change Route'
+                                      : 'Select Route',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: BorderSide(color: AppColors.primary),
+                                ),
+                              ),
+                            ),
+                            if (_selectedRoute != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.blue.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Colors.blue,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Route selected: ${_selectedRoute!.description ?? "Custom Polyline"} \n(${(_selectedRoute!.distance / 1000).toStringAsFixed(1)} km)',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 30),
+                          ],
+
                           // Trip Details Section
-                          Text('Trip Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Trip Details',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          _buildDateTimePickerField(label: 'Start Date & Time *', selectedDateTime: _selectedTripStartDateTime, onTap: () => _selectTripStartDateTime(context)),
+                          _buildDateTimePickerField(
+                            label: 'Start Date & Time *',
+                            selectedDateTime: _selectedTripStartDateTime,
+                            onTap: () => _selectTripStartDateTime(context),
+                          ),
                           const SizedBox(height: 16),
-                          _buildDateTimePickerField(label: 'End Date & Time (Optional)', selectedDateTime: _selectedTripEndDateTime, onTap: () => _selectTripEndDateTime(context)),
+                          _buildDateTimePickerField(
+                            label: 'End Date & Time (Optional)',
+                            selectedDateTime: _selectedTripEndDateTime,
+                            onTap: () => _selectTripEndDateTime(context),
+                          ),
                           const SizedBox(height: 30),
 
                           // Vehicle & Driver Section
-                          Text('Vehicle & Driver', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Vehicle & Driver',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildVehicleDropdown(),
                           const SizedBox(height: 16),
@@ -642,7 +928,14 @@ class _AddTripScreenState extends State<AddTripScreen> {
                           const SizedBox(height: 30),
 
                           // Goods & Weight Section
-                          Text('Goods & Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Goods & Weight',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildGoodsTypeDropdown(),
                           const SizedBox(height: 16),
@@ -671,7 +964,14 @@ class _AddTripScreenState extends State<AddTripScreen> {
                           const SizedBox(height: 30),
 
                           // Post Content Section
-                          Text('Trip Content', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(
+                            'Trip Content',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildInputField(
                             controller: _titleController,
@@ -695,7 +995,8 @@ class _AddTripScreenState extends State<AddTripScreen> {
                           _buildInputField(
                             controller: _descriptionController,
                             label: 'Description',
-                            hint: 'Provide details about the goods, size, weight, etc.',
+                            hint:
+                                'Provide details about the goods, size, weight, etc.',
                             icon: Icons.description_outlined,
                             maxLines: 4,
                             validator: (value) {
@@ -715,14 +1016,33 @@ class _AddTripScreenState extends State<AddTripScreen> {
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: _submitPost,
-                              icon: Icon(widget.postToEdit != null ? Icons.save_rounded : Icons.send_rounded, color: Colors.white),
-                              label: Text(widget.postToEdit != null ? 'Update Trip' : 'Create Trip', style: const TextStyle(color: Colors.white, fontSize: 18)),
+                              icon: Icon(
+                                widget.postToEdit != null
+                                    ? Icons.save_rounded
+                                    : Icons.send_rounded,
+                                color: Colors.white,
+                              ),
+                              label: Text(
+                                widget.postToEdit != null
+                                    ? 'Update Trip'
+                                    : 'Create Trip',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.secondary,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 elevation: 5,
-                                shadowColor: AppColors.secondary.withOpacity(0.4),
+                                shadowColor: AppColors.secondary.withOpacity(
+                                  0.4,
+                                ),
                               ),
                             ),
                           ),
@@ -748,14 +1068,27 @@ class _AddTripScreenState extends State<AddTripScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade300, width: 1),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: TextFormField(
             controller: controller,
@@ -767,7 +1100,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
               hintStyle: const TextStyle(color: AppColors.textSecondary),
               prefixIcon: Icon(icon, color: AppColors.textSecondary),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
             validator: validator,
           ),
@@ -777,11 +1113,22 @@ class _AddTripScreenState extends State<AddTripScreen> {
   }
 
   // Widget for displaying map coordinates (placeholder)
-  Widget _buildMapCoordinatesField({required String label, required String? coordinates, required VoidCallback onTap}) {
+  Widget _buildMapCoordinatesField({
+    required String label,
+    required String? coordinates,
+    required VoidCallback onTap,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: onTap,
@@ -792,7 +1139,13 @@ class _AddTripScreenState extends State<AddTripScreen> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300, width: 1),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -801,11 +1154,20 @@ class _AddTripScreenState extends State<AddTripScreen> {
                 Expanded(
                   child: Text(
                     coordinates ?? 'Tap to select on map',
-                    style: TextStyle(color: coordinates != null ? AppColors.textPrimary : AppColors.textSecondary),
+                    style: TextStyle(
+                      color:
+                          coordinates != null
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textSecondary, size: 18),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.textSecondary,
+                  size: 18,
+                ),
               ],
             ),
           ),
@@ -815,11 +1177,22 @@ class _AddTripScreenState extends State<AddTripScreen> {
   }
 
   // Widget for date and time picker field (combined)
-  Widget _buildDateTimePickerField({required String label, required DateTime? selectedDateTime, required VoidCallback onTap}) {
+  Widget _buildDateTimePickerField({
+    required String label,
+    required DateTime? selectedDateTime,
+    required VoidCallback onTap,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         GestureDetector(
           onTap: onTap,
@@ -830,16 +1203,34 @@ class _AddTripScreenState extends State<AddTripScreen> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300, width: 1),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today_outlined, color: AppColors.textSecondary),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    selectedDateTime != null ? DateFormat('dd MMM yyyy, hh:mm a').format(selectedDateTime) : 'Select Date & Time',
-                    style: TextStyle(color: selectedDateTime != null ? AppColors.textPrimary : AppColors.textSecondary),
+                    selectedDateTime != null
+                        ? DateFormat(
+                          'dd MMM yyyy, hh:mm a',
+                        ).format(selectedDateTime)
+                        : 'Select Date & Time',
+                    style: TextStyle(
+                      color:
+                          selectedDateTime != null
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -859,14 +1250,26 @@ class _AddTripScreenState extends State<AddTripScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Expanded(
             child: RadioListTile<String>(
-              title: const Text('Load', style: TextStyle(color: AppColors.textPrimary)),
-              subtitle: const Text('Looking for transport', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              title: const Text(
+                'Load',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Looking for transport',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
               value: 'load',
               groupValue: _postType,
               onChanged: (value) => setState(() => _postType = value),
@@ -875,8 +1278,14 @@ class _AddTripScreenState extends State<AddTripScreen> {
           ),
           Expanded(
             child: RadioListTile<String>(
-              title: const Text('Truck', style: TextStyle(color: AppColors.textPrimary)),
-              subtitle: const Text('Offering transport', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              title: const Text(
+                'Truck',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: const Text(
+                'Offering transport',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
               value: 'truck',
               groupValue: _postType,
               onChanged: (value) => setState(() => _postType = value),
@@ -896,7 +1305,13 @@ class _AddTripScreenState extends State<AddTripScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -906,8 +1321,21 @@ class _AddTripScreenState extends State<AddTripScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Self Drive', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                const Text('Will you be driving yourself?', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                const Text(
+                  'Self Drive',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Text(
+                  'Will you be driving yourself?',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -918,7 +1346,10 @@ class _AddTripScreenState extends State<AddTripScreen> {
                 _isSelfDrive = value;
                 // Auto-select self-drive driver when toggled on
                 if (value && _drivers.isNotEmpty) {
-                  final selfDriveDriver = _drivers.firstWhere((d) => d['isSelfDrive'] == true, orElse: () => _drivers.first);
+                  final selfDriveDriver = _drivers.firstWhere(
+                    (d) => d['isSelfDrive'] == true,
+                    orElse: () => _drivers.first,
+                  );
                   _selectedDriverId = selfDriveDriver['_id'];
                 }
               });
@@ -935,33 +1366,56 @@ class _AddTripScreenState extends State<AddTripScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Vehicle *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const Text(
+          'Vehicle *',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade300, width: 1),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: DropdownButtonFormField<String>(
             value: _selectedVehicleId,
             decoration: InputDecoration(
               hintText: 'Select Vehicle',
               hintStyle: const TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(Icons.local_shipping_outlined, color: AppColors.textSecondary),
+              prefixIcon: Icon(
+                Icons.local_shipping_outlined,
+                color: AppColors.textSecondary,
+              ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
             items:
                 _vehicles.map((vehicle) {
                   return DropdownMenuItem<String>(
                     value: vehicle.id,
-                    child: Text('${vehicle.vehicleNumber} - ${vehicle.type}', style: const TextStyle(color: AppColors.textPrimary)),
+                    child: Text(
+                      '${vehicle.vehicleNumber} - ${vehicle.type}',
+                      style: const TextStyle(color: AppColors.textPrimary),
+                    ),
                   );
                 }).toList(),
             onChanged: (value) => setState(() => _selectedVehicleId = value),
-            validator: (value) => value == null ? 'Please select a vehicle' : null,
+            validator:
+                (value) => value == null ? 'Please select a vehicle' : null,
           ),
         ),
       ],
@@ -973,23 +1427,42 @@ class _AddTripScreenState extends State<AddTripScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Driver *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const Text(
+          'Driver *',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade300, width: 1),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: DropdownButtonFormField<String>(
             value: _selectedDriverId,
             decoration: InputDecoration(
               hintText: 'Select Driver',
               hintStyle: const TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+              prefixIcon: Icon(
+                Icons.person_outline,
+                color: AppColors.textSecondary,
+              ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
             items:
                 _drivers.map((driver) {
@@ -997,12 +1470,19 @@ class _AddTripScreenState extends State<AddTripScreen> {
                     value: driver['_id'],
                     child: Text(
                       driver['name'] ?? 'Unknown',
-                      style: TextStyle(color: AppColors.textPrimary, fontWeight: driver['isSelfDrive'] == true ? FontWeight.bold : FontWeight.normal),
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight:
+                            driver['isSelfDrive'] == true
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                      ),
                     ),
                   );
                 }).toList(),
             onChanged: (value) => setState(() => _selectedDriverId = value),
-            validator: (value) => value == null ? 'Please select a driver' : null,
+            validator:
+                (value) => value == null ? 'Please select a driver' : null,
           ),
         ),
       ],
@@ -1014,30 +1494,56 @@ class _AddTripScreenState extends State<AddTripScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Goods Type *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const Text(
+          'Goods Type *',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade300, width: 1),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: DropdownButtonFormField<String>(
             value: _selectedGoodsTypeId,
             decoration: InputDecoration(
               hintText: 'Select Goods Type',
               hintStyle: const TextStyle(color: AppColors.textSecondary),
-              prefixIcon: Icon(Icons.inventory_outlined, color: AppColors.textSecondary),
+              prefixIcon: Icon(
+                Icons.inventory_outlined,
+                color: AppColors.textSecondary,
+              ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
             items:
                 _goodsTypes.map((goods) {
-                  return DropdownMenuItem<String>(value: goods.id, child: Text(goods.name, style: const TextStyle(color: AppColors.textPrimary)));
+                  return DropdownMenuItem<String>(
+                    value: goods.id,
+                    child: Text(
+                      goods.name,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                    ),
+                  );
                 }).toList(),
             onChanged: (value) => setState(() => _selectedGoodsTypeId = value),
-            validator: (value) => value == null ? 'Please select a goods type' : null,
+            validator:
+                (value) => value == null ? 'Please select a goods type' : null,
           ),
         ),
       ],
