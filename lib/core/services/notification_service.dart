@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -94,7 +95,7 @@ class NotificationService {
     _firebaseMessaging.onTokenRefresh.listen((newToken) {
       _fcmToken = newToken;
       debugPrint("FCM Token Refreshed: $_fcmToken");
-      // TODO: Update token in backend
+      _updateTokenOnBackend(newToken);
     });
 
     // 5. Setup Foreground Message Handler
@@ -126,13 +127,59 @@ class NotificationService {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
+  // Callback for navigation when notification is tapped
+  Function(Map<String, dynamic>)? _onNotificationTap;
+
+  void setOnNotificationTap(Function(Map<String, dynamic>) callback) {
+    _onNotificationTap = callback;
+  }
+
   void _handleNotificationTap(String? payload) {
     debugPrint("Notification Tapped with payload: $payload");
-    // TODO: Navigate to specific screen based on payload
+
+    if (payload != null && _onNotificationTap != null) {
+      try {
+        final data = json.decode(payload) as Map<String, dynamic>;
+        _onNotificationTap!(data);
+      } catch (e) {
+        debugPrint("Error parsing notification payload: $e");
+      }
+    }
   }
 
   // Method to get token explicitly
   Future<String?> getToken() async {
     return await _firebaseMessaging.getToken();
+  }
+
+  // Callback for updating token on backend
+  Function(String)? _tokenUpdateCallback;
+
+  void setTokenUpdateCallback(Function(String) callback) {
+    _tokenUpdateCallback = callback;
+  }
+
+  // Update FCM token on backend
+  Future<void> _updateTokenOnBackend(String token) async {
+    if (_tokenUpdateCallback != null) {
+      try {
+        await _tokenUpdateCallback!(token);
+        debugPrint("FCM Token updated on backend successfully");
+      } catch (e) {
+        debugPrint("Error updating FCM token on backend: $e");
+      }
+    }
+  }
+
+  // Public method to update token on backend (called from app initialization)
+  Future<void> updateTokenOnBackend(Function(String) updateCallback) async {
+    if (_fcmToken != null) {
+      try {
+        await updateCallback(_fcmToken!);
+        debugPrint("FCM Token sent to backend");
+      } catch (e) {
+        debugPrint("Error sending FCM token to backend: $e");
+      }
+    }
   }
 }

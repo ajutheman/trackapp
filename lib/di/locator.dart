@@ -19,6 +19,7 @@ import 'package:truck_app/features/booking/repo/booking_repo.dart';
 import 'package:truck_app/features/booking/bloc/booking_bloc.dart';
 import 'package:truck_app/features/review/repo/review_repo.dart';
 import 'package:truck_app/features/review/bloc/review_bloc.dart';
+import 'package:truck_app/features/notification/bloc/notification_bloc.dart';
 
 import '../features/auth/bloc/image_upload/image_upload_bloc.dart';
 import '../features/auth/repo/auth_repo.dart';
@@ -79,4 +80,5 @@ void setupLocator() {
   locator.registerFactory(() => TokenBloc(repository: locator()));
   locator.registerFactory(() => BookingBloc(repository: locator()));
   locator.registerFactory(() => ReviewBloc(repository: locator()));
+  locator.registerFactory(() => NotificationBloc(repository: locator()));
 }

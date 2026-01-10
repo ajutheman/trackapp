@@ -31,4 +31,24 @@ class NotificationModel {
               : DateTime.now(),
     );
   }
+
+  NotificationModel copyWith({
+    String? id,
+    String? title,
+    String? body,
+    String? type,
+    Map<String, dynamic>? data,
+    bool? read,
+    DateTime? createdAt,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      type: type ?? this.type,
+      data: data ?? this.data,
+      read: read ?? this.read,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
