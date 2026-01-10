@@ -12,7 +12,15 @@ class SendOTPRequested extends AuthEvent {
 /// Event to verify the OTP provided by the user, along with the token received after requesting OTP.
 class VerifyOTPRequested extends AuthEvent {
   final String otp;
-  final String token; // This token is required for the API call as per your AuthRepository
+  final String
+  token; // This token is required for the API call as per your AuthRepository
 
   VerifyOTPRequested({required this.otp, required this.token});
+}
+
+/// Event to resend OTP using the existing token
+class ResendOTPRequested extends AuthEvent {
+  final String token;
+
+  ResendOTPRequested({required this.token});
 }

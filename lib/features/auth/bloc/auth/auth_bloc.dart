@@ -20,17 +20,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // Only listen to OTP-related events
     on<SendOTPRequested>(_onSendOTPRequested);
     on<VerifyOTPRequested>(_onVerifyOTPRequested);
+    on<ResendOTPRequested>(_onResendOTPRequested);
   }
 
   /// Handles the [SendOTPRequested] event.
   /// Calls the repository to send an OTP and emits [OTPSentSuccess] on success,
   /// carrying the `otpRequestToken` received from the repository.
-  Future<void> _onSendOTPRequested(SendOTPRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onSendOTPRequested(
+    SendOTPRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
       final result = await repository.sendOTP(event.phone);
       if (result.isSuccess) {
-        emit(OTPSentSuccess(otpRequestToken: result.data!)); // Pass the token received from sendOTP
+        emit(
+          OTPSentSuccess(otpRequestToken: result.data!),
+        ); // Pass the token received from sendOTP
       } else {
         emit(AuthFailure(error: result.message ?? "Failed to send OTP"));
       }
@@ -41,21 +47,64 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   /// Handles the [VerifyOTPRequested] event.
   /// Calls the repository to verify the OTP, passing the OTP code and the token.
-  Future<void> _onVerifyOTPRequested(VerifyOTPRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onVerifyOTPRequested(
+    VerifyOTPRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
-      final result = await repository.verifyOTP(event.otp, event.token); // Use the otp and token from the event
+      final result = await repository.verifyOTP(
+        event.otp,
+        event.token,
+      ); // Use the otp and token from the event
       if (result.isSuccess) {
         // If your verifyOTP API returns tokens to be saved locally after successful verification,
         // you would add that logic here, e.g.:
         bool isNewUser = result.data?['isNewUser'] ?? false;
         String token = result.data?['phoneVerifiedToken'] ?? '';
         if (!isNewUser) {
-          await LocalService.saveToken(accessToken: token, isDriver: result.data?['user']['user_type'] == AppUserType.driver);
+          await LocalService.saveToken(
+            accessToken: token,
+            isDriver: result.data?['user']['user_type'] == AppUserType.driver,
+          );
         }
-        emit(OTPVerifiedSuccess(isNewUser: isNewUser, token: token)); // A dedicated state for successful OTP verification
+        emit(
+          OTPVerifiedSuccess(isNewUser: isNewUser, token: token),
+        ); // A dedicated state for successful OTP verification
       } else {
-        emit(AuthFailure(error: result.message ?? "An unknown error occurred during OTP verification"));
+        emit(
+          AuthFailure(
+            error:
+                result.message ??
+                "An unknown error occurred during OTP verification",
+          ),
+        );
+      }
+    } catch (e) {
+      emit(AuthFailure(error: e.toString()));
+    }
+  }
+
+  /// Handles the [ResendOTPRequested] event.
+  /// Calls the repository to resend OTP using the existing token.
+  Future<void> _onResendOTPRequested(
+    ResendOTPRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await repository.resendOTP(event.token);
+      if (result.isSuccess) {
+        emit(
+          OTPResentSuccess(
+            otpRequestToken: result.data?['otpRequestToken'] ?? event.token,
+            resendCount: result.data?['resendCount'] ?? 0,
+            remainingResends: result.data?['remainingResends'] ?? 0,
+            message: result.data?['message'],
+          ),
+        );
+      } else {
+        emit(AuthFailure(error: result.message ?? "Failed to resend OTP"));
       }
     } catch (e) {
       emit(AuthFailure(error: e.toString()));

@@ -25,6 +25,8 @@ class Booking {
   final String? cancellationReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final BookingOtp? pickupOtp;
+  final BookingOtp? deliveryOtp;
 
   // Populated fields
   final TripInfo? trip;
@@ -65,6 +67,8 @@ class Booking {
     this.customer,
     this.initiator,
     this.recipient,
+    this.pickupOtp,
+    this.deliveryOtp,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -76,29 +80,87 @@ class Booking {
       customerId: _extractId(json['customer']),
       initiatorId: _extractId(json['initiator']),
       recipientId: _extractId(json['recipient']),
-      connectRequestId: json['connectRequest'] != null ? _extractId(json['connectRequest']) : null,
+      connectRequestId:
+          json['connectRequest'] != null
+              ? _extractId(json['connectRequest'])
+              : null,
       price: json['price'] != null ? (json['price'] as num).toDouble() : null,
-      pickupDate: json['pickupDate'] != null ? DateTime.parse(json['pickupDate']) : null,
+      pickupDate:
+          json['pickupDate'] != null
+              ? DateTime.parse(json['pickupDate'])
+              : null,
       notes: json['notes'],
       status: _statusFromString(json['status'] ?? 'pending'),
       initiatorAccepted: json['initiatorAccepted'] ?? true,
       recipientAccepted: json['recipientAccepted'] ?? false,
-      acceptedAt: json['acceptedAt'] != null ? DateTime.parse(json['acceptedAt']) : null,
-      rejectedAt: json['rejectedAt'] != null ? DateTime.parse(json['rejectedAt']) : null,
-      cancelledAt: json['cancelledAt'] != null ? DateTime.parse(json['cancelledAt']) : null,
-      completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
+      acceptedAt:
+          json['acceptedAt'] != null
+              ? DateTime.parse(json['acceptedAt'])
+              : null,
+      rejectedAt:
+          json['rejectedAt'] != null
+              ? DateTime.parse(json['rejectedAt'])
+              : null,
+      cancelledAt:
+          json['cancelledAt'] != null
+              ? DateTime.parse(json['cancelledAt'])
+              : null,
+      completedAt:
+          json['completedAt'] != null
+              ? DateTime.parse(json['completedAt'])
+              : null,
       cancellationPending: json['cancellationPending'] ?? false,
-      cancellationRequestedBy: json['cancellationRequestedBy'] != null ? _extractId(json['cancellationRequestedBy']) : null,
-      cancellationRequestedAt: json['cancellationRequestedAt'] != null ? DateTime.parse(json['cancellationRequestedAt']) : null,
+      cancellationRequestedBy:
+          json['cancellationRequestedBy'] != null
+              ? _extractId(json['cancellationRequestedBy'])
+              : null,
+      cancellationRequestedAt:
+          json['cancellationRequestedAt'] != null
+              ? DateTime.parse(json['cancellationRequestedAt'])
+              : null,
       cancellationReason: json['cancellationReason'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      trip: json['trip'] is Map ? TripInfo.fromJson(Map<String, dynamic>.from(json['trip'])) : null,
-      customerRequest: json['customerRequest'] is Map ? CustomerRequestInfo.fromJson(Map<String, dynamic>.from(json['customerRequest'])) : null,
-      driver: json['driver'] is Map ? UserInfo.fromJson(Map<String, dynamic>.from(json['driver'])) : null,
-      customer: json['customer'] is Map ? UserInfo.fromJson(Map<String, dynamic>.from(json['customer'])) : null,
-      initiator: json['initiator'] is Map ? UserInfo.fromJson(Map<String, dynamic>.from(json['initiator'])) : null,
-      recipient: json['recipient'] is Map ? UserInfo.fromJson(Map<String, dynamic>.from(json['recipient'])) : null,
+      createdAt:
+          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt:
+          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      trip:
+          json['trip'] is Map
+              ? TripInfo.fromJson(Map<String, dynamic>.from(json['trip']))
+              : null,
+      customerRequest:
+          json['customerRequest'] is Map
+              ? CustomerRequestInfo.fromJson(
+                Map<String, dynamic>.from(json['customerRequest']),
+              )
+              : null,
+      driver:
+          json['driver'] is Map
+              ? UserInfo.fromJson(Map<String, dynamic>.from(json['driver']))
+              : null,
+      customer:
+          json['customer'] is Map
+              ? UserInfo.fromJson(Map<String, dynamic>.from(json['customer']))
+              : null,
+      initiator:
+          json['initiator'] is Map
+              ? UserInfo.fromJson(Map<String, dynamic>.from(json['initiator']))
+              : null,
+      recipient:
+          json['recipient'] is Map
+              ? UserInfo.fromJson(Map<String, dynamic>.from(json['recipient']))
+              : null,
+      pickupOtp:
+          json['pickupOtp'] != null
+              ? BookingOtp.fromJson(
+                Map<String, dynamic>.from(json['pickupOtp']),
+              )
+              : null,
+      deliveryOtp:
+          json['deliveryOtp'] != null
+              ? BookingOtp.fromJson(
+                Map<String, dynamic>.from(json['deliveryOtp']),
+              )
+              : null,
     );
   }
 
@@ -166,11 +228,7 @@ class TripInfo {
   final String? title;
   final String? description;
 
-  TripInfo({
-    required this.id,
-    this.title,
-    this.description,
-  });
+  TripInfo({required this.id, this.title, this.description});
 
   factory TripInfo.fromJson(Map<String, dynamic> json) {
     return TripInfo(
@@ -186,11 +244,7 @@ class CustomerRequestInfo {
   final String? title;
   final String? description;
 
-  CustomerRequestInfo({
-    required this.id,
-    this.title,
-    this.description,
-  });
+  CustomerRequestInfo({required this.id, this.title, this.description});
 
   factory CustomerRequestInfo.fromJson(Map<String, dynamic> json) {
     return CustomerRequestInfo(
@@ -207,12 +261,7 @@ class UserInfo {
   final String? email;
   final String? phone;
 
-  UserInfo({
-    required this.id,
-    required this.name,
-    this.email,
-    this.phone,
-  });
+  UserInfo({required this.id, required this.name, this.email, this.phone});
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
@@ -259,11 +308,15 @@ class BookingOtp {
       code: json['code'] ?? '',
       issuedTo: _issuedToFromString(json['issuedTo'] ?? 'customer'),
       expiresAt: DateTime.parse(json['expiresAt']),
-      consumedAt: json['consumedAt'] != null ? DateTime.parse(json['consumedAt']) : null,
+      consumedAt:
+          json['consumedAt'] != null
+              ? DateTime.parse(json['consumedAt'])
+              : null,
       attempts: json['attempts'] ?? 0,
       maxAttempts: json['maxAttempts'] ?? 5,
       isActive: json['isActive'] ?? true,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      createdAt:
+          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
     );
   }
 
@@ -278,17 +331,12 @@ class BookingOtp {
   }
 
   static OtpIssuedTo _issuedToFromString(String issuedTo) {
-    return issuedTo.toLowerCase() == 'driver' ? OtpIssuedTo.driver : OtpIssuedTo.customer;
+    return issuedTo.toLowerCase() == 'driver'
+        ? OtpIssuedTo.driver
+        : OtpIssuedTo.customer;
   }
 }
 
-enum OtpKind {
-  pickup,
-  delivery,
-}
+enum OtpKind { pickup, delivery }
 
-enum OtpIssuedTo {
-  driver,
-  customer,
-}
-
+enum OtpIssuedTo { driver, customer }

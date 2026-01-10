@@ -27,7 +27,30 @@ class OTPVerifiedSuccess extends AuthState {
   final String token;
   final bool isNewUser;
 
-  OTPVerifiedSuccess({required this.isNewUser,required this.token});
+  OTPVerifiedSuccess({required this.isNewUser, required this.token});
+}
+
+/// State indicating that OTP has been successfully resent
+class OTPResentSuccess extends AuthState {
+  final String otpRequestToken;
+  final int resendCount;
+  final int remainingResends;
+  final String? message;
+
+  OTPResentSuccess({
+    required this.otpRequestToken,
+    required this.resendCount,
+    required this.remainingResends,
+    this.message,
+  });
+
+  @override
+  List<Object?> get props => [
+    otpRequestToken,
+    resendCount,
+    remainingResends,
+    message,
+  ];
 }
 
 class AuthFailure extends AuthState {

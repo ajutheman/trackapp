@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:truck_app/core/utils/messages.dart';
+import 'package:sms_autofill/sms_autofill.dart';
 import 'package:truck_app/features/auth/screens/register_screen_driver.dart';
 import 'package:truck_app/features/auth/screens/register_screen_user.dart';
 import 'package:truck_app/features/splash/screen/splash_screen.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../main/screen/main_screen_driver.dart';
-import '../../main/screen/main_screen_user.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
@@ -29,7 +27,8 @@ class OtpScreen extends StatefulWidget {
   State<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
+class _OtpScreenState extends State<OtpScreen>
+    with TickerProviderStateMixin, CodeAutoFill {
   final List<TextEditingController> _otpControllers = List.generate(
     4,
     (index) => TextEditingController(),
@@ -42,12 +41,14 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
   late Animation<double> _pulseAnimation;
 
-  int _countdown = 30;
+  int _countdown = 60;
   bool _isResendEnabled = false;
+  String _currentToken = '';
 
   @override
   void initState() {
     super.initState();
+    _currentToken = widget.otpRequestToken;
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -76,6 +77,35 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
 
     _animationController.forward();
     _startCountdown();
+    _listenForSMS();
+  }
+
+  void _listenForSMS() async {
+    try {
+      // Request SMS permission and listen for OTP
+      await SmsAutoFill().listenForCode();
+    } catch (e) {
+      debugPrint('Error listening for SMS: $e');
+    }
+  }
+
+  @override
+  void codeUpdated() {
+    // This is called when SMS is received
+    if (code != null && code!.length == 4) {
+      // Auto-fill OTP fields
+      for (int i = 0; i < 4; i++) {
+        _otpControllers[i].text = code![i];
+      }
+      setState(() {});
+
+      // Auto-verify after a short delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (_isOtpComplete) {
+          _verifyOtp();
+        }
+      });
+    }
   }
 
   void _startCountdown() {
@@ -95,11 +125,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
   }
 
   void _resendOtp() {
-    setState(() {
-      _countdown = 30;
-      _isResendEnabled = false;
-    });
-    _startCountdown();
+    if (!_isResendEnabled) return;
 
     // Add haptic feedback
     HapticFeedback.lightImpact();
@@ -108,6 +134,9 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
     _pulseController.forward().then((_) {
       _pulseController.reverse();
     });
+
+    // Trigger resend event
+    context.read<AuthBloc>().add(ResendOTPRequested(token: _currentToken));
   }
 
   String get _otpValue {
@@ -120,6 +149,8 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    SmsAutoFill().unregisterListener();
+    cancel();
     _animationController.dispose();
     _pulseController.dispose();
     for (var controller in _otpControllers) {
@@ -154,9 +185,48 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
             }
 
             if (state is AuthFailure) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.error)));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+
+            if (state is OTPResentSuccess) {
+              // Update token after successful resend
+              setState(() {
+                _currentToken = state.otpRequestToken;
+                _countdown = 60;
+                _isResendEnabled = false;
+              });
+              _startCountdown();
+
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message ?? 'OTP resent successfully'),
+                  backgroundColor: AppColors.success,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+
+              // Show resend info if available
+              if (state.remainingResends > 0) {
+                Future.delayed(const Duration(seconds: 2), () {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${state.remainingResends} resend(s) remaining',
+                        ),
+                        backgroundColor: AppColors.secondary,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                });
+              }
             }
 
             if (state is OTPVerifiedSuccess) {
@@ -272,7 +342,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
 
                           // Subtitle
                           Text(
-                            'Enter the 4-digit code sent to your\nmobile number',
+                            'Enter the 4-digit code sent to\n${widget.phone}',
                             textAlign: TextAlign.center,
                             style: Theme.of(
                               context,
@@ -437,7 +507,7 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
     HapticFeedback.mediumImpact();
 
     context.read<AuthBloc>().add(
-      VerifyOTPRequested(otp: _otpValue, token: widget.otpRequestToken),
+      VerifyOTPRequested(otp: _otpValue, token: _currentToken),
     );
   }
 }

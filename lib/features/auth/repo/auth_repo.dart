@@ -10,15 +10,39 @@ class AuthRepository {
   AuthRepository({required this.apiService});
 
   Future<Result<String>> sendOTP(String phone) async {
-    final result = await apiService.post(ApiEndpoints.sendOTP, body: {'phone': phone}, isTokenRequired: false);
+    final result = await apiService.post(
+      ApiEndpoints.sendOTP,
+      body: {'phone': phone},
+      isTokenRequired: false,
+    );
     if (result.isSuccess) {
       return Result.success(result.data["otpRequestToken"]);
     }
     return Result.error(result.message!);
   }
 
-  Future<Result<Map<String,dynamic>>> verifyOTP(String otp, String token) async {
-    final result = await apiService.post(ApiEndpoints.verifyOTP, body: {"otp": otp}, isTokenRequired: false,token: token);
+  Future<Result<Map<String, dynamic>>> verifyOTP(
+    String otp,
+    String token,
+  ) async {
+    final result = await apiService.post(
+      ApiEndpoints.verifyOTP,
+      body: {"otp": otp},
+      isTokenRequired: false,
+      token: token,
+    );
+    if (result.isSuccess) {
+      return Result.success(result.data);
+    }
+    return Result.error(result.message!);
+  }
+
+  Future<Result<Map<String, dynamic>>> resendOTP(String token) async {
+    final result = await apiService.post(
+      ApiEndpoints.resendOTP,
+      isTokenRequired: false,
+      token: token,
+    );
     if (result.isSuccess) {
       return Result.success(result.data);
     }
