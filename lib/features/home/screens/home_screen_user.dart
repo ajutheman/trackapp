@@ -4,7 +4,7 @@ import 'package:truck_app/core/constants/app_images.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/loading_skeletons.dart';
-import '../../notification/presentation/screens/notifications_screen.dart';
+import '../../notification/screen/notifications_screen.dart';
 import '../../search/screens/search_screen.dart';
 import '../model/post.dart';
 import '../model/connect.dart';

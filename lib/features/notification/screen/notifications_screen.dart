@@ -2,28 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../bloc/notification_bloc.dart';
-import '../../bloc/notification_event.dart';
-import '../../bloc/notification_state.dart';
-import '../../data/models/notification_model.dart';
+import '../bloc/notification_bloc.dart';
+import '../bloc/notification_event.dart';
+import '../bloc/notification_state.dart';
+import '../data/models/notification_model.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              NotificationBloc(repository: context.read())
-                ..add(const LoadNotifications()),
-      child: const _NotificationsView(),
-    );
-  }
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsView extends StatelessWidget {
-  const _NotificationsView();
+class _NotificationsScreenState extends State<NotificationsScreen> {
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    context.read<NotificationBloc>().add(const LoadNotifications());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,22 +35,9 @@ class _NotificationsView extends StatelessWidget {
                   const Text('Notifications'),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${state.unreadCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(12)),
+                    child: Text('${state.unreadCount}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ],
               );
@@ -68,9 +53,7 @@ class _NotificationsView extends StatelessWidget {
                   icon: const Icon(Icons.done_all),
                   tooltip: 'Mark all as read',
                   onPressed: () {
-                    context.read<NotificationBloc>().add(
-                      const MarkAllNotificationsAsRead(),
-                    );
+                    context.read<NotificationBloc>().add(const MarkAllNotificationsAsRead());
                   },
                 );
               }
@@ -94,9 +77,7 @@ class _NotificationsView extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      context.read<NotificationBloc>().add(
-                        const LoadNotifications(),
-                      );
+                      context.read<NotificationBloc>().add(const LoadNotifications());
                     },
                     child: const Text('Retry'),
                   ),
@@ -111,16 +92,9 @@ class _NotificationsView extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.notifications_none,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
+                    Icon(Icons.notifications_none, size: 64, color: Colors.grey),
                     SizedBox(height: 16),
-                    Text(
-                      'No notifications',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
+                    Text('No notifications', style: TextStyle(fontSize: 18, color: Colors.grey)),
                   ],
                 ),
               );
@@ -128,9 +102,7 @@ class _NotificationsView extends StatelessWidget {
 
             return RefreshIndicator(
               onRefresh: () async {
-                context.read<NotificationBloc>().add(
-                  const RefreshNotifications(),
-                );
+                context.read<NotificationBloc>().add(const RefreshNotifications());
               },
               child: ListView.separated(
                 itemCount: state.notifications.length,
@@ -162,29 +134,19 @@ class _NotificationTile extends StatelessWidget {
         backgroundColor: notification.read ? Colors.grey : Colors.blue,
         child: Icon(_getIconForType(notification.type), color: Colors.white),
       ),
-      title: Text(
-        notification.title,
-        style: TextStyle(
-          fontWeight: notification.read ? FontWeight.normal : FontWeight.bold,
-        ),
-      ),
+      title: Text(notification.title, style: TextStyle(fontWeight: notification.read ? FontWeight.normal : FontWeight.bold)),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
           Text(notification.body),
           const SizedBox(height: 4),
-          Text(
-            DateFormat('MMM d, h:mm a').format(notification.createdAt),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(DateFormat('MMM d, h:mm a').format(notification.createdAt), style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
       onTap: () {
         if (!notification.read) {
-          context.read<NotificationBloc>().add(
-            MarkNotificationAsRead(notification.id),
-          );
+          context.read<NotificationBloc>().add(MarkNotificationAsRead(notification.id));
         }
         _handleNotificationNavigation(context, notification);
       },
@@ -206,10 +168,7 @@ class _NotificationTile extends StatelessWidget {
     }
   }
 
-  void _handleNotificationNavigation(
-    BuildContext context,
-    NotificationModel notification,
-  ) {
+  void _handleNotificationNavigation(BuildContext context, NotificationModel notification) {
     // Handle navigation based on notification type and data
     final data = notification.data;
 

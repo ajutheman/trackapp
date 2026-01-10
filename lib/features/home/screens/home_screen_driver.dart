@@ -12,7 +12,7 @@ import '../widgets/location_dropdown.dart';
 import '../../connect/bloc/connect_request_bloc.dart';
 import '../../connect/model/connect_request.dart';
 import '../../token/bloc/token_bloc.dart';
-import '../../notification/presentation/screens/notifications_screen.dart';
+import '../../notification/screen/notifications_screen.dart';
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});

@@ -12,6 +12,7 @@ import 'package:truck_app/features/review/bloc/review_bloc.dart';
 
 import '../di/locator.dart';
 import '../features/connect/bloc/driver_connection_bloc.dart';
+import '../features/notification/bloc/notification_bloc.dart';
 import '../features/splash/bloc/user_session/user_session_bloc.dart';
 import '../features/vehicle/bloc/vehicle/vehicle_bloc.dart';
 
@@ -29,4 +30,5 @@ List<BlocProvider> globalBlocProviders = [
   BlocProvider<TokenBloc>(create: (_) => locator()),
   BlocProvider<BookingBloc>(create: (_) => locator()),
   BlocProvider<ReviewBloc>(create: (_) => locator()),
+  BlocProvider<NotificationBloc>(create: (_) => locator()),
 ];
