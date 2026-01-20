@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:truck_app/features/main/screen/main_screen_driver.dart';
 import 'package:truck_app/features/main/screen/main_screen_user.dart';
+import 'package:truck_app/services/local/local_services.dart';
 
 import '../../../core/constants/app_images.dart';
 import '../../../core/utils/messages.dart';
+import '../../auth/screens/login_screen.dart';
 import '../../auth/screens/welcome_screen.dart';
 import '../bloc/user_session/user_session_bloc.dart';
 import '../bloc/user_session/user_session_event.dart';
@@ -17,7 +19,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -29,11 +32,24 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     super.initState();
 
     // Initialize animations
-    _controller = AnimationController(duration: const Duration(milliseconds: 1500), vsync: this);
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Interval(0.0, 0.5, curve: Curves.easeIn)));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.0, 0.5, curve: Curves.easeIn),
+      ),
+    );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Interval(0.0, 0.5, curve: Curves.easeOutBack)));
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.0, 0.5, curve: Curves.easeOutBack),
+      ),
+    );
 
     // Start the animation
     _controller.forward();
@@ -54,22 +70,37 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           print(state);
           if (state is SessionAuthenticated) {
             if (state.isDriver) {
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenDriver()), (predicate) => false);
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => MainScreenDriver()),
+                (predicate) => false,
+              );
             } else {
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MainScreenUser()), (predicate) => false);
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => MainScreenUser()),
+                (predicate) => false,
+              );
             }
           } else if (state is SessionUnauthenticated) {
-            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+            _navigateToAuthScreen();
           } else if (state is SessionError) {
             showSnackBar(context, state.errorMessage);
             Future.delayed(Duration(seconds: 2)).then((result) {
-              Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => WelcomeScreen()), (predicate) => false);
+              _navigateToAuthScreen();
             });
           }
         },
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [theme.primaryColor.withOpacity(0.1), theme.primaryColor.withOpacity(0.3)]),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.primaryColor.withOpacity(0.1),
+                theme.primaryColor.withOpacity(0.3),
+              ],
+            ),
           ),
           child: Center(
             child: AnimatedBuilder(
@@ -89,14 +120,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20.0),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20.0, spreadRadius: 2.0)],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 20.0,
+                                spreadRadius: 2.0,
+                              ),
+                            ],
                           ),
                           child: Image.asset(AppImages.appIconWithName),
                         ),
                         const SizedBox(height: 30),
-                        Text("Return Cargo", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.primaryColor, letterSpacing: 1.2)),
+                        Text(
+                          "Return Cargo",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: theme.primaryColor,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
                         const SizedBox(height: 5),
-                        const Text("Manage. Track. Deliver.", style: TextStyle(fontSize: 16, color: Colors.black54)),
+                        const Text(
+                          "Manage. Track. Deliver.",
+                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
                       ],
                     ),
                   ),
@@ -107,6 +155,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         ),
       ),
     );
+  }
+
+  /// Navigate to the appropriate auth screen based on onboarding status
+  Future<void> _navigateToAuthScreen() async {
+    final isOnboardingCompleted = await LocalService.isOnboardingCompleted();
+
+    if (!mounted) return;
+
+    if (isOnboardingCompleted) {
+      // User has already seen onboarding, go directly to login
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(isDriverLogin: false),
+        ),
+        (predicate) => false,
+      );
+    } else {
+      // First time user, show onboarding/welcome screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (predicate) => false,
+      );
+    }
   }
 
   init() {
