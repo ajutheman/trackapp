@@ -139,12 +139,24 @@ class _OtpScreenState extends State<OtpScreen>
     context.read<AuthBloc>().add(ResendOTPRequested(token: _currentToken));
   }
 
+  // Zero-width space constant for consistency
+  static const String _zeroWidthSpace = '\u200B';
+
   String get _otpValue {
-    return _otpControllers.map((controller) => controller.text).join();
+    return _otpControllers
+        .map((controller) => controller.text.replaceAll(_zeroWidthSpace, ''))
+        .join();
   }
 
   bool get _isOtpComplete {
-    return _otpValue.length == 4;
+    // Check each field has exactly 1 digit
+    for (var controller in _otpControllers) {
+      final digit = controller.text.replaceAll(_zeroWidthSpace, '');
+      if (digit.isEmpty || digit.length != 1) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @override
@@ -375,12 +387,26 @@ class _OtpScreenState extends State<OtpScreen>
                                 controller: _otpControllers[index],
                                 focusNode: _focusNodes[index],
                                 onChanged: (value) {
+                                  // Handle paste - if value has more than 1 character
+                                  if (value.length > 1) {
+                                    _handlePaste(value);
+                                    return;
+                                  }
+
                                   if (value.isNotEmpty && index < 3) {
                                     _focusNodes[index + 1].requestFocus();
-                                  } else if (value.isEmpty && index > 0) {
-                                    _focusNodes[index - 1].requestFocus();
                                   }
                                   setState(() {});
+                                },
+                                onBackspace: () {
+                                  // Handle backspace on empty field
+                                  if (_otpControllers[index].text.isEmpty &&
+                                      index > 0) {
+                                    _focusNodes[index - 1].requestFocus();
+                                    // Clear the previous field value as well for better UX
+                                    _otpControllers[index - 1].clear();
+                                    setState(() {});
+                                  }
                                 },
                               ),
                             ),
@@ -503,6 +529,38 @@ class _OtpScreenState extends State<OtpScreen>
     );
   }
 
+  /// Handle paste - distributes pasted OTP across all fields
+  void _handlePaste(String pastedValue) {
+    // Extract only digits from pasted value
+    final digits = pastedValue.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Fill OTP fields with pasted digits
+    for (int i = 0; i < 4 && i < digits.length; i++) {
+      _otpControllers[i].text = digits[i];
+    }
+
+    // Move focus to the last filled field or the next empty one
+    final lastIndex = (digits.length - 1).clamp(0, 3);
+    if (digits.length >= 4) {
+      // All fields filled, focus on the last one
+      _focusNodes[3].requestFocus();
+    } else {
+      // Focus on the next empty field
+      _focusNodes[(lastIndex + 1).clamp(0, 3)].requestFocus();
+    }
+
+    setState(() {});
+
+    // Auto-verify if all fields are filled
+    if (digits.length >= 4) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_isOtpComplete && mounted) {
+          _verifyOtp();
+        }
+      });
+    }
+  }
+
   void _verifyOtp() {
     HapticFeedback.mediumImpact();
 
@@ -512,16 +570,67 @@ class _OtpScreenState extends State<OtpScreen>
   }
 }
 
-class _OtpInputField extends StatelessWidget {
+class _OtpInputField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Function(String) onChanged;
+  final VoidCallback? onBackspace;
 
   const _OtpInputField({
     required this.controller,
     required this.focusNode,
     required this.onChanged,
+    this.onBackspace,
   });
+
+  @override
+  State<_OtpInputField> createState() => _OtpInputFieldState();
+}
+
+class _OtpInputFieldState extends State<_OtpInputField> {
+  // Zero-width space used for backspace detection on mobile
+  static const String _zeroWidthSpace = '\u200B';
+  String _previousValue = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with zero-width space if empty
+    if (widget.controller.text.isEmpty) {
+      widget.controller.text = _zeroWidthSpace;
+    }
+    _previousValue = widget.controller.text;
+
+    // Listen for focus changes to position cursor correctly
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (widget.focusNode.hasFocus && mounted) {
+      // Position cursor at the end when focused
+      final text = widget.controller.text;
+      widget.controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: text.length),
+      );
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    super.dispose();
+  }
+
+  // Get the actual digit value (excluding zero-width space)
+  String get _actualValue {
+    return widget.controller.text.replaceAll(_zeroWidthSpace, '');
+  }
+
+  // Check if field has actual content
+  bool get _hasContent {
+    return _actualValue.isNotEmpty;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -533,12 +642,12 @@ class _OtpInputField extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color:
-              focusNode.hasFocus
+              widget.focusNode.hasFocus
                   ? AppColors.secondary
-                  : controller.text.isNotEmpty
+                  : _hasContent
                   ? AppColors.success
                   : Colors.grey.shade300,
-          width: focusNode.hasFocus ? 2 : 1,
+          width: widget.focusNode.hasFocus ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -549,27 +658,77 @@ class _OtpInputField extends StatelessWidget {
         ],
       ),
       child: TextField(
-        controller: controller,
-        focusNode: focusNode,
+        controller: widget.controller,
+        focusNode: widget.focusNode,
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
-        maxLength: 1,
         style: const TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9\u200B]')),
+        ],
         decoration: const InputDecoration(
           counterText: '',
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) {
-          if (value.isNotEmpty) {
-            HapticFeedback.selectionClick();
+          // Remove all zero-width spaces and get actual digits
+          final digits = value.replaceAll(_zeroWidthSpace, '');
+
+          // Handle paste - multiple digits entered
+          if (digits.length > 1) {
+            // Reset this field to zero-width space
+            widget.controller.text = _zeroWidthSpace;
+            widget.controller.selection = TextSelection.fromPosition(
+              const TextPosition(offset: 1),
+            );
+            _previousValue = _zeroWidthSpace;
+            widget.onChanged(digits); // Pass full pasted value to parent
+            return;
           }
-          onChanged(value);
+
+          // Handle backspace - was there content before and now there's nothing?
+          final prevDigits = _previousValue.replaceAll(_zeroWidthSpace, '');
+          if (prevDigits.isEmpty && digits.isEmpty && value.isEmpty) {
+            // Backspace pressed on empty field (zero-width space was deleted)
+            widget.controller.text = _zeroWidthSpace;
+            widget.controller.selection = TextSelection.fromPosition(
+              const TextPosition(offset: 1),
+            );
+            _previousValue = _zeroWidthSpace;
+            if (widget.onBackspace != null) {
+              widget.onBackspace!();
+            }
+            return;
+          }
+
+          // Handle normal single digit input
+          if (digits.length == 1) {
+            widget.controller.text = digits;
+            widget.controller.selection = TextSelection.fromPosition(
+              const TextPosition(offset: 1),
+            );
+            _previousValue = digits;
+            HapticFeedback.selectionClick();
+            widget.onChanged(digits);
+            setState(() {});
+            return;
+          }
+
+          // Field is empty (digit was deleted)
+          if (digits.isEmpty) {
+            widget.controller.text = _zeroWidthSpace;
+            widget.controller.selection = TextSelection.fromPosition(
+              const TextPosition(offset: 1),
+            );
+            _previousValue = _zeroWidthSpace;
+            widget.onChanged('');
+            setState(() {});
+          }
         },
       ),
     );
